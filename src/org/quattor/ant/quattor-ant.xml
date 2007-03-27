@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<antlib>
+
+  <taskdef name="quattor-notify"
+           classname="org.quattor.ant.NotifyClientTask"/>
+
+  <taskdef name="pan-syntax"
+           classname="org.quattor.ant.PanSyntaxTask"/>
+
+  <taskdef name="pan-compile"
+           classname="org.quattor.ant.PanCompileTask"/>
+
+  <taskdef name="pan-profile-info"
+           classname="org.quattor.ant.ProfileInfoTask"/>
+
+  <taskdef name="repository-templates"
+           classname="org.quattor.ant.RepositoryTask"/>
+
+  <taskdef name="quattor-svntag"
+           classname="org.quattor.ant.SvnTagTask"/>
+
+  <taskdef name="quattor-svncache"
+           classname="org.quattor.ant.SvnCacheTask"/>
+           
+</antlib>
