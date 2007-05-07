@@ -206,9 +206,9 @@ public class SvnTagTask extends Task {
 		System.out.println("Making tag: " + tag);
 		LinkedList<String> branchesToCreate = new LinkedList<String>();
 		boolean tagDirExists = false;
-		String tagParent;
+		String tagParent = tag;
 		SVNNodeKind tagParentNodeKind = null;
-		int parentIndex = tag.lastIndexOf("/");
+		int parentIndex = tagParent.lastIndexOf("/");
 		i = parentIndex;
 		while ( !tagDirExists && (i>0)) {
 			tagParent = tag.substring(0,i);
