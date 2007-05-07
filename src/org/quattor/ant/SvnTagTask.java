@@ -221,7 +221,7 @@ public class SvnTagTask extends Task {
 			}
 			if ( tagParentNodeKind == SVNNodeKind.NONE ) {
 				branchesToCreate.addFirst(tagsBranch+tagParent);
-				i = tag.lastIndexOf("/");
+				i = tagParent.lastIndexOf("/");
 			} else if ( tagParentNodeKind != SVNNodeKind.DIR ) {
 				throw new BuildException(
 						"Error: "+tagParent+" exists in repository but is not a directory");
