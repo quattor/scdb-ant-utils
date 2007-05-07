@@ -211,7 +211,7 @@ public class SvnTagTask extends Task {
 		int parentIndex = tagParent.lastIndexOf("/");
 		i = parentIndex;
 		while ( !tagDirExists && (i>0)) {
-			tagParent = tag.substring(0,i);
+			tagParent = tagParent.substring(0,i);
 			System.out.println("Checking existence of tag parent "+tagParent);
 			try {
 				tagParentNodeKind = repositoryTags.checkPath(tagParent, -1);
