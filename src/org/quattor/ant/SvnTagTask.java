@@ -207,11 +207,12 @@ public class SvnTagTask extends Task {
 		LinkedList<String> branchesToCreate = new LinkedList<String>();
 		boolean tagDirExists = false;
 		String tagParent;
+		SVNNodeKind tagParentNodeKind = null;
 		int parentIndex = tag.lastIndexOf("/");
 		i = parentIndex;
 		while ( !tagDirExists && (i>0)) {
-			SVNNodeKind tagParentNodeKind = null;
 			tagParent = tag.substring(0,i);
+			System.out.println("Checking existence of tag parent "+tagParent);
 			try {
 				tagParentNodeKind = repositoryTags.checkPath(tagParent, -1);
 			} catch (SVNException e) {
@@ -233,6 +234,7 @@ public class SvnTagTask extends Task {
 			int j = 0;
 			for (Iterator<String> it=branchesToCreate.iterator(); it.hasNext(); ) {
 				String branchPath = it.next(); 
+				System.out.println("Adding "+branchPath+" to branch list to create");
 				try {
 					urlsToCreate[j] = SVNURL.parseURIEncoded(branchPath);
 				} catch ( SVNException e) {
