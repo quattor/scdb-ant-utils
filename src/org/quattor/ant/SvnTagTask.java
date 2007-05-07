@@ -210,7 +210,7 @@ public class SvnTagTask extends Task {
 		i = parentIndex;
 		while ( !tagDirExists && (i>0)) {
 			tagParent = tagParent.substring(0,i);
-			System.out.println("Checking existence of tag parent "+tagParent);
+			//System.out.println("Checking existence of tag parent "+tagParent);
 			try {
 				tagParentNodeKind = repositoryTags.checkPath(tagParent, -1);
 			} catch (SVNException e) {
@@ -232,7 +232,7 @@ public class SvnTagTask extends Task {
 			int j = 0;
 			for (Iterator<String> it=branchesToCreate.iterator(); it.hasNext(); ) {
 				String branchPath = it.next(); 
-				System.out.println("Adding "+branchPath+" to branch list to create");
+				//System.out.println("Adding "+branchPath+" to branch list to create");
 				try {
 					urlsToCreate[j] = SVNURL.parseURIEncoded(branchPath);
 				} catch ( SVNException e) {
@@ -241,6 +241,7 @@ public class SvnTagTask extends Task {
 				}
 				j++;
 			}
+			System.out.println("Creating tag branch "+tagParent);
 			try {
 				commit.doMkDir(urlsToCreate,"SCDB ant tools : create new tag branch");
 			} catch (SVNException e) {
