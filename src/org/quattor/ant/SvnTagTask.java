@@ -199,11 +199,9 @@ public class SvnTagTask extends Task {
 					"workspace needs to be updated; tag aborted");
 		}
 
-		// Actually make the tag.
-		// First check the tag branch exists and create it if necessary.
+		// Check the tag branch exists and create it if necessary.
 		// The check needs to be done recursively as doMkDir() doesn't allow
 		// to create intermediate branch levels implicitly.
-		System.out.println("Making tag: " + tag);
 		LinkedList<String> branchesToCreate = new LinkedList<String>();
 		boolean tagDirExists = false;
 		String tagParent = tag;
@@ -254,6 +252,9 @@ public class SvnTagTask extends Task {
 				throw new BuildException("Error creating tag branch "+tagRoot+": " + e.getMessage());
 			}
 		}
+
+		// Actually make the tag.
+		System.out.println("Making tag: " + tag);
 		try {
 			copy.doCopy(srcUrl, SVNRevision.HEAD, tagUrl, false, "ant tag");
 		} catch (SVNException e) {
