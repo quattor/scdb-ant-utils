@@ -1,0 +1,111 @@
+<project name="Quattor Java Tasks and Utilities" default="all" basedir=".">
+
+	<description>
+    Ant tasks and other java utilities for Quattor.
+  </description>
+
+	<!-- Checks for a build.properties file in the local area.  This
+       can be used to override any of the defaults given below. -->
+	<property file="${basedir}/quattor.build.properties" />
+	<property file="${basedir}/../quattor.build.properties" />
+
+	<!-- source location for support software -->
+	<property name="src" location="src" />
+	<property name="src.java" location="${src}/java" />
+
+	<!-- build subdirectories (local to sub-ant builds) -->
+	<property name="build" location="build" />
+	<property name="build.java" location="${build}/java" />
+	<property name="build.jar" location="${build}/jar" />
+
+	<!-- externals -->
+	<property name="external" location="${basedir}/external" />
+
+	<!-- apache-ant -->
+	<property name="apache-ant" location="${external}/apache-ant" />
+	<property name="apache-ant.jar" location="${apache-ant}/lib/ant.jar" />
+
+	<!-- svnkit -->
+	<property name="svnkit" location="${external}/svnkit" />
+	<property name="svnkit.jar" location="${svnkit}/svnkit.jar" />
+
+	<!-- final jar file to create -->
+	<property name="quattor.jar" location="${build.jar}/quattor.jar" />
+
+	<!-- **************************************************************************
+     INTERNAL: Initialization.
+ ************************************************************************** -->
+
+	<target name="init">
+
+		<!-- Create the time stamp -->
+		<tstamp />
+
+		<!-- Make the build subdirectories. -->
+		<mkdir dir="${build.java}" />
+		<mkdir dir="${build.jar}" />
+
+	</target>
+
+
+	<!-- **************************************************************************
+     Clean up the generated files.
+ ************************************************************************** -->
+
+	<target name="clean" description="Clean up generated files">
+
+		<!-- Delete everything in the build directory. -->
+		<delete includeEmptyDirs="true" dir="${build}" />
+
+	</target>
+
+
+	<!-- **************************************************************************
+     Compile java
+ ************************************************************************** -->
+
+	<target name="compile" depends="init" description="Compile tools in java">
+		
+		<javac srcdir="${src}" destdir="${build.java}" includes="**/*.java" deprecation="on">
+
+			<compilerarg value="-Xlint:unchecked" />
+
+			<classpath path="${apache-ant.jar}" />
+			<classpath path="${svnkit.jar}" />
+
+		</javac>
+
+	</target>
+
+
+	<!-- **************************************************************************
+     Package the jar file
+ ************************************************************************** -->
+
+	<target name="package" depends="compile" description="Package code into jar">
+
+		<copy todir="${build.java}">
+			<fileset dir="${src}" includes="**/*.xml" />
+		</copy>
+
+		<jar destfile="${quattor.jar}" basedir="${build.java}" />
+
+	</target>
+
+
+	<!-- **************************************************************************
+     all: compile and build the quattor jar file
+ ************************************************************************** -->
+
+	<target name="all" depends="package" description="Create quattor jar">
+	</target>
+
+
+	<!-- **************************************************************************
+     forced all: generate xml profiles from scratch
+ ************************************************************************** -->
+
+	<target name="all.force" depends="clean,all" description="Create quattor jar from scratch">
+	</target>
+
+</project>
