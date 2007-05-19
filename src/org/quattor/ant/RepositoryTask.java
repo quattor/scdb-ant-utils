@@ -43,7 +43,7 @@ public class RepositoryTask extends Task {
 
 	/* The pattern for matching the template name information. */
 	private static Pattern templatePattern = Pattern
-			.compile("\\s*structure\\s*template\\s*([[:alpha:]/\\-]+)\\s*;");
+			.compile("\\s*structure\\s*template\\s*([\\w/\\-]+)\\s*;");
 
 	/*
 	 * The pattern for matching an anchor with href attribute (and ending with
