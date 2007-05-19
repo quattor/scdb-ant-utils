@@ -41,6 +41,10 @@ public class RepositoryTask extends Task {
 	private static Pattern pkgPattern = Pattern
 			.compile("\\s*#\\s*pkg\\s*=\\s*([^\\s]+)\\s*");
 
+	/* The pattern for matching the template name information. */
+	private static Pattern templatePattern = Pattern
+			.compile("\\s*structure\\s*template\\s*([[:alpha:]/\\-]+)\\s*;");
+
 	/*
 	 * The pattern for matching an anchor with href attribute (and ending with
 	 * rpm).
@@ -123,6 +127,7 @@ public class RepositoryTask extends Task {
 		File template = f;
 		String name = null;
 		String owner = null;
+		String templateName = null;
 		URL url = null;
 		TreeSet<String> packages = new TreeSet<String>();
 
@@ -131,11 +136,12 @@ public class RepositoryTask extends Task {
 			// Open the file for reading.
 			LineNumberReader reader = new LineNumberReader(new FileReader(f));
 
-			// Loop over all of the lines searching for key/value
-			// pair matches in comment lines. If more than one
-			// line has the same value, the later one is used.
+			// Loop over all header lines searching for key/value
+			// pair matches in comment lines. Header ends when line 'structure template...'
+			// is found.
+			// If more than one line has the same value, the later one is used.
 			String line = reader.readLine();
-			while (line != null) {
+			while ( (line != null) && (templateName == null) ) {
 
 				Matcher m = namePattern.matcher(line);
 				if (m.matches()) {
@@ -160,6 +166,11 @@ public class RepositoryTask extends Task {
 					packages.add(m.group(1));
 				}
 
+				m = templatePattern.matcher(line);
+				if (m.matches()) {
+					templateName = m.group(1);
+				}
+
 				line = reader.readLine();
 			}
 
@@ -169,7 +180,7 @@ public class RepositoryTask extends Task {
 
 		if ((template != null) && (name != null) && (owner != null)
 				&& (url != null)) {
-			repository = new Repository(template, name, owner, url, packages);
+			repository = new Repository(template, name, owner, url, packages, templateName);
 		}
 
 		return repository;
@@ -220,6 +231,8 @@ public class RepositoryTask extends Task {
 
 		private final String owner;
 
+		private final String templateName;
+
 		private final URL url;
 
 		private final Set<String> existingPkgs;
@@ -228,10 +241,15 @@ public class RepositoryTask extends Task {
 		 * Create a new repository based on the given values.
 		 */
 		public Repository(File template, String name, String owner, URL url,
-				Set<String> packages) {
+				Set<String> packages, String templateName) {
 			this.template = template;
 			this.name = name;
 			this.owner = owner;
+			if ( templateName != null ) {
+			  this.templateName = templateName;
+			} else {
+				this.templateName = "repository/" + name;
+			}
 			this.url = url;
 			this.existingPkgs = new TreeSet<String>();
 			this.existingPkgs.addAll(packages);
@@ -287,7 +305,7 @@ public class RepositoryTask extends Task {
 			buffer.append("# owner = " + owner + "\n");
 			buffer.append("# url = " + url + "\n");
 			buffer.append("#\n\n");
-			buffer.append("structure template repository_" + name + ";"
+			buffer.append("structure template " + templateName + ";"
 					+ "\n\n");
 			buffer.append("\"name\" = \"" + name + "\";" + "\n");
 			buffer.append("\"owner\" = \"" + owner + "\";" + "\n");
