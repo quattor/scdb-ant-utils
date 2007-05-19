@@ -118,6 +118,8 @@ public class RepositoryTask extends Task {
 	 * should be embedded in comments in the template header. The format is "#
 	 * name = <name>" for the repository name; use a similar syntax for the
 	 * owner and URL.
+	 * If 'structure template' line exists in the template, the template name is
+	 * retrieved from this line to be preserved if updating the template.
 	 */
 	public static Repository parseTemplate(File f) {
 
@@ -136,12 +138,12 @@ public class RepositoryTask extends Task {
 			// Open the file for reading.
 			LineNumberReader reader = new LineNumberReader(new FileReader(f));
 
-			// Loop over all header lines searching for key/value
-			// pair matches in comment lines. Header ends when line 'structure template...'
-			// is found.
+			// Loop over all lines searching for key/value pair matches in comment lines.
 			// If more than one line has the same value, the later one is used.
+			// The whole file is parsed to build the list of current packages used
+			// later to check if repository template content has changed.
 			String line = reader.readLine();
-			while ( (line != null) && (templateName == null) ) {
+			while ( line != null ) {
 
 				Matcher m = namePattern.matcher(line);
 				if (m.matches()) {
