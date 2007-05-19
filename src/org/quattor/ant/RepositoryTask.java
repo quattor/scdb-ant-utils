@@ -233,7 +233,7 @@ public class RepositoryTask extends Task {
 
 		private final String owner;
 
-		private final String templateName;
+		private String templateName;
 
 		private final URL url;
 
@@ -247,11 +247,7 @@ public class RepositoryTask extends Task {
 			this.template = template;
 			this.name = name;
 			this.owner = owner;
-			if ( templateName != null ) {
-			  this.templateName = templateName;
-			} else {
-				this.templateName = "repository/" + name;
-			}
+			this.templateName = templateName;
 			this.url = url;
 			this.existingPkgs = new TreeSet<String>();
 			this.existingPkgs.addAll(packages);
@@ -268,8 +264,10 @@ public class RepositoryTask extends Task {
 
 			// Compare the packages with what already exists. If the packages
 			// are the same, then there is nothing to do.
+			// If no 'structure template' line has been found, existing template is
+			// malformed and need to be rebuilt, even if the package list is the same.
 			Set<String> newPkgs = pkgs.keySet();
-			boolean write = !(newPkgs.equals(existingPkgs));
+			boolean write = !(newPkgs.equals(existingPkgs)) && (templateName==null);
 
 			// Write out the template if necessary.
 			if (write) {
@@ -297,6 +295,10 @@ public class RepositoryTask extends Task {
 		 * Generate a template for this repository.
 		 */
 		public String format(Map<String, String> pkgs) {
+
+			if ( templateName == null ) {
+				templateName = "repository/" + name;
+			}
 
 			StringBuilder buffer = new StringBuilder();
 			buffer.append("#\n");
