@@ -267,7 +267,7 @@ public class RepositoryTask extends Task {
 			// If no 'structure template' line has been found, existing template is
 			// malformed and need to be rebuilt, even if the package list is the same.
 			Set<String> newPkgs = pkgs.keySet();
-			boolean write = !(newPkgs.equals(existingPkgs)) && (templateName==null);
+			boolean write = !(newPkgs.equals(existingPkgs)) || (templateName==null);
 
 			// Write out the template if necessary.
 			if (write) {
