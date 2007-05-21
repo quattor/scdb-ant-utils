@@ -56,6 +56,10 @@ public class RepositoryTask extends Task {
 	/* The list of configuration files. */
 	private LinkedList<File> files = new LinkedList<File>();
 
+	/* Control printing of debugging messages in this task */
+	private boolean debugTask = false;
+
+
 	/*
 	 * Method used by ant to execute this task.
 	 */
@@ -71,6 +75,18 @@ public class RepositoryTask extends Task {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Setting this flag will print debugging information from the task itself.
+	 * This is primarily useful if one wants to debug a build using the command
+	 * line interface.
+	 * 
+	 * @param debugTask
+	 *            flag to print task debugging information
+	 */
+	public void setDebugTask(boolean debugTask) {
+		this.debugTask = debugTask;
 	}
 
 	/*

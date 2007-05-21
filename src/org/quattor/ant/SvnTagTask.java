@@ -55,6 +55,22 @@ public class SvnTagTask extends Task {
 	/* The full path to the local subversion workspace. */
 	private File workspacePath = null;
 
+	/* Control printing of debugging messages in this task */
+	private boolean debugTask = false;
+
+
+	/**
+	 * Setting this flag will print debugging information from the task itself.
+	 * This is primarily useful if one wants to debug a build using the command
+	 * line interface.
+	 * 
+	 * @param debugTask
+	 *            flag to print task debugging information
+	 */
+	public void setDebugTask(boolean debugTask) {
+		this.debugTask = debugTask;
+	}
+
 	/*
 	 * Set the tag name to use.
 	 * 
@@ -210,7 +226,8 @@ public class SvnTagTask extends Task {
 		i = parentIndex;
 		while ( !tagDirExists && (i>0)) {
 			tagParent = tagParent.substring(0,i);
-			//System.out.println("Checking existence of tag parent "+tagParent);
+			if ( debugTask )
+				System.out.println("Checking existence of tag parent "+tagParent);
 			try {
 				tagParentNodeKind = repositoryTags.checkPath(tagParent, -1);
 			} catch (SVNException e) {
@@ -231,8 +248,9 @@ public class SvnTagTask extends Task {
 			SVNURL[] urlsToCreate = new SVNURL[branchesToCreate.size()];
 			int j = 0;
 			for (Iterator<String> it=branchesToCreate.iterator(); it.hasNext(); ) {
-				String branchPath = it.next(); 
-				//System.out.println("Adding "+branchPath+" to branch list to create");
+				String branchPath = it.next();
+				if ( debugTask )
+					System.out.println("Adding "+branchPath+" to branch list to create");
 				try {
 					urlsToCreate[j] = SVNURL.parseURIEncoded(branchPath);
 				} catch ( SVNException e) {
