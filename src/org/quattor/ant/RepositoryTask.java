@@ -141,7 +141,7 @@ public class RepositoryTask extends Task {
 	 * If 'structure template' line exists in the template, the template name is
 	 * retrieved from this line to be preserved if updating the template.
 	 */
-	public static Repository parseTemplate(File f) {
+	public Repository parseTemplate(File f) {
 
 		Repository repository = null;
 
@@ -208,7 +208,8 @@ public class RepositoryTask extends Task {
 
 		if ((template != null) && (name != null) && (owner != null)
 				&& (url != null)) {
-			repository = new Repository(template, name, owner, url, packages, templateName, nameProperty);
+			repository = new Repository(template, name, owner,
+					url, packages, templateName, nameProperty, debugTask);
 		}
 
 		return repository;
@@ -266,12 +267,14 @@ public class RepositoryTask extends Task {
 		private final URL url;
 
 		private final Set<String> existingPkgs;
+		
+		private final boolean debugTask;
 
 		/**
 		 * Create a new repository based on the given values.
 		 */
 		public Repository(File template, String name, String owner, URL url,
-				Set<String> packages, String templateName, String nameProperty) {
+				Set<String> packages, String templateName, String nameProperty, boolean debugTask) {
 			this.template = template;
 			this.name = name;
 			this.nameProperty = nameProperty;
@@ -280,6 +283,7 @@ public class RepositoryTask extends Task {
 			this.url = url;
 			this.existingPkgs = new TreeSet<String>();
 			this.existingPkgs.addAll(packages);
+			this.debugTask = debugTask;
 		}
 
 		/**
@@ -302,6 +306,14 @@ public class RepositoryTask extends Task {
 
 			// Write out the template if necessary.
 			if (write) {
+				
+				if (debugTask) {
+					if (templateName == null)
+						System.out.println(template+": no 'structure template line' found");
+					if (name != nameProperty)
+						System.out.println(template+": 'name' tag ("+name+") doesn't match 'name' property ("+
+								nameProperty+")");
+				}
 
 				String contents = format(pkgs);
 
