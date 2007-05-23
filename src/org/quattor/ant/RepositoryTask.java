@@ -302,15 +302,15 @@ public class RepositoryTask extends Task {
 			//   - If 'name' property is missing or its value differs from 'name' tag in comments,
 			//     the template is considered malformed and rebuilt.
 			Set<String> newPkgs = pkgs.keySet();
-			boolean write = !(newPkgs.equals(existingPkgs)) || (templateName==null) || (name!=nameProperty);
+			boolean write = !(newPkgs.equals(existingPkgs)) || (templateName==null) || !(name.equals(nameProperty));
 
 			// Write out the template if necessary.
 			if (write) {
 				
 				if (debugTask) {
-					if (templateName == null)
+					if ( templateName == null )
 						System.out.println(template+": no 'structure template line' found");
-					if (name != nameProperty)
+					if ( !name.equals(nameProperty) )
 						System.out.println(template+": 'name' tag ("+name+") doesn't match 'name' property ("+
 								nameProperty+")");
 				}
