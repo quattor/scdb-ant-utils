@@ -29,6 +29,9 @@ public class PanSyntaxTask extends Task {
 
 	/* The list of files to check. */
 	private LinkedList<String> files = new LinkedList<String>();
+	
+	/* Print debugging messages */
+	private boolean debugTask = false;
 
 	/*
 	 * Method used by ant to execute this task.
@@ -116,6 +119,18 @@ public class PanSyntaxTask extends Task {
 			System.err.println("Error touching timestamp file.");
 			System.err.println(ioe.getMessage());
 		}
+	}
+
+	/**
+	 * Setting this flag will print debugging information from the task itself.
+	 * This is primarily useful if one wants to debug a build using the command
+	 * line interface.
+	 * 
+	 * @param debugTask
+	 *            flag to print task debugging information
+	 */
+	public void setDebugTask(boolean debugTask) {
+		this.debugTask = debugTask;
 	}
 
 	/*

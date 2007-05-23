@@ -45,6 +45,10 @@ public class RepositoryTask extends Task {
 	private static Pattern templatePattern = Pattern
 			.compile("\\s*structure\\s*template\\s*([\\w/\\-]+)\\s*;");
 
+	/* The pattern for matching the name PAN property. */
+	private static Pattern namePanPattern = Pattern
+			.compile("\\s*[\"']name[\"']\\s*=\\s*[\"']([^\\s]+)[\"']\\s*;\\s*");
+
 	/*
 	 * The pattern for matching an anchor with href attribute (and ending with
 	 * rpm).
@@ -144,6 +148,7 @@ public class RepositoryTask extends Task {
 		// Setup the values for the repository.
 		File template = f;
 		String name = null;
+		String nameProperty = null;
 		String owner = null;
 		String templateName = null;
 		URL url = null;
@@ -189,6 +194,11 @@ public class RepositoryTask extends Task {
 					templateName = m.group(1);
 				}
 
+				m = namePanPattern.matcher(line);
+				if (m.matches()) {
+					nameProperty = m.group(1);
+				}
+
 				line = reader.readLine();
 			}
 
@@ -198,7 +208,7 @@ public class RepositoryTask extends Task {
 
 		if ((template != null) && (name != null) && (owner != null)
 				&& (url != null)) {
-			repository = new Repository(template, name, owner, url, packages, templateName);
+			repository = new Repository(template, name, owner, url, packages, templateName, nameProperty);
 		}
 
 		return repository;
@@ -247,6 +257,8 @@ public class RepositoryTask extends Task {
 
 		private final String name;
 
+		private final String nameProperty;
+
 		private final String owner;
 
 		private String templateName;
@@ -259,9 +271,10 @@ public class RepositoryTask extends Task {
 		 * Create a new repository based on the given values.
 		 */
 		public Repository(File template, String name, String owner, URL url,
-				Set<String> packages, String templateName) {
+				Set<String> packages, String templateName, String nameProperty) {
 			this.template = template;
 			this.name = name;
+			this.nameProperty = nameProperty;
 			this.owner = owner;
 			this.templateName = templateName;
 			this.url = url;
@@ -279,11 +292,13 @@ public class RepositoryTask extends Task {
 			parseURL(pkgs);
 
 			// Compare the packages with what already exists. If the packages
-			// are the same, then there is nothing to do.
-			// If no 'structure template' line has been found, existing template is
-			// malformed and need to be rebuilt, even if the package list is the same.
+			// are the same, then there is nothing to do with the following exceptions :
+			//   - If no 'structure template' line has been found, existing template is
+			//     malformed and need to be rebuilt, even if the package list is the same.
+			//   - If 'name' property is missing or its value differs from 'name' tag in comments,
+			//     the template is considered malformed and rebuilt.
 			Set<String> newPkgs = pkgs.keySet();
-			boolean write = !(newPkgs.equals(existingPkgs)) || (templateName==null);
+			boolean write = !(newPkgs.equals(existingPkgs)) || (templateName==null) || (name!=nameProperty);
 
 			// Write out the template if necessary.
 			if (write) {

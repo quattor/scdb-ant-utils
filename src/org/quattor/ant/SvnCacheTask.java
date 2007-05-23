@@ -56,6 +56,21 @@ public class SvnCacheTask extends Task {
 	/* The password to access the repository. */
 	private String password = null;
 
+	/* Print debugging messages */
+	private boolean debugTask = false;
+
+	/**
+	 * Setting this flag will print debugging information from the task itself.
+	 * This is primarily useful if one wants to debug a build using the command
+	 * line interface.
+	 * 
+	 * @param debugTask
+	 *            flag to print task debugging information
+	 */
+	public void setDebugTask(boolean debugTask) {
+		this.debugTask = debugTask;
+	}
+
 	/**
 	 * Give the username that will be used to access the subversion repository.
 	 * 
