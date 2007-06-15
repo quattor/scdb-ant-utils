@@ -123,7 +123,7 @@ public class SvnTagTask extends Task {
 		SVNCommitClient commit = manager.getCommitClient();
 
 		// Create a handler to collect the information.
-		StatusHandler handler = new StatusHandler();
+		StatusHandler handler = new StatusHandler(debugTask);
 		
 		// Retrieve the URL for the repository.
 		SVNInfo info = null;
@@ -293,7 +293,18 @@ public class SvnTagTask extends Task {
 		 * workspace.
 		 */
 		private boolean modified = false;
+		
+		/**
+		 * Flag enabling debugging message in the handler
+		 */
+		private boolean debugHandler = false;
+		
 
+		public StatusHandler(boolean debugTask) {
+		  debugHandler = debugTask;	
+		}
+		
+		
 		/**
 		 * Implement the method to retrieve the status of a file or directory.
 		 */
@@ -306,7 +317,12 @@ public class SvnTagTask extends Task {
 			boolean fileModified = (s != SVNStatusType.STATUS_NORMAL)
 					&& (s != SVNStatusType.STATUS_IGNORED)
 					&& (s != SVNStatusType.STATUS_EXTERNAL);
+			
+			if ( debugHandler ) {
+				System.out.println("File="+status.getURL().toString()+"Status="+s.toString());
+			}
 
+			
 			// Write the files that have been modified to the standard error.
 			if (fileModified) {
 				modified = true;
