@@ -295,7 +295,7 @@ public class SvnTagTask extends Task {
 			// an ignored file, or an external reference. STATUS_NONE means the file
 			// has no local modifications but only remote ones (this happens only if
 			// remote=true in doStatus() call.
-			// If the file has local modifications, register it in the appropriate list.
+			// If the file has no modification, check its properties.
 			
 			SVNStatusType ls = status.getContentsStatus();
 			boolean fileLocallyModified = (ls != SVNStatusType.STATUS_NORMAL)
@@ -306,22 +306,49 @@ public class SvnTagTask extends Task {
 			if ( debugHandler ) {
 				System.out.println("File="+status.getFile()+", Local status="+ls.toString());
 			}
+
+			String localStatus = null;
+			if ( fileLocallyModified ) {
+				localStatus = ls.toString();
+			} else {
+				SVNStatusType lps = status.getPropertiesStatus();
+				fileLocallyModified = (lps != SVNStatusType.STATUS_NORMAL)
+									&& (lps != SVNStatusType.STATUS_NONE);
+				if ( fileLocallyModified ) {
+					localStatus = "property";
+				}
+			}
+			
 			
 			// A file is considered remotly modified if the status is not STATUS_NONE 
-			// If the file has remote modifications, register it in the appropriate list.
+
 			SVNStatusType rs = status.getRemoteContentsStatus();
-			boolean fileRemotlyModified = (rs != SVNStatusType.STATUS_NONE);
+			boolean fileRemotelyModified = (rs != SVNStatusType.STATUS_NONE);
 			if ( debugHandler ) {
 				System.out.println("File="+status.getFile()+", Remote status="+rs.toString());
 			}
 			
-			if ( fileLocallyModified || fileRemotlyModified ) {
+			String remoteStatus = null;
+			if ( fileRemotelyModified ) {
+				remoteStatus = rs.toString();
+			} else {
+				SVNStatusType rps = status.getRemotePropertiesStatus();
+				fileRemotelyModified = (rps != SVNStatusType.STATUS_NORMAL)
+									&& (rps != SVNStatusType.STATUS_NONE);
+				if ( fileRemotelyModified ) {
+					remoteStatus = "property";
+				}
+			}
+			
+			
+			// Print message if the file has been modified or is not uptodate
+			if ( fileLocallyModified || fileRemotelyModified ) {
 				System.err.println(
-						(fileLocallyModified ? ls.toString() : rs.toString()) +
+						(fileLocallyModified ? localStatus : remoteStatus) +
 						" (" +
 						(fileLocallyModified ? "locally" : "") +
-						(fileLocallyModified && fileRemotlyModified ? "," : "") +
-						(fileRemotlyModified ? "remotely" : "") +
+						(fileLocallyModified && fileRemotelyModified ? "," : "") +
+						(fileRemotelyModified ? "remotely" : "") +
 						") : " +
 						status.getFile().getPath()
 						);
