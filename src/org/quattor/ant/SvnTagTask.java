@@ -322,10 +322,10 @@ public class SvnTagTask extends Task {
 				System.out.println("File="+status.getFile()+", Local status="+ls.toString());
 			}
 			
-			// A file is considered remotly modified if it is not in a 'normal' status
+			// A file is considered remotly modified if the status is not STATUS_NONE 
 			// If the file has remote modifications, register it in the appropriate list.
 			SVNStatusType rs = status.getRemoteContentsStatus();
-			boolean fileRemotlyModified = (rs != SVNStatusType.STATUS_NORMAL);
+			boolean fileRemotlyModified = (rs != SVNStatusType.STATUS_NONE);
 			if ( debugHandler ) {
 				System.out.println("File="+status.getFile()+", Remote status="+rs.toString());
 			}
@@ -337,7 +337,7 @@ public class SvnTagTask extends Task {
 						(fileRemotlyModified ? "remotly," : "") +
 						(fileLocallyModified ? ls.toString() : rs.toString()) +
 						") : " +
-						status.getFile()
+						status.getFile().getPath()
 						);
 				modified = true;
 			}
