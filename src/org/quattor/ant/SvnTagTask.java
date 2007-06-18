@@ -180,21 +180,20 @@ public class SvnTagTask extends Task {
 					"Error getting information about SVN branch "+tagsBranch+": "+e.getMessage());
 		}
 		
-		// Check for any local modifications. With the flags below,
-		// it will do a recursive search of the workspace path but
-		// only use local information. The handler will not be called
-		// for ignored or normal files.
-		System.out.println("Checking for local modifications...");
+		// Check for any local or remote modifications. With the flags below,
+		// it will do a recursive search of the workspace. The handler will 
+		// not be called for ignored or normal (unmodified, uptodate) files.
+		System.out.println("Checking for local and remote modifications...");
 		try {
-			status.doStatus(workspacePath, true, false, false, false, handler);
+			status.doStatus(workspacePath, true, true, false, false, handler);
 		} catch (SVNException e) {
 			e.printStackTrace();
 			throw new BuildException(
-					"svn status (local) failed; see traceback.");
+					"Check failed; see traceback.");
 		}
 		if (handler.isModified()) {
 			throw new BuildException(
-					"workspace has local modifications; tag aborted");
+					"workspace has local and/or remote modifications; tag aborted");
 		}
 
 		// Check for any remote modifications. With the flags below,
@@ -289,7 +288,7 @@ public class SvnTagTask extends Task {
 	private class StatusHandler implements ISVNStatusHandler {
 
 		/**
-		 * A private flag to indicate whether there are any modifications to the
+		 * A private flag to indicate whether there are any local modifications to the
 		 * workspace.
 		 */
 		private boolean modified = false;
@@ -310,24 +309,37 @@ public class SvnTagTask extends Task {
 		 */
 		public void handleStatus(SVNStatus status) {
 
-			SVNStatusType s = status.getContentsStatus();
-
-			// A file is considered modified if it is not in a 'normal' status,
+			// A file is considered locally modified if it is not in a 'normal' status,
 			// an ignored file, or an external reference.
-			boolean fileModified = (s != SVNStatusType.STATUS_NORMAL)
-					&& (s != SVNStatusType.STATUS_IGNORED)
-					&& (s != SVNStatusType.STATUS_EXTERNAL);
+			// If the file has local modifications, register it in the appropriate list.
 			
-			if ( debugHandler ) {
-//				System.out.println("File="+status.getFile()+" ("+status.getURL().toString()+"), Status="+status.toString());
-				System.out.println("File="+status.getFile()+", Status="+s.toString());
-			}
+			SVNStatusType ls = status.getContentsStatus();
+			boolean fileLocallyModified = (ls != SVNStatusType.STATUS_NORMAL)
+					&& (ls != SVNStatusType.STATUS_IGNORED)
+					&& (ls != SVNStatusType.STATUS_EXTERNAL);
 
+			if ( debugHandler ) {
+				System.out.println("File="+status.getFile()+", Local status="+ls.toString());
+			}
 			
-			// Write the files that have been modified to the standard error.
-			if (fileModified) {
+			// A file is considered remotly modified if it is not in a 'normal' status
+			// If the file has remote modifications, register it in the appropriate list.
+			SVNStatusType rs = status.getRemoteContentsStatus();
+			boolean fileRemotlyModified = (rs != SVNStatusType.STATUS_NORMAL);
+			if ( debugHandler ) {
+				System.out.println("File="+status.getFile()+", Remote status="+rs.toString());
+			}
+			
+			if ( fileLocallyModified || fileRemotlyModified ) {
+				System.err.println(
+						"Modified (" +
+						(fileLocallyModified ? "locally," : "") +
+						(fileRemotlyModified ? "remotly," : "") +
+						(fileLocallyModified ? ls.toString() : rs.toString()) +
+						") : " +
+						status.getFile()
+						);
 				modified = true;
-				System.err.println("modified : " + status.getFile());
 			}
 		}
 
@@ -348,4 +360,4 @@ public class SvnTagTask extends Task {
 	}
 
 }
-
+	
