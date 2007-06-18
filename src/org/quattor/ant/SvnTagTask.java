@@ -319,7 +319,7 @@ public class SvnTagTask extends Task {
 					&& (s != SVNStatusType.STATUS_EXTERNAL);
 			
 			if ( debugHandler ) {
-				System.out.println("File="+status.getURL().toString()+"Status="+s.toString());
+				System.out.println("File="+status.getFile()+" ("+status.getURL().toString()+"), Status="+status.toString());
 			}
 
 			
