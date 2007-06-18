@@ -332,10 +332,11 @@ public class SvnTagTask extends Task {
 			
 			if ( fileLocallyModified || fileRemotlyModified ) {
 				System.err.println(
-						"Modified (" +
-						(fileLocallyModified ? "locally," : "") +
-						(fileRemotlyModified ? "remotly," : "") +
 						(fileLocallyModified ? ls.toString() : rs.toString()) +
+						" (" +
+						(fileLocallyModified ? "locally" : "") +
+						(fileLocallyModified && fileRemotlyModified ? "," : "") +
+						(fileRemotlyModified ? "remotely" : "") +
 						") : " +
 						status.getFile().getPath()
 						);
