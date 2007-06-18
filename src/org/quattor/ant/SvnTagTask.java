@@ -292,13 +292,16 @@ public class SvnTagTask extends Task {
 		public void handleStatus(SVNStatus status) {
 
 			// A file is considered locally modified if it is not in a 'normal' status,
-			// an ignored file, or an external reference.
+			// an ignored file, or an external reference. STATUS_NONE means the file
+			// has no local modifications but only remote ones (this happens only if
+			// remote=true in doStatus() call.
 			// If the file has local modifications, register it in the appropriate list.
 			
 			SVNStatusType ls = status.getContentsStatus();
 			boolean fileLocallyModified = (ls != SVNStatusType.STATUS_NORMAL)
 					&& (ls != SVNStatusType.STATUS_IGNORED)
-					&& (ls != SVNStatusType.STATUS_EXTERNAL);
+					&& (ls != SVNStatusType.STATUS_EXTERNAL)
+					&& (ls != SVNStatusType.STATUS_NONE);
 
 			if ( debugHandler ) {
 				System.out.println("File="+status.getFile()+", Local status="+ls.toString());
