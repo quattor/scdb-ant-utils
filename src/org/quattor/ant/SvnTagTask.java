@@ -196,24 +196,6 @@ public class SvnTagTask extends Task {
 					"workspace has local and/or remote modifications; tag aborted");
 		}
 
-		// Check for any remote modifications. With the flags below,
-		// it will do a recursive search of the workspace path and
-		// will use remote information. The handler will not be
-		// called for ignored or normal files.
-		handler.reset();
-		System.out.println("Checking for remote modifications...");
-		try {
-			status.doStatus(workspacePath, true, true, false, false, handler);
-		} catch (SVNException e) {
-			e.printStackTrace();
-			throw new BuildException(
-					"svn status (remote) failed; see traceback.");
-		}
-		if (handler.isModified()) {
-			throw new BuildException(
-					"workspace needs to be updated; tag aborted");
-		}
-
 		// Check the tag branch exists and create it if necessary.
 		// The check needs to be done recursively as doMkDir() doesn't allow
 		// to create intermediate branch levels implicitly.
