@@ -385,7 +385,7 @@ public class SvnTagTask extends Task {
 		 * Get the remote modification status flag.
 		 */
 		public boolean isModifiedRemotely() {
-			return modifiedRemotly;
+			return modifiedRemotely;
 		}
 
 		/**
@@ -393,7 +393,7 @@ public class SvnTagTask extends Task {
 		 */
 		public void reset() {
 			modifiedLocally = false;
-			modifiedRemotly = false;
+			modifiedRemotely = false;
 		}
 
 	}
