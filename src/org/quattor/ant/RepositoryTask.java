@@ -210,6 +210,12 @@ public class RepositoryTask extends Task {
 				&& (url != null)) {
 			repository = new Repository(template, name, owner,
 					url, packages, templateName, nameProperty, debugTask);
+		} else if ( debugTask ) {
+			System.out.println("Template "+f.getAbsolutePath()+" not recognized as a template");
+			System.out.println("    template=" + (template != null ? template : "not specified"));
+			System.out.println("    name=" + (name != null ? name : "not specified"));
+			System.out.println("    url=" + (url != null ? url : "not specified"));
+			System.out.println("    owner=" + (owner != null ? owner : "not specified"));
 		}
 
 		return repository;
