@@ -184,6 +184,7 @@ public class SvnTagTask extends Task {
 		// it will do a recursive search of the workspace. The handler will 
 		// not be called for ignored or normal (unmodified, uptodate) files.
 		System.out.println("Checking for local and remote modifications...");
+		handler.reset();
 		try {
 			status.doStatus(workspacePath, true, true, false, false, handler);
 		} catch (SVNException e) {
