@@ -198,7 +198,7 @@ public class SvnTagTask extends Task {
 				System.err.println("Some files are not up-to-date : use 'svn update' to update your working copy.");
 			}
 			throw new BuildException(
-					"workspace has local and/or remote modifications; tag aborted");
+					"workspace has local and/or remote modifications; deploy aborted");
 		}
 
 		// Check the tag branch exists and create it if necessary.
