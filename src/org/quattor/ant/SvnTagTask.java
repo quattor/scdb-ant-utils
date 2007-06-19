@@ -192,6 +192,12 @@ public class SvnTagTask extends Task {
 					"Check failed; see traceback.");
 		}
 		if (handler.isModified()) {
+			if ( handler.isModifiedLocally() ) {
+				System.err.println("Some files found with local modifications : commit your changes before deploy.");
+			}
+			if ( handler.isModifiedRemotely() ) {
+				System.err.println("Some files are not up-to-date : use 'svn update' to update your working copy.");
+			}
 			throw new BuildException(
 					"workspace has local and/or remote modifications; tag aborted");
 		}
@@ -273,7 +279,13 @@ public class SvnTagTask extends Task {
 		 * A private flag to indicate whether there are any local modifications to the
 		 * workspace.
 		 */
-		private boolean modified = false;
+		private boolean modifiedLocally = false;
+		
+		/**
+		 * A private flag to indicate whether there are any remote modifications to the
+		 * workspace.
+		 */
+		private boolean modifiedRemotely = false;
 		
 		/**
 		 * Flag enabling debugging message in the handler
@@ -298,7 +310,7 @@ public class SvnTagTask extends Task {
 			// If the file has no modification, check its properties.
 			
 			SVNStatusType ls = status.getContentsStatus();
-			boolean fileLocallyModified = (ls != SVNStatusType.STATUS_NORMAL)
+			modifiedLocally = (ls != SVNStatusType.STATUS_NORMAL)
 					&& (ls != SVNStatusType.STATUS_IGNORED)
 					&& (ls != SVNStatusType.STATUS_EXTERNAL)
 					&& (ls != SVNStatusType.STATUS_NONE);
@@ -308,13 +320,13 @@ public class SvnTagTask extends Task {
 			}
 
 			String localStatus = null;
-			if ( fileLocallyModified ) {
+			if ( modifiedLocally ) {
 				localStatus = ls.toString();
 			} else {
 				SVNStatusType lps = status.getPropertiesStatus();
-				fileLocallyModified = (lps != SVNStatusType.STATUS_NORMAL)
+				modifiedLocally = (lps != SVNStatusType.STATUS_NORMAL)
 									&& (lps != SVNStatusType.STATUS_NONE);
-				if ( fileLocallyModified ) {
+				if ( modifiedLocally ) {
 					localStatus = "property";
 				}
 			}
@@ -323,51 +335,65 @@ public class SvnTagTask extends Task {
 			// A file is considered remotly modified if the status is not STATUS_NONE 
 
 			SVNStatusType rs = status.getRemoteContentsStatus();
-			boolean fileRemotelyModified = (rs != SVNStatusType.STATUS_NONE);
+			modifiedRemotely = (rs != SVNStatusType.STATUS_NONE);
 			if ( debugHandler ) {
 				System.out.println("File="+status.getFile()+", Remote status="+rs.toString());
 			}
 			
 			String remoteStatus = null;
-			if ( fileRemotelyModified ) {
+			if ( modifiedRemotely ) {
 				remoteStatus = rs.toString();
 			} else {
 				SVNStatusType rps = status.getRemotePropertiesStatus();
-				fileRemotelyModified = (rps != SVNStatusType.STATUS_NORMAL)
+				modifiedRemotely = (rps != SVNStatusType.STATUS_NORMAL)
 									&& (rps != SVNStatusType.STATUS_NONE);
-				if ( fileRemotelyModified ) {
+				if ( modifiedRemotely ) {
 					remoteStatus = "property";
 				}
 			}
 			
 			
 			// Print message if the file has been modified or is not uptodate
-			if ( fileLocallyModified || fileRemotelyModified ) {
+			if ( modifiedLocally || modifiedRemotely ) {
 				System.err.println(
-						(fileLocallyModified ? localStatus : remoteStatus) +
+						(modifiedLocally ? localStatus : remoteStatus) +
 						" (" +
-						(fileLocallyModified ? "locally" : "") +
-						(fileLocallyModified && fileRemotelyModified ? "," : "") +
-						(fileRemotelyModified ? "remotely" : "") +
+						(modifiedLocally ? "locally" : "") +
+						(modifiedLocally && modifiedRemotely ? "," : "") +
+						(modifiedRemotely ? "remotely" : "") +
 						") : " +
 						status.getFile().getPath()
 						);
-				modified = true;
 			}
 		}
 
 		/**
-		 * Get the status flag.
+		 * Get the overall status flag.
 		 */
 		public boolean isModified() {
-			return modified;
+			return modifiedLocally || modifiedRemotely;
+		}
+
+		/**
+		 * Get the local modification status flag.
+		 */
+		public boolean isModifiedLocally() {
+			return modifiedLocally;
+		}
+
+		/**
+		 * Get the remote modification status flag.
+		 */
+		public boolean isModifiedRemotely() {
+			return modifiedRemotly;
 		}
 
 		/**
 		 * Reset the status flag.
 		 */
 		public void reset() {
-			modified = false;
+			modifiedLocally = false;
+			modifiedRemotly = false;
 		}
 
 	}
