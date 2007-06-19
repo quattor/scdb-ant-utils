@@ -43,7 +43,7 @@ public class RepositoryTask extends Task {
 
 	/* The pattern for matching the template name information. */
 	private static Pattern templatePattern = Pattern
-			.compile("\\s*structure\\s*template\\s*([\\w/\\-]+)\\s*;");
+			.compile("\\s*structure\\s*template\\s*([^\\s]+)\\s*;");
 
 	/* The pattern for matching the name PAN property. */
 	private static Pattern namePanPattern = Pattern
