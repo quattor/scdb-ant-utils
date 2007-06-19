@@ -279,13 +279,13 @@ public class SvnTagTask extends Task {
 		 * A private flag to indicate whether there are any local modifications to the
 		 * workspace.
 		 */
-		private boolean modifiedLocally = false;
+		private boolean localModifications = false;
 		
 		/**
 		 * A private flag to indicate whether there are any remote modifications to the
 		 * workspace.
 		 */
-		private boolean modifiedRemotely = false;
+		private boolean remoteModifications = false;
 		
 		/**
 		 * Flag enabling debugging message in the handler
@@ -310,7 +310,7 @@ public class SvnTagTask extends Task {
 			// If the file has no modification, check its properties.
 			
 			SVNStatusType ls = status.getContentsStatus();
-			modifiedLocally = (ls != SVNStatusType.STATUS_NORMAL)
+			boolean fileModifiedLocally = (ls != SVNStatusType.STATUS_NORMAL)
 					&& (ls != SVNStatusType.STATUS_IGNORED)
 					&& (ls != SVNStatusType.STATUS_EXTERNAL)
 					&& (ls != SVNStatusType.STATUS_NONE);
@@ -320,13 +320,13 @@ public class SvnTagTask extends Task {
 			}
 
 			String localStatus = null;
-			if ( modifiedLocally ) {
+			if ( fileModifiedLocally ) {
 				localStatus = ls.toString();
 			} else {
 				SVNStatusType lps = status.getPropertiesStatus();
-				modifiedLocally = (lps != SVNStatusType.STATUS_NORMAL)
+				fileModifiedLocally = (lps != SVNStatusType.STATUS_NORMAL)
 									&& (lps != SVNStatusType.STATUS_NONE);
-				if ( modifiedLocally ) {
+				if ( fileModifiedLocally ) {
 					localStatus = "property";
 				}
 			}
@@ -335,32 +335,38 @@ public class SvnTagTask extends Task {
 			// A file is considered remotly modified if the status is not STATUS_NONE 
 
 			SVNStatusType rs = status.getRemoteContentsStatus();
-			modifiedRemotely = (rs != SVNStatusType.STATUS_NONE);
+			boolean fileModifiedRemotely = (rs != SVNStatusType.STATUS_NONE);
 			if ( debugHandler ) {
 				System.out.println("File="+status.getFile()+", Remote status="+rs.toString());
 			}
 			
 			String remoteStatus = null;
-			if ( modifiedRemotely ) {
+			if ( fileModifiedRemotely ) {
 				remoteStatus = rs.toString();
 			} else {
 				SVNStatusType rps = status.getRemotePropertiesStatus();
-				modifiedRemotely = (rps != SVNStatusType.STATUS_NORMAL)
+				fileModifiedRemotely = (rps != SVNStatusType.STATUS_NORMAL)
 									&& (rps != SVNStatusType.STATUS_NONE);
-				if ( modifiedRemotely ) {
+				if ( fileModifiedRemotely ) {
 					remoteStatus = "property";
 				}
 			}
 			
 			
 			// Print message if the file has been modified or is not uptodate
-			if ( modifiedLocally || modifiedRemotely ) {
+			if ( fileModifiedLocally || fileModifiedRemotely ) {
+				if ( fileModifiedLocally ) {
+					localModifications = true;
+				}
+				if ( fileModifiedRemotely ) {
+					remoteModifications = true;
+				}
 				System.err.println(
-						(modifiedLocally ? localStatus : remoteStatus) +
+						(fileModifiedLocally ? localStatus : remoteStatus) +
 						" (" +
-						(modifiedLocally ? "locally" : "") +
-						(modifiedLocally && modifiedRemotely ? "," : "") +
-						(modifiedRemotely ? "remotely" : "") +
+						(fileModifiedLocally ? "locally" : "") +
+						(fileModifiedLocally && fileModifiedRemotely ? "," : "") +
+						(fileModifiedRemotely ? "remotely" : "") +
 						") : " +
 						status.getFile().getPath()
 						);
@@ -371,29 +377,29 @@ public class SvnTagTask extends Task {
 		 * Get the overall status flag.
 		 */
 		public boolean isModified() {
-			return modifiedLocally || modifiedRemotely;
+			return localModifications || remoteModifications;
 		}
 
 		/**
 		 * Get the local modification status flag.
 		 */
 		public boolean isModifiedLocally() {
-			return modifiedLocally;
+			return localModifications;
 		}
 
 		/**
 		 * Get the remote modification status flag.
 		 */
 		public boolean isModifiedRemotely() {
-			return modifiedRemotely;
+			return remoteModifications;
 		}
 
 		/**
 		 * Reset the status flag.
 		 */
 		public void reset() {
-			modifiedLocally = false;
-			modifiedRemotely = false;
+			localModifications = false;
+			remoteModifications = false;
 		}
 
 	}
