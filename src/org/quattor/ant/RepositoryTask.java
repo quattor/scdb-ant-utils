@@ -203,7 +203,7 @@ public class RepositoryTask extends Task {
 			}
 
 		} catch (java.io.IOException ioe) {
-			throw new BuildException("Error ("+ioe.toString()+") reading template "+f.getAbsolutePath());
+			throw new BuildException("Error reading template "+f.getAbsolutePath()+": ("+ioe.toString()+")");
 		}
 
 		if ((template != null) && (name != null) && (owner != null)
@@ -324,9 +324,9 @@ public class RepositoryTask extends Task {
 						writer.write(contents);
 						writer.close();
 					} catch (IOException ioe) {
-						throw new BuildException ("Error (" + ioe.toString() + ") "
-								+ "writing template "
-								+ template.getAbsolutePath());
+						throw new BuildException ("Error writing template "
+								+ template.getAbsolutePath()
+								+ ": ("+ioe.toString()+")");
 					}
 				}
 			}
@@ -409,7 +409,9 @@ public class RepositoryTask extends Task {
 				}
 
 			} catch (java.io.IOException ioe) {
-				throw new BuildException("IO Exception (" + ioe.toString() + ") for URL: " + url);
+				throw new BuildException("IO Exception for URL "
+						+ url
+						+ ": ("+ioe.toString()+")");
 			}
 
 		}
