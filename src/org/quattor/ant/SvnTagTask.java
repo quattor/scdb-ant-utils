@@ -187,9 +187,8 @@ public class SvnTagTask extends Task {
 		try {
 			status.doStatus(workspacePath, true, true, false, false, handler);
 		} catch (SVNException e) {
-			e.printStackTrace();
 			throw new BuildException(
-					"Check failed; see traceback.");
+					"Check failed ("+e.toString()+")");
 		}
 		if (handler.isModified()) {
 			if ( handler.isModifiedLocally() ) {
