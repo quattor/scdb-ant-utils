@@ -203,7 +203,7 @@ public class RepositoryTask extends Task {
 			}
 
 		} catch (java.io.IOException ioe) {
-			ioe.printStackTrace();
+			throw new BuildException("Error reading template "+f.getAbsolutePath());
 		}
 
 		if ((template != null) && (name != null) && (owner != null)
@@ -324,10 +324,9 @@ public class RepositoryTask extends Task {
 						writer.write(contents);
 						writer.close();
 					} catch (IOException ioe) {
-						System.err.println("Error (" + ioe.getMessage() + ") "
+						throw new BuildException ("Error (" + ioe.getMessage() + ") "
 								+ "writing template "
 								+ template.getAbsolutePath());
-						;
 					}
 				}
 			}
@@ -410,9 +409,7 @@ public class RepositoryTask extends Task {
 				}
 
 			} catch (java.io.IOException ioe) {
-				System.err.println("IO Exception for URL: " + url);
-				System.err.println("Message: " + ioe.getMessage());
-				pkgs = null;
+				throw new BuildException("IO Exception (" + ioe.getMessage() + ") for URL: " + url);
 			}
 
 		}
