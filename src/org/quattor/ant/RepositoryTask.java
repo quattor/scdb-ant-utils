@@ -409,7 +409,7 @@ public class RepositoryTask extends Task {
 				}
 
 			} catch (java.io.IOException ioe) {
-				throw new BuildException("IO Exception for URL "
+				throw new BuildException("Error getting RPM list from URL "
 						+ url
 						+ ": ("+ioe.toString()+")");
 			}
