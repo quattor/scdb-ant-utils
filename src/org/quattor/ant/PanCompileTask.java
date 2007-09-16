@@ -3,6 +3,7 @@ package org.quattor.ant;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
@@ -133,6 +134,9 @@ public class PanCompileTask extends Task implements java.io.FileFilter {
 
 		// Create the process builder to manage the subprocesses.
 		ProcessBuilder pb = new ProcessBuilder(cmd);
+		
+		// Get the start time.
+		Date start = new Date();
 
 		// Loop over each file and check the syntax. The pan compiler
 		// allows multiple arguments, but avoid using that to avoid
@@ -174,6 +178,9 @@ public class PanCompileTask extends Task implements java.io.FileFilter {
 			throw new BuildException("Error running command: " + cmd + ".\n"
 					+ ioe.getMessage() + "\n");
 		}
+		
+		Date end = new Date();
+		System.out.println("Total elapsed time (ms): "+(end.getTime()-start.getTime()));
 
 	}
 
