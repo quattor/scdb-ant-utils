@@ -74,11 +74,14 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 
 	/**
 	 * This implements the FileFilter interface to allow template files to be
-	 * selected.
+	 * selected. This filter will accept any file that ends with the suffix
+	 * ".xml", has at least 5 characters (i.e. something before the suffix), and
+	 * is not hidden. The file "profile-info.xml" is specifically excluded.
 	 */
 	public boolean accept(File file) {
 		String name = file.getName();
-		boolean ok = (name.startsWith("profile_") && name.endsWith(".xml"));
+		boolean ok = (!"profile-info.xml".equals(name)) && !file.isHidden()
+				&& (name.length() > 4 && name.endsWith(".xml"));
 		return ok;
 	}
 
