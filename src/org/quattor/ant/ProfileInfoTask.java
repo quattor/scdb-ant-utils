@@ -80,7 +80,7 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 	 */
 	public boolean accept(File file) {
 		String name = file.getName();
-		boolean ok = (!"profile-info.xml".equals(name)) && !file.isHidden()
+		boolean ok = (!"profiles-info.xml".equals(name)) && !file.isHidden()
 				&& (name.length() > 4 && name.endsWith(".xml"));
 		return ok;
 	}
