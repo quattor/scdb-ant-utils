@@ -77,8 +77,8 @@ public class VOConfigTask extends Task {
 				}
 				bw = initFile(fileTplName);
 				String siteParamsFileName = getNameSiteParamsDir();				
-				String customName = VOname.concat("_SiteParam");
-				siteParamsFileName = siteParamsFileName.concat("/").concat(customName);
+				String siteParamName = VOname.concat("_SiteParam");
+				siteParamsFileName = siteParamsFileName.concat("/").concat(siteParamName);
 				if (isShort){
 					write("structure template vo/alias/" + VOname +";", bw);
 				}else{	        	
@@ -111,21 +111,34 @@ public class VOConfigTask extends Task {
 	    			write("\t\t\t\"port\", " + port + ",", bw);
 	    			write("\t\t\t);", bw);
 	    			write("", bw);
-	    			if ((roleAdmin != null) || (roleProd != null)) {
+	    			if ((roleAdmin != null) || (roleProd != null) || (roleAtl != null)) {
+	    				System.out.println("Role admin ou prod existe");
 	    				write("\"voms_roles\" ?= list(", bw);
 	    				if (roleAdmin != null) {
+	    					System.out.println("Role admin existe");
 	    					write("\t\t\tnlist(\"description\", \"SW manager\",",
 	    							bw);
-	    					write("\t\t\t\t\"name\", \"lcgadmin\",", bw);
+	    					write("\t\t\t\t\"fqan\", \"lcgadmin\",", bw);
 	    					write("\t\t\t\t\"suffix\", \"s\"),", bw);
 	    				}
 	    				if (roleProd != null) {
+	    					System.out.println("Role prod existe");
 	    					write("\t\t\tnlist(\"description\", \"production\",",
 	    							bw);
-	    					write("\t\t\t\t\"name\", \"production\",", bw);
+	    					write("\t\t\t\t\"fqan\", \"production\",", bw);
 	    					write("\t\t\t\t\"suffix\", \"p\"),", bw);
 	    				}
+	    				if (roleAtl != null) {
+	    					System.out.println("Role atlas existe");
+	    					write("\t\t\tnlist(\"description\", \"ATLAS\",",
+	    							bw);
+	    					write("\t\t\t\t\"fqan\", \"atlas\",", bw);
+	    					write("\t\t\t\t\"suffix\", \"atl\"),", bw);
+	    				}
 	    				write(");", bw);
+	    				roleProd = null;
+	    				roleAdmin = null;
+	    				roleAtl = null;
 	    			}
 	    			write("", bw);
 	           }
@@ -143,11 +156,15 @@ public class VOConfigTask extends Task {
 				closeFile(fileTplName, bw);
 	    	}else if(qualifiedName.equals("GROUP_ROLE")){
 				Matcher m = padmin.matcher(buffer.toString());
+				Matcher mbis = padmin2.matcher(buffer.toString());
 				Matcher m2 = pprod.matcher(buffer.toString());
-				if (m.find()) {
+				Matcher m3 = patlas.matcher(buffer.toString());
+				if ((m.find()) || (mbis.find())) {
 					roleAdmin = buffer.toString();
 				} else if (m2.find()) {
 					roleProd = buffer.toString();
+				} else if (m3.find()) {
+					roleAtl = buffer.toString();
 				}
 				buffer = null;
 			}else if (qualifiedName.equals("HOSTNAME")){
@@ -196,7 +213,7 @@ public class VOConfigTask extends Task {
 	/*the name of the directory containing customization templates*/
 	private static String nameSiteParamsDir = null;
 
-	/*the name of the directory containing generated templates for shortnamed VOs*/
+	/*the name of the directory containing generated templates for alias named VOs*/
 	private static String nameAliasDirTpl = null;
 	
 	/*the name of the VO*/
@@ -212,8 +229,10 @@ public class VOConfigTask extends Task {
 	private static BufferedWriter bwCert = null;
 
 	/*the patterns used to collect the roles*/
-	private static final Pattern padmin = Pattern.compile("Role=lcgadmin");
-	private static final Pattern pprod = Pattern.compile("Role=production");
+	private static final Pattern padmin = Pattern.compile("Role=lcgadmin", Pattern.CASE_INSENSITIVE);
+	private static final Pattern padmin2 = Pattern.compile("/admin", Pattern.CASE_INSENSITIVE);
+	private static final Pattern pprod = Pattern.compile("Role=production", Pattern.CASE_INSENSITIVE);
+	private static final Pattern patlas = Pattern.compile("Role=atlas", Pattern.CASE_INSENSITIVE);
 
 	/*the hostname of the server*/
 	private static String hostname = null;
@@ -227,6 +246,7 @@ public class VOConfigTask extends Task {
 	/*the Strings containing the roles*/
 	private static String roleAdmin = null;
 	private static String roleProd = null;
+	private static String roleAtl = null;
 
 	/*Default values of the proxy, nshosts and lbhosts*/
 	private static String proxy = "grid02.lal.in2p3.fr";
@@ -237,9 +257,9 @@ public class VOConfigTask extends Task {
 	private static String pool_size = "200";
 	private static int base_uid = 0;
 	
-	/*List containing all the short names of VO*/
+	/*List containing all the alias names of VO*/
 	private static List<String> fileAliases = new ArrayList<String>();
-	/*List containing all the entire names of VO which are shortnamed*/
+	/*List containing all the entire names of VO which are mames with alias*/
 	private static List<String> VONamesAssociated = new ArrayList<String>();
 
 
@@ -296,7 +316,7 @@ public class VOConfigTask extends Task {
 	}
 	
 	/**
-	 * Set the directory for the generated templates named with a short name.
+	 * Set the directory for the generated templates named with an alias name.
 	 * 
 	 * @param nameShortNamedDirTpl String containing full path to the directory
 	 *            
@@ -347,14 +367,14 @@ public class VOConfigTask extends Task {
 	 * 
 	 * @param name String containing the name of the VO
 	 * @param iscert Boolean indicating if the generated template contains a certificat
-	 * @param isShortNamed Boolean indicating the generated templates is for a shortnamed VO
+	 * @param isAliasNamed Boolean indicating the generated templates is for a alias named VO
 	 *            
 	 */
-	public static String getFileName(String name, boolean iscert, boolean isShortNamed) {
+	public static String getFileName(String name, boolean iscert, boolean isAliasNamed) {
 		String filename = null;
 		name = name.toLowerCase();
 		String paramDirName = null;
-		if (isShortNamed){
+		if (isAliasNamed){
 			paramDirName = nameAliasDirTpl;
 		}else{
 			paramDirName = nameParamDirTpl;
@@ -420,7 +440,7 @@ public class VOConfigTask extends Task {
 	}
 
 	/**
-	 * Verify the VO is shortnamed or not and modify the associated template.
+	 * Verify the VO is alias named or not and modify the associated template.
 	 * 
 	 * @param nameVO String containing the name of the VO
 	 *            
@@ -470,7 +490,7 @@ public class VOConfigTask extends Task {
 						BufferedWriter bwr = initFile(file.getAbsolutePath());
 						write("structure template vo/params/"+fileAlias+";", bwr);
 						write("", bwr);
-						write("include vo/shortNamed/" + nameVO + ";", bwr);
+						write("include vo/alias/" + nameVO + ";", bwr);
 						closeFile(file.getName(), bwr);
 						result = true;
 					}
