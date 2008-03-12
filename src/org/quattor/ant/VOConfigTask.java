@@ -407,7 +407,7 @@ public class VOConfigTask extends Task {
 		String urlName = urlFile;
 		// String fileName = nameFile;
 
-		// On crée une instance de SAXBuilder
+		// On cree une instance de SAXBuilder
 		DefaultHandler handler = new MyHandler();
 		SAXParserFactory factory = SAXParserFactory.newInstance();
 
