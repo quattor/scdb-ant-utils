@@ -78,13 +78,13 @@ public class VOConfigTask extends Task {
 				}
 				bw = initFile(fileTplName);
 				String siteParamsFileName = getNameSiteParamsDir();
-				String siteParamName = VOname.concat("_SiteParam");
+				String siteParamName = VOname;
 				siteParamsFileName = siteParamsFileName.concat("/").concat(
 						siteParamName);
 				if (isShort) {
-					write("structure template vo/alias/" + VOname + ";", bw);
+					write("structure template "+nameAliasDirTpl+"/" + VOname + ";", bw);
 				} else {
-					write("structure template vo/params/" + VOname + ";", bw);
+					write("structure template "+nameParamDirTpl+"/" + VOname + ";", bw);
 				}
 				write("", bw);
 				write("include {if_exists('" + siteParamsFileName + "')};", bw);
@@ -232,6 +232,9 @@ public class VOConfigTask extends Task {
 	/* the buffer containing data given in the XML document */
 	private StringBuffer buffer;
 
+	/* the name of the root directory */
+	private static String configRootDir = null;
+
 	/* the name of the directory containing generated templates */
 	private static String nameParamDirTpl = null;
 
@@ -332,10 +335,23 @@ public class VOConfigTask extends Task {
 	private static List<String> VONamesAssociated = new ArrayList<String>();
 
 	// DECLARATION DE METHODES
+	
+	
 	/**
 	 * Set the directory for the generated VO templates.
 	 * 
 	 * @param nameDirTpl
+	 *            String containing full path of the directory
+	 * 
+	 */
+	public void setConfigRootDir(String configRootDir) {
+		this.configRootDir = configRootDir;
+	}
+
+	/**
+	 * Set the directory for the generated VO templates.
+	 * 
+	 * @param nameParamDirTpl
 	 *            String containing full path of the directory
 	 * 
 	 */
@@ -347,7 +363,7 @@ public class VOConfigTask extends Task {
 	 * Set the directory for the generated templates containing certificates.
 	 * 
 	 * @param nameCertDirTpl
-	 *            String containing full path of the directory
+	 *            String containing the template form of the path of the directory
 	 * 
 	 */
 	public void setNameCertDirTpl(String nameCertDirTpl) {
@@ -358,7 +374,7 @@ public class VOConfigTask extends Task {
 	 * Set the url of the xml file containing data about VOs.
 	 * 
 	 * @param urlFile
-	 *            String containing full path of the url
+	 *            String containing the template form of the path of the url
 	 * 
 	 */
 	public void setUrlFile(String urlFile) {
@@ -453,13 +469,13 @@ public class VOConfigTask extends Task {
 		name = name.toLowerCase();
 		String paramDirName = null;
 		if (isAliasNamed) {
-			paramDirName = nameAliasDirTpl;
+			paramDirName = configRootDir.concat("/"+nameAliasDirTpl);
 		} else {
-			paramDirName = nameParamDirTpl;
+			paramDirName = configRootDir.concat("/"+nameParamDirTpl);
 		}
 		filename = name.trim();
 		if (iscert) {
-			String certDirName = nameCertDirTpl;
+			String certDirName = configRootDir.concat("/"+nameCertDirTpl);
 			filename = certDirName.concat("/" + filename.concat(".tpl"));
 			File dir = new File(certDirName);
 			if (!dir.exists() || !dir.isDirectory()) {
@@ -560,7 +576,7 @@ public class VOConfigTask extends Task {
 				"supernemo");
 		fileAliases.add(VONamesAssociated.indexOf("vo.agata.org"), "agata");
 
-		String dirName = nameParamDirTpl;
+		String dirName = configRootDir.concat("/"+nameParamDirTpl);
 		File dirTpl = new File(dirName);
 		if (!dirTpl.isDirectory()) {
 			catchError(dirName + " should be a directory");
@@ -574,10 +590,10 @@ public class VOConfigTask extends Task {
 					if ((file.getName()).equals(fileAlias.concat(".tpl"))) {
 						BufferedWriter bwr = initFile(file.getAbsolutePath());
 						write(
-								"structure template vo/params/" + fileAlias
+								"structure template " + nameParamDirTpl + "/" + fileAlias
 										+ ";", bwr);
 						write("", bwr);
-						write("include vo/alias/" + nameVO + ";", bwr);
+						write("include " + nameAliasDirTpl + "/" + nameVO + ";", bwr);
 						closeFile(file.getName(), bwr);
 						result = true;
 					}
@@ -611,6 +627,14 @@ public class VOConfigTask extends Task {
 	 * 
 	 * @param fileName
 	 *            String containing the name of the file to write in
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
 	 * 
 	 */
 	public static BufferedWriter initFile(String fileName) {
@@ -660,7 +684,7 @@ public class VOConfigTask extends Task {
 		if (!certExists) {
 			bwCert = initFile(fileName);
 			write(
-					"structure template vo/certs/" + hostname.toLowerCase()
+					"structure template " + nameCertDirTpl + "/" + hostname.toLowerCase()
 							+ ";", bwCert);
 			write("", bwCert);
 			write("'cert' = {<<EOF};", bwCert);
@@ -753,7 +777,7 @@ public class VOConfigTask extends Task {
 	 *            String containing the error message
 	 */
 	public static void catchError(String error) {
-		System.err.println("Converter: " + error);
+		System.err.println("ERROR: " + error);
 		System.err.printf("\n");
 		System.exit(-1);
 	}
