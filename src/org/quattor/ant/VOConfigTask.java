@@ -4,6 +4,9 @@ import java.io.*;
 import java.net.URL;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -111,9 +114,9 @@ public class VOConfigTask extends Task {
 				if ((hostname != null) && (port != null)) {
 					write("\"voms_servers\" ?= nlist(\"name\", '" + hostname
 							+ "',", bw);
-					write("\t\t\t\"host\", '" + hostname + "',", bw);
-					write("\t\t\t\"port\", " + port + ",", bw);
-					write("\t\t\t);", bw);
+					write("\t\t\t\t\t\t\"host\", '" + hostname + "',", bw);
+					write("\t\t\t\t\t\t\"port\", " + port + ",", bw);
+					write("\t\t\t\t\t\t);", bw);
 					write("", bw);
 					if ((roleAdmin != null) || (roleProd != null)
 							|| (roleAtl != null) || (roleSwAdmin != null)
@@ -121,38 +124,38 @@ public class VOConfigTask extends Task {
 						write("\"voms_roles\" ?= list(", bw);
 						if (roleAdmin != null) {
 							write(
-									"\t\t\tnlist(\"description\", \"SW manager\",",
+									"\t\t\t\t\tnlist(\"description\", \"SW manager\",",
 									bw);
-							write("\t\t\t\t\"fqan\", \"lcgadmin\",", bw);
-							write("\t\t\t\t\"suffix\", \"s\"),", bw);
+							write("\t\t\t\t\t\t\t\"fqan\", \"lcgadmin\",", bw);
+							write("\t\t\t\t\t\t\t\"suffix\", \"s\"),", bw);
 						}
 						if (roleSwAdmin != null) {
 							write(
-									"\t\t\tnlist(\"description\", \"SW manager\",",
+									"\t\t\t\t\tnlist(\"description\", \"SW manager\",",
 									bw);
-							write("\t\t\t\t\"fqan\", \"swadmin\",", bw);
-							write("\t\t\t\t\"suffix\", \"s\"),", bw);
+							write("\t\t\t\t\t\t\t\"fqan\", \"swadmin\",", bw);
+							write("\t\t\t\t\t\t\t\"suffix\", \"s\"),", bw);
 						}
 						if (roleProd != null) {
 							write(
-									"\t\t\tnlist(\"description\", \"production\",",
+									"\t\t\t\t\tnlist(\"description\", \"production\",",
 									bw);
-							write("\t\t\t\t\"fqan\", \"production\",", bw);
-							write("\t\t\t\t\"suffix\", \"p\"),", bw);
+							write("\t\t\t\t\t\t\t\"fqan\", \"production\",", bw);
+							write("\t\t\t\t\t\t\t\"suffix\", \"p\"),", bw);
 						}
 						if (roleAtl != null) {
-							write("\t\t\tnlist(\"description\", \"ATLAS\",", bw);
-							write("\t\t\t\t\"fqan\", \"atlas\",", bw);
-							write("\t\t\t\t\"suffix\", \"atl\"),", bw);
+							write("\t\t\t\t\tnlist(\"description\", \"ATLAS\",", bw);
+							write("\t\t\t\t\t\t\t\"fqan\", \"atlas\",", bw);
+							write("\t\t\t\t\t\t\t\"suffix\", \"atl\"),", bw);
 						}
 						if (roleSwMan != null) {
 							write(
-									"\t\t\tnlist(\"description\", \"SW manager\",",
+									"\t\t\t\t\tnlist(\"description\", \"SW manager\",",
 									bw);
-							write("\t\t\t\t\"fqan\", \"SoftwareManager\",", bw);
-							write("\t\t\t\t\"suffix\", \"s\"),", bw);
+							write("\t\t\t\t\t\t\t\"fqan\", \"SoftwareManager\",", bw);
+							write("\t\t\t\t\t\t\t\"suffix\", \"s\"),", bw);
 						}
-						write(");", bw);
+						write("\t\t\t\t\t);", bw);
 						roleProd = null;
 						roleAdmin = null;
 						roleAtl = null;
@@ -431,7 +434,24 @@ public class VOConfigTask extends Task {
 			URL url = new URL(urlName);
 			// File xmlFile = new File(fileName);
 			SAXParser saxParser = factory.newSAXParser();
-			saxParser.parse(url.openStream(), handler);
+			System.out.println("Creation of the flow to CIC portal (about one minute)");
+/*			Calendar c1 = Calendar.getInstance();
+			int date1 = c1.get(Calendar.MINUTE);
+			System.out.println("date : "+ date1);
+			int date2 = date1 + 3;
+			System.out.println("date2 : "+ date2);
+			while (date1<=date2){
+				Calendar c2 = Calendar.getInstance();
+				date1 = c2.get(Calendar.MINUTE);
+				if (date1 == date2){
+					catchError("");
+				}
+			}
+*/			
+			InputStream urlstream = url.openStream();
+			System.out.println("Document parsing and templates creation");
+			saxParser.parse(urlstream, handler);
+			System.out.println("Templates created");
 			// saxParser.parse(xmlFile, handler);
 		} catch (Exception e) {
 		}
