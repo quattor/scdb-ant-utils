@@ -208,7 +208,7 @@ public class VOConfigTask extends Task {
 				certificat = buffer.toString();
 				if (certificat.endsWith("\n")) {
 					certificat = certificat.substring(0,
-							(certificat.length()) - 2);
+							(certificat.length()) - 1);
 				}
 				writeCert();
 				buffer = null;
@@ -434,7 +434,7 @@ public class VOConfigTask extends Task {
 			URL url = new URL(urlName);
 			// File xmlFile = new File(fileName);
 			SAXParser saxParser = factory.newSAXParser();
-			System.out.println("Creation of the flow to CIC portal (about one minute)");
+			System.out.println("Creation of the flow to CIC portal (may take up till one minute)");
 /*			Calendar c1 = Calendar.getInstance();
 			int date1 = c1.get(Calendar.MINUTE);
 			System.out.println("date : "+ date1);
