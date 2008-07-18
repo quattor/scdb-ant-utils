@@ -4,16 +4,22 @@ import java.io.*;
 import java.net.URL;
 
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import org.xml.sax.*;
 import org.xml.sax.helpers.DefaultHandler;
+
+import javax.security.auth.x500.X500Principal;
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.parsers.SAXParser;
+
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Task;
@@ -85,9 +91,11 @@ public class VOConfigTask extends Task {
 				siteParamsFileName = siteParamsFileName.concat("/").concat(
 						siteParamName);
 				if (isShort) {
-					write("structure template "+nameAliasDirTpl+"/" + VOname + ";", bw);
+					write("structure template " + nameAliasDirTpl + "/"
+							+ VOname + ";", bw);
 				} else {
-					write("structure template "+nameParamDirTpl+"/" + VOname + ";", bw);
+					write("structure template " + nameParamDirTpl + "/"
+							+ VOname + ";", bw);
 				}
 				write("", bw);
 				write("include {if_exists('" + siteParamsFileName + "')};", bw);
@@ -144,7 +152,9 @@ public class VOConfigTask extends Task {
 							write("\t\t\t\t\t\t\t\"suffix\", \"p\"),", bw);
 						}
 						if (roleAtl != null) {
-							write("\t\t\t\t\tnlist(\"description\", \"ATLAS\",", bw);
+							write(
+									"\t\t\t\t\tnlist(\"description\", \"ATLAS\",",
+									bw);
 							write("\t\t\t\t\t\t\t\"fqan\", \"atlas\",", bw);
 							write("\t\t\t\t\t\t\t\"suffix\", \"atl\"),", bw);
 						}
@@ -152,7 +162,9 @@ public class VOConfigTask extends Task {
 							write(
 									"\t\t\t\t\tnlist(\"description\", \"SW manager\",",
 									bw);
-							write("\t\t\t\t\t\t\t\"fqan\", \"SoftwareManager\",", bw);
+							write(
+									"\t\t\t\t\t\t\t\"fqan\", \"SoftwareManager\",",
+									bw);
 							write("\t\t\t\t\t\t\t\"suffix\", \"s\"),", bw);
 						}
 						write("\t\t\t\t\t);", bw);
@@ -176,6 +188,7 @@ public class VOConfigTask extends Task {
 				port = null;
 				certificat = null;
 				closeFile(fileTplName, bw);
+				System.out.println("VO = "+VOname);
 			} else if (qualifiedName.equals("GROUP_ROLE")) {
 				Matcher m = padmin.matcher(buffer.toString());
 				Matcher mbis = padmin2.matcher(buffer.toString());
@@ -185,7 +198,8 @@ public class VOConfigTask extends Task {
 				Matcher m3 = patlas.matcher(buffer.toString());
 				Matcher m4 = pswadmin.matcher(buffer.toString());
 				Matcher m5 = pswman.matcher(buffer.toString());
-				if ((m.find()) || (mbis.find()) || (mter.find()) || (mqua.find())) {
+				if ((m.find()) || (mbis.find()) || (mter.find())
+						|| (mqua.find())) {
 					roleAdmin = buffer.toString();
 				} else if (m2.find()) {
 					roleProd = buffer.toString();
@@ -212,6 +226,16 @@ public class VOConfigTask extends Task {
 				}
 				writeCert();
 				buffer = null;
+			} else if (qualifiedName.equals("VOMSServer")) {
+				if ((hostname == null) || (certificat == null)) {
+					System.err
+							.println("Problem while creation of lsc file for VO "
+									+ VOname + ": no hostname or certificat");
+				} else if (!createLscFile(hostname, certificat, VOname)) {
+					System.err
+							.println("Problem while creation of lsc file for VO "
+									+ VOname + " with hostname " + hostname);
+				}
 			} else if (qualifiedName.equals("VOMSServers")) {
 				if (hostname == null) {
 					System.err
@@ -242,6 +266,9 @@ public class VOConfigTask extends Task {
 	private static String nameParamDirTpl = null;
 
 	/* the name of the directory containing generated certificates templates */
+	private static String nameDNListDirTpl = null;
+
+	/* the name of the directory containing generated certificates templates */
 	private static String nameCertDirTpl = null;
 
 	/* the name of the url wherre to find the XML document */
@@ -256,6 +283,12 @@ public class VOConfigTask extends Task {
 	 */
 	private static String nameAliasDirTpl = null;
 
+	/* the name of the file containing proxy */
+	private static String proxyFile = null;
+
+	/* the name of the file containing short names associated to some VOs */
+	private static String shortNameFile = null;
+		
 	/* the name of the VO */
 	private static String VOname = null;
 
@@ -270,6 +303,9 @@ public class VOConfigTask extends Task {
 
 	/* the BufferedWriter associated to the certificat template */
 	private static BufferedWriter bwCert = null;
+
+	/* the BufferedWriter associated to the DN list template */
+	private static BufferedWriter bwDN = null;
 
 	/* the patterns used to collect the roles */
 	private static final Pattern padmin = Pattern.compile("Role=lcgadmin",
@@ -320,7 +356,7 @@ public class VOConfigTask extends Task {
 	private static String roleAtl = null;
 
 	/* Default values of the proxy, nshosts and lbhosts */
-	private static String proxy = "grid02.lal.in2p3.fr";
+	private static String proxy = "";
 
 	private static String nshosts = "node04.datagrid.cea.fr:7772";
 
@@ -337,9 +373,21 @@ public class VOConfigTask extends Task {
 	/* List containing all the entire names of VO which are mames with alias */
 	private static List<String> VONamesAssociated = new ArrayList<String>();
 
+	final public static CertificateFactory cf;
+	static {
+		try {
+			cf = CertificateFactory.getInstance("X.509");
+		} catch (CertificateException ce) {
+			throw new RuntimeException(ce.getMessage());
+		}
+	}
+
+	final public static String beginTag = "-----BEGIN CERTIFICATE-----";
+
+	final public static String endTag = "-----END CERTIFICATE-----";
+
 	// DECLARATION DE METHODES
-	
-	
+
 	/**
 	 * Set the directory for the generated VO templates.
 	 * 
@@ -366,7 +414,20 @@ public class VOConfigTask extends Task {
 	 * Set the directory for the generated templates containing certificates.
 	 * 
 	 * @param nameCertDirTpl
-	 *            String containing the template form of the path of the directory
+	 *            String containing the template form of the path of the
+	 *            directory
+	 * 
+	 */
+	public void setNameDNListDirTpl(String nameDNListDirTpl) {
+		this.nameDNListDirTpl = nameDNListDirTpl;
+	}
+
+	/**
+	 * Set the directory for the generated templates containing certificates.
+	 * 
+	 * @param nameCertDirTpl
+	 *            String containing the template form of the path of the
+	 *            directory
 	 * 
 	 */
 	public void setNameCertDirTpl(String nameCertDirTpl) {
@@ -418,6 +479,28 @@ public class VOConfigTask extends Task {
 		this.nameAliasDirTpl = nameAliasDirTpl;
 	}
 
+	/**
+	 * Set the file containing the proxy name.
+	 * 
+	 * @param proxyFile
+	 *            String containing full path to file
+	 * 
+	 */
+	public void setProxyFile(String proxyFile) {
+		this.proxyFile = proxyFile;
+	}
+
+	/**
+	 * Set the file containing the short names of some VOs.
+	 * 
+	 * @param shortNameFile
+	 *            String containing full path to file
+	 * 
+	 */
+	public void setShortNameFile(String shortNameFile) {
+		this.shortNameFile = shortNameFile;
+	}
+	
 	/*
 	 * Method used by ant to execute this task.
 	 */
@@ -425,29 +508,35 @@ public class VOConfigTask extends Task {
 		// Checking we have enough parameters
 		String urlName = urlFile;
 		// String fileName = nameFile;
-
+		proxy = readFile1(proxyFile);
+		LinkedList<String> aliasesVO = new LinkedList<String>();
+		if (shortNameFile != null){
+			aliasesVO = readFile2(shortNameFile);
+			Pattern p = Pattern.compile("=");
+			for (String aliaseVO : aliasesVO){
+				String[] objects = p.split(aliaseVO);
+				//System.out.println(objects[0]);
+				//System.out.println(objects[1]);
+				VONamesAssociated.add(objects[0].trim());
+				fileAliases.add(objects[1].trim());
+			}
+		}
 		// On cree une instance de SAXBuilder
 		DefaultHandler handler = new MyHandler();
 		SAXParserFactory factory = SAXParserFactory.newInstance();
-
+		String filename = configRootDir.concat("/" + nameDNListDirTpl
+				+ "/vos_dn_list.tpl");
+		//System.out.println(nameDNListDirTpl);
+		bwDN = initFile(filename);
+		write("unique template vo/" + nameDNListDirTpl + "/vos_dn_list;", bwDN);
+		write("", bwDN);
+		write("variable VOS_DN_LIST = nlist(", bwDN);
 		try {
 			URL url = new URL(urlName);
 			// File xmlFile = new File(fileName);
 			SAXParser saxParser = factory.newSAXParser();
-			System.out.println("Creation of the flow to CIC portal (may take up till one minute)");
-/*			Calendar c1 = Calendar.getInstance();
-			int date1 = c1.get(Calendar.MINUTE);
-			System.out.println("date : "+ date1);
-			int date2 = date1 + 3;
-			System.out.println("date2 : "+ date2);
-			while (date1<=date2){
-				Calendar c2 = Calendar.getInstance();
-				date1 = c2.get(Calendar.MINUTE);
-				if (date1 == date2){
-					catchError("");
-				}
-			}
-*/			
+			System.out
+					.println("Creation of the flow to CIC portal (may take up till one minute)");
 			InputStream urlstream = url.openStream();
 			System.out.println("Document parsing and templates creation");
 			saxParser.parse(urlstream, handler);
@@ -455,11 +544,59 @@ public class VOConfigTask extends Task {
 			// saxParser.parse(xmlFile, handler);
 		} catch (Exception e) {
 		}
-
+		write("\t\t\t\t\t\t\t);", bwDN);
+		closeFile(filename, bwDN);
 	}
 
 	/**
-	 * Initialize the nlist containing data of the VO.
+	 * Creates the lsc file containing the DN of the voms server for each VO.
+	 * 
+	 * @param hostname
+	 *            String containing the name of the hostname
+	 * @param certificat
+	 *            String containing the certificat
+	 * @param VOname
+	 *            String containing the name of the VO
+	 * 
+	 */
+
+	public static boolean createLscFile(String hostname, String certificat,
+			String VOname) {
+		boolean result = false;
+		X509Certificate c = null;
+
+		if (VOname.equals("auvergrid")) {
+			result = false;
+		} else {
+
+			try {
+				c = extractCertificates(certificat);
+
+				if (c != null) {
+					X500Principal subject = c.getSubjectX500Principal();
+					X500Principal issuer = c.getIssuerX500Principal();
+					/*System.out.println("-----");
+					System.out.println(subject.toString());
+					System.out.println(issuer.toString());
+					System.out.println("-----");*/
+
+					write("\t\t\t\t\t\t\t\"" + hostname + "\", list(\""
+							+ subject.toString()
+							+ "\",\n\t\t\t\t\t\t\t\t\t\t\t\t\t\""
+							+ issuer.toString() + "\"),\n", bwDN);
+					result = true;
+				}
+
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * Initializes the nlist containing data of the VO.
 	 * 
 	 * @param VO
 	 *            String containing the name of the VO
@@ -469,6 +606,94 @@ public class VOConfigTask extends Task {
 	 * public static String initNList(String VO) { String nlist = null; nlist =
 	 * "\"" + VO + "\" ?= nlist("; return nlist; }
 	 */
+
+	/**
+	 * Reads a text file and returns a String.
+	 * 
+	 * @param filepath
+	 *            String containing the full path to the file
+	 * 
+	 */
+
+	public static String readFile1(String filepath) {
+		LinkedList<String> objects = new LinkedList<String>();
+		BufferedReader bfrd = null;
+		String ligne;
+		File file = new File(filepath);
+		veriFile(file);
+		boolean error = false;
+		try {
+			bfrd = new BufferedReader(new FileReader(file));
+
+			while ((ligne = bfrd.readLine()) != null) {
+				if (!(ligne.equals(""))) {
+					objects.add(ligne);
+				}
+			}
+		} catch (FileNotFoundException exc) {
+			System.out.println("File " + file.getName() + " Opening Error");
+			error = true;
+		} catch (IOException e) {
+			System.out.println("Reading " + file.getName() + " Error");
+			error = true;
+		} finally {
+			try {
+				if (bfrd != null) {
+					bfrd.close();
+				}
+			} catch (IOException e) {
+				System.out.println("Closing " + file.getName() + " Error");
+				error = true;
+			}
+		}
+		if (error) {
+			System.exit(-1);
+		}
+		return objects.getFirst();
+	}
+
+	/**
+	 * Reading a file line by line filling them in a list of String
+	 * 
+	 * @param file
+	 *            the file to be readen
+	 */
+	public static LinkedList<String> readFile2(String filepath) {
+		LinkedList<String> objects = new LinkedList<String>();
+		File file = new File(filepath);
+		BufferedReader bfrd = null;
+		String ligne;
+		veriFile(file);
+		boolean error = false;
+		try {
+			bfrd = new BufferedReader(new FileReader(file));
+			while ((ligne = bfrd.readLine()) != null) {
+				if (!(ligne.equals(""))) {
+					objects.add(ligne);
+				}
+			}
+		} catch (FileNotFoundException exc) {
+
+			System.out.println("File " + file.getName() + " Opening Error");
+			error = true;
+		} catch (IOException e) {
+			System.out.println("Reading " + file.getName() + " Error");
+			error = true;
+		} finally {
+			try {
+				if (bfrd != null) {
+					bfrd.close();
+				}
+			} catch (IOException e) {
+				System.out.println("Closing " + file.getName() + " Error");
+				error = true;
+			}
+		}
+		if (error) {
+			System.exit(-1);
+		}
+		return objects;
+	}
 
 	/**
 	 * Creates and gets the full path of a generated templates.
@@ -489,13 +714,15 @@ public class VOConfigTask extends Task {
 		name = name.toLowerCase();
 		String paramDirName = null;
 		if (isAliasNamed) {
-			paramDirName = configRootDir.concat("/"+nameAliasDirTpl);
+			paramDirName = configRootDir.concat("/" + nameAliasDirTpl);
 		} else {
-			paramDirName = configRootDir.concat("/"+nameParamDirTpl);
+			paramDirName = configRootDir.concat("/" + nameParamDirTpl);
 		}
 		filename = name.trim();
 		if (iscert) {
-			String certDirName = configRootDir.concat("/"+nameCertDirTpl);
+			// String DNListDirName =
+			// configRootDir.concat("/"+nameDNListDirTpl);
+			String certDirName = configRootDir.concat("/" + nameCertDirTpl);
 			filename = certDirName.concat("/" + filename.concat(".tpl"));
 			File dir = new File(certDirName);
 			if (!dir.exists() || !dir.isDirectory()) {
@@ -561,65 +788,37 @@ public class VOConfigTask extends Task {
 	 * 
 	 */
 	public static boolean verifyShortNamedFileExists(String nameVO) {
+		//System.out.println("verifyShortNamedFileExists1");
 		boolean result = false;
-
-		VONamesAssociated.add("vo.apc.univ-paris7.fr");
-		VONamesAssociated.add("vo.lapp.in2p3.fr");
-		VONamesAssociated.add("vo.u-psud.fr");
-		VONamesAssociated.add("astro.vo.eu-egee.org");
-		VONamesAssociated.add("vo.dapnia.cea.fr");
-		VONamesAssociated.add("vo.grif.fr");
-		VONamesAssociated.add("vo.ipno.in2p3.fr");
-		VONamesAssociated.add("vo.lal.in2p3.fr");
-		VONamesAssociated.add("vo.llr.in2p3.fr");
-		VONamesAssociated.add("vo.lpnhe.in2p3.fr");
-		VONamesAssociated.add("vo.sbg.in2p3.fr");
-		VONamesAssociated.add("supernemo.vo.eu-egee.org");
-		VONamesAssociated.add("vo.agata.org");
-
-		fileAliases.add(VONamesAssociated.indexOf("vo.apc.univ-paris7.fr"),
-				"apc");
-		fileAliases.add(VONamesAssociated.indexOf("vo.lapp.in2p3.fr"), "lapp");
-		fileAliases.add(VONamesAssociated.indexOf("vo.u-psud.fr"), "psud");
-		fileAliases.add(VONamesAssociated.indexOf("astro.vo.eu-egee.org"),
-				"astro");
-		fileAliases
-				.add(VONamesAssociated.indexOf("vo.dapnia.cea.fr"), "dapnia");
-		fileAliases.add(VONamesAssociated.indexOf("vo.grif.fr"), "grif");
-		fileAliases.add(VONamesAssociated.indexOf("vo.ipno.in2p3.fr"), "ipno");
-		fileAliases.add(VONamesAssociated.indexOf("vo.lal.in2p3.fr"), "lal");
-		fileAliases.add(VONamesAssociated.indexOf("vo.llr.in2p3.fr"), "llr");
-		fileAliases
-				.add(VONamesAssociated.indexOf("vo.lpnhe.in2p3.fr"), "lpnhe");
-		fileAliases.add(VONamesAssociated.indexOf("vo.sbg.in2p3.fr"), "sbg");
-		fileAliases.add(VONamesAssociated.indexOf("supernemo.vo.eu-egee.org"),
-				"supernemo");
-		fileAliases.add(VONamesAssociated.indexOf("vo.agata.org"), "agata");
-
-		String dirName = configRootDir.concat("/"+nameParamDirTpl);
+		String dirName = configRootDir.concat("/" + nameParamDirTpl);
 		File dirTpl = new File(dirName);
 		if (!dirTpl.isDirectory()) {
 			catchError(dirName + " should be a directory");
 		}
 		for (String VONameAssociated : VONamesAssociated) {
+			//System.out.println("VONameAssociated = "+VONameAssociated);
+			//System.out.println("VO = "+nameVO);
 			if (nameVO.equals(VONameAssociated)) {
+				//System.out.println("VO = VO");
 				File[] files = dirTpl.listFiles();
 				for (File file : files) {
 					String fileAlias = fileAliases.get(VONamesAssociated
 							.indexOf(nameVO));
 					if ((file.getName()).equals(fileAlias.concat(".tpl"))) {
 						BufferedWriter bwr = initFile(file.getAbsolutePath());
-						write(
-								"structure template " + nameParamDirTpl + "/" + fileAlias
-										+ ";", bwr);
+						write("structure template " + nameParamDirTpl + "/"
+								+ fileAlias + ";", bwr);
 						write("", bwr);
-						write("include " + nameAliasDirTpl + "/" + nameVO + ";", bwr);
+						write(
+								"include " + nameAliasDirTpl + "/" + nameVO
+										+ ";", bwr);
 						closeFile(file.getName(), bwr);
 						result = true;
 					}
 				}
 			}
 		}
+		//System.out.println("--\n--\nSortie\n--\n--");
 		return result;
 	}
 
@@ -647,13 +846,6 @@ public class VOConfigTask extends Task {
 	 * 
 	 * @param fileName
 	 *            String containing the name of the file to write in
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
-	 * 
 	 * 
 	 * 
 	 */
@@ -701,11 +893,11 @@ public class VOConfigTask extends Task {
 	 */
 	public static void writeCert() {
 		String fileName = getFileName(hostname, true, false);
+
 		if (!certExists) {
 			bwCert = initFile(fileName);
-			write(
-					"structure template " + nameCertDirTpl + "/" + hostname.toLowerCase()
-							+ ";", bwCert);
+			write("structure template " + nameCertDirTpl + "/"
+					+ hostname.toLowerCase() + ";", bwCert);
 			write("", bwCert);
 			write("'cert' = {<<EOF};", bwCert);
 			write(certificat, bwCert);
@@ -800,5 +992,88 @@ public class VOConfigTask extends Task {
 		System.err.println("ERROR: " + error);
 		System.err.printf("\n");
 		System.exit(-1);
+	}
+
+	/**
+	 * This method will extract a list of X509 certificates from a file.
+	 * Unfortunately, the native Java routines are not tolerant of extraneous
+	 * information in the file, so we must string out that information manually.
+	 * This causes lots of gymnastics for a relatively simple task.
+	 * 
+	 * @param file
+	 * 
+	 * @return array of X509Certificates from the file
+	 * 
+	 * @throws IOException
+	 */
+	private static X509Certificate extractCertificates(String certif)
+			throws IOException {
+
+		X509Certificate cert = null;
+
+		if (!(certif.startsWith(beginTag))) {
+			System.err.println("Wrong form of certificat for VO " + VOname);
+		}
+
+		else {
+			//System.out.println("VO : " + VOname);
+			// System.out.println("certificat : " + certif);
+
+			// Store the real information in memory (in a byte
+			// array).
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			// System.out.println("1");
+			OutputStreamWriter osw = new OutputStreamWriter(baos);
+			// System.out.println("2");
+
+			// Process the file line by line saving only
+			// information between certificate markers (including
+			// the markers themselves).
+
+			osw.write(certif);
+			// System.out.println("3");
+			osw.write("\n");
+			// System.out.println("4");
+
+			// Convert the buffer to a byte array and create an
+			// InputStream to read from it.
+			osw.close();
+			// System.out.println("5");
+			byte[] certInfo = baos.toByteArray();
+			// System.out.println("6");
+			ByteArrayInputStream bais = new ByteArrayInputStream(certInfo);
+			// System.out.println("7");
+
+			// Now actually process the embedded certificates.
+			// Lots of gymnastics for doing something simple.
+			while (bais.available() > 0) {
+				//System.out.println("in while");
+				try {
+					//System.out.println("1 : " + bais.toString());
+					cert = (X509Certificate) cf.generateCertificate(bais);
+					//System.out.println("2 : " + bais.toString());
+				} catch (CertificateException ce) {
+					throw new RuntimeException(ce.getMessage());
+				}
+				//System.out.println("boucle while");
+			}
+			//System.out.println("8");
+		}
+		//System.out.println("9");
+		return cert;
+	}
+
+	/**
+	 * Verify if a file exists
+	 * 
+	 * @param file
+	 *            the file
+	 */
+	public static void veriFile(File file) {
+		if (!file.exists() || !file.isFile()) {
+			System.out.println("can't open " + file.getName()
+					+ ": No such file or directory");
+			System.exit(-1);
+		}
 	}
 }
