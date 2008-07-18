@@ -4,7 +4,6 @@ import java.io.*;
 import java.net.URL;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -515,8 +514,6 @@ public class VOConfigTask extends Task {
 			Pattern p = Pattern.compile("=");
 			for (String aliaseVO : aliasesVO){
 				String[] objects = p.split(aliaseVO);
-				//System.out.println(objects[0]);
-				//System.out.println(objects[1]);
 				VONamesAssociated.add(objects[0].trim());
 				fileAliases.add(objects[1].trim());
 			}
@@ -526,7 +523,6 @@ public class VOConfigTask extends Task {
 		SAXParserFactory factory = SAXParserFactory.newInstance();
 		String filename = configRootDir.concat("/" + nameDNListDirTpl
 				+ "/vos_dn_list.tpl");
-		//System.out.println(nameDNListDirTpl);
 		bwDN = initFile(filename);
 		write("unique template vo/" + nameDNListDirTpl + "/vos_dn_list;", bwDN);
 		write("", bwDN);
@@ -575,11 +571,6 @@ public class VOConfigTask extends Task {
 				if (c != null) {
 					X500Principal subject = c.getSubjectX500Principal();
 					X500Principal issuer = c.getIssuerX500Principal();
-					/*System.out.println("-----");
-					System.out.println(subject.toString());
-					System.out.println(issuer.toString());
-					System.out.println("-----");*/
-
 					write("\t\t\t\t\t\t\t\"" + hostname + "\", list(\""
 							+ subject.toString()
 							+ "\",\n\t\t\t\t\t\t\t\t\t\t\t\t\t\""
@@ -788,7 +779,6 @@ public class VOConfigTask extends Task {
 	 * 
 	 */
 	public static boolean verifyShortNamedFileExists(String nameVO) {
-		//System.out.println("verifyShortNamedFileExists1");
 		boolean result = false;
 		String dirName = configRootDir.concat("/" + nameParamDirTpl);
 		File dirTpl = new File(dirName);
@@ -796,10 +786,7 @@ public class VOConfigTask extends Task {
 			catchError(dirName + " should be a directory");
 		}
 		for (String VONameAssociated : VONamesAssociated) {
-			//System.out.println("VONameAssociated = "+VONameAssociated);
-			//System.out.println("VO = "+nameVO);
 			if (nameVO.equals(VONameAssociated)) {
-				//System.out.println("VO = VO");
 				File[] files = dirTpl.listFiles();
 				for (File file : files) {
 					String fileAlias = fileAliases.get(VONamesAssociated
@@ -818,7 +805,6 @@ public class VOConfigTask extends Task {
 				}
 			}
 		}
-		//System.out.println("--\n--\nSortie\n--\n--");
 		return result;
 	}
 
@@ -1016,50 +1002,30 @@ public class VOConfigTask extends Task {
 		}
 
 		else {
-			//System.out.println("VO : " + VOname);
-			// System.out.println("certificat : " + certif);
-
 			// Store the real information in memory (in a byte
 			// array).
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			// System.out.println("1");
 			OutputStreamWriter osw = new OutputStreamWriter(baos);
-			// System.out.println("2");
-
 			// Process the file line by line saving only
 			// information between certificate markers (including
 			// the markers themselves).
-
 			osw.write(certif);
-			// System.out.println("3");
 			osw.write("\n");
-			// System.out.println("4");
-
 			// Convert the buffer to a byte array and create an
 			// InputStream to read from it.
 			osw.close();
-			// System.out.println("5");
 			byte[] certInfo = baos.toByteArray();
-			// System.out.println("6");
 			ByteArrayInputStream bais = new ByteArrayInputStream(certInfo);
-			// System.out.println("7");
-
 			// Now actually process the embedded certificates.
 			// Lots of gymnastics for doing something simple.
 			while (bais.available() > 0) {
-				//System.out.println("in while");
 				try {
-					//System.out.println("1 : " + bais.toString());
 					cert = (X509Certificate) cf.generateCertificate(bais);
-					//System.out.println("2 : " + bais.toString());
 				} catch (CertificateException ce) {
 					throw new RuntimeException(ce.getMessage());
 				}
-				//System.out.println("boucle while");
 			}
-			//System.out.println("8");
 		}
-		//System.out.println("9");
 		return cert;
 	}
 
