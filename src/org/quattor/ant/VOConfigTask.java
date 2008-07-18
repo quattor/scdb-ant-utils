@@ -121,9 +121,9 @@ public class VOConfigTask extends Task {
 				if ((hostname != null) && (port != null)) {
 					write("\"voms_servers\" ?= nlist(\"name\", '" + hostname
 							+ "',", bw);
-					write("\t\t\t\t\t\t\"host\", '" + hostname + "',", bw);
-					write("\t\t\t\t\t\t\"port\", " + port + ",", bw);
-					write("\t\t\t\t\t\t);", bw);
+					write("      \"host\", '" + hostname + "',", bw);
+					write("      \"port\", " + port + ",", bw);
+					write("      );", bw);
 					write("", bw);
 					if ((roleAdmin != null) || (roleProd != null)
 							|| (roleAtl != null) || (roleSwAdmin != null)
@@ -131,42 +131,42 @@ public class VOConfigTask extends Task {
 						write("\"voms_roles\" ?= list(", bw);
 						if (roleAdmin != null) {
 							write(
-									"\t\t\t\t\tnlist(\"description\", \"SW manager\",",
+									"     nlist(\"description\", \"SW manager\",",
 									bw);
-							write("\t\t\t\t\t\t\t\"fqan\", \"lcgadmin\",", bw);
-							write("\t\t\t\t\t\t\t\"suffix\", \"s\"),", bw);
+							write("       \"fqan\", \"lcgadmin\",", bw);
+							write("       \"suffix\", \"s\"),", bw);
 						}
 						if (roleSwAdmin != null) {
 							write(
-									"\t\t\t\t\tnlist(\"description\", \"SW manager\",",
+									"     nlist(\"description\", \"SW manager\",",
 									bw);
-							write("\t\t\t\t\t\t\t\"fqan\", \"swadmin\",", bw);
-							write("\t\t\t\t\t\t\t\"suffix\", \"s\"),", bw);
+							write("       \"fqan\", \"swadmin\",", bw);
+							write("       \"suffix\", \"s\"),", bw);
 						}
 						if (roleProd != null) {
 							write(
-									"\t\t\t\t\tnlist(\"description\", \"production\",",
+									"     nlist(\"description\", \"production\",",
 									bw);
-							write("\t\t\t\t\t\t\t\"fqan\", \"production\",", bw);
-							write("\t\t\t\t\t\t\t\"suffix\", \"p\"),", bw);
+							write("       \"fqan\", \"production\",", bw);
+							write("       \"suffix\", \"p\"),", bw);
 						}
 						if (roleAtl != null) {
 							write(
-									"\t\t\t\t\tnlist(\"description\", \"ATLAS\",",
+									"     nlist(\"description\", \"ATLAS\",",
 									bw);
-							write("\t\t\t\t\t\t\t\"fqan\", \"atlas\",", bw);
-							write("\t\t\t\t\t\t\t\"suffix\", \"atl\"),", bw);
+							write("       \"fqan\", \"atlas\",", bw);
+							write("       \"suffix\", \"atl\"),", bw);
 						}
 						if (roleSwMan != null) {
 							write(
-									"\t\t\t\t\tnlist(\"description\", \"SW manager\",",
+									"     nlist(\"description\", \"SW manager\",",
 									bw);
 							write(
-									"\t\t\t\t\t\t\t\"fqan\", \"SoftwareManager\",",
+									"       \"fqan\", \"SoftwareManager\",",
 									bw);
-							write("\t\t\t\t\t\t\t\"suffix\", \"s\"),", bw);
+							write("       \"suffix\", \"s\"),", bw);
 						}
-						write("\t\t\t\t\t);", bw);
+						write("     );", bw);
 						roleProd = null;
 						roleAdmin = null;
 						roleAtl = null;
@@ -540,7 +540,7 @@ public class VOConfigTask extends Task {
 			// saxParser.parse(xmlFile, handler);
 		} catch (Exception e) {
 		}
-		write("\t\t\t\t\t\t\t);", bwDN);
+		write("       );", bwDN);
 		closeFile(filename, bwDN);
 	}
 
@@ -571,9 +571,9 @@ public class VOConfigTask extends Task {
 				if (c != null) {
 					X500Principal subject = c.getSubjectX500Principal();
 					X500Principal issuer = c.getIssuerX500Principal();
-					write("\t\t\t\t\t\t\t\"" + hostname + "\", list(\""
+					write("       \"" + hostname + "\", list(\""
 							+ subject.toString()
-							+ "\",\n\t\t\t\t\t\t\t\t\t\t\t\t\t\""
+							+ "\",\n             \""
 							+ issuer.toString() + "\"),\n", bwDN);
 					result = true;
 				}
