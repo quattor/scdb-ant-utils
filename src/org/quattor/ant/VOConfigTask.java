@@ -187,7 +187,7 @@ public class VOConfigTask extends Task {
 				port = null;
 				certificat = null;
 				closeFile(fileTplName, bw);
-				System.out.println("VO = "+VOname);
+				//System.out.println("VO = "+VOname);
 			} else if (qualifiedName.equals("GROUP_ROLE")) {
 				Matcher m = padmin.matcher(buffer.toString());
 				Matcher mbis = padmin2.matcher(buffer.toString());
@@ -506,7 +506,7 @@ public class VOConfigTask extends Task {
 	public void execute() throws BuildException {
 		// Checking we have enough parameters
 		String urlName = urlFile;
-		// String fileName = nameFile;
+		//String fileName = nameFile;
 		proxy = readFile1(proxyFile);
 		LinkedList<String> aliasesVO = new LinkedList<String>();
 		if (shortNameFile != null){
@@ -524,20 +524,21 @@ public class VOConfigTask extends Task {
 		String filename = configRootDir.concat("/" + nameDNListDirTpl
 				+ "/vos_dn_list.tpl");
 		bwDN = initFile(filename);
-		write("unique template vo/" + nameDNListDirTpl + "/vos_dn_list;", bwDN);
+		write("unique template " + nameDNListDirTpl + "/vos_dn_list;", bwDN);
 		write("", bwDN);
 		write("variable VOS_DN_LIST = nlist(", bwDN);
 		try {
 			URL url = new URL(urlName);
-			// File xmlFile = new File(fileName);
+			//File xmlFile = new File(configRootDir.concat("/vo/all_vocard.xml"));
+			//System.out.println(xmlFile.getAbsolutePath());
 			SAXParser saxParser = factory.newSAXParser();
 			System.out
 					.println("Creation of the flow to CIC portal (may take up till one minute)");
 			InputStream urlstream = url.openStream();
 			System.out.println("Document parsing and templates creation");
 			saxParser.parse(urlstream, handler);
+			//saxParser.parse(xmlFile, handler);
 			System.out.println("Templates created");
-			// saxParser.parse(xmlFile, handler);
 		} catch (Exception e) {
 		}
 		write("       );", bwDN);
