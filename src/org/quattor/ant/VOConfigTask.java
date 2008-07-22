@@ -187,7 +187,7 @@ public class VOConfigTask extends Task {
 				port = null;
 				certificat = null;
 				closeFile(fileTplName, bw);
-				//System.out.println("VO = "+VOname);
+				System.out.println("VO = "+VOname);
 			} else if (qualifiedName.equals("GROUP_ROLE")) {
 				Matcher m = padmin.matcher(buffer.toString());
 				Matcher mbis = padmin2.matcher(buffer.toString());
@@ -219,10 +219,7 @@ public class VOConfigTask extends Task {
 			} else if ((qualifiedName.equals("CertificatePublicKey"))
 					&& (!buffer.toString().equals(""))) {
 				certificat = buffer.toString();
-				if (certificat.endsWith("\n")) {
-					certificat = certificat.substring(0,
-							(certificat.length()) - 1);
-				}
+				certificat = certificat.trim();
 				writeCert();
 				buffer = null;
 			} else if (qualifiedName.equals("VOMSServer")) {
@@ -529,8 +526,8 @@ public class VOConfigTask extends Task {
 		write("variable VOS_DN_LIST = nlist(", bwDN);
 		try {
 			URL url = new URL(urlName);
-			//File xmlFile = new File(configRootDir.concat("/vo/all_vocard.xml"));
-			//System.out.println(xmlFile.getAbsolutePath());
+			File xmlFile = new File(configRootDir.concat("/vo/all_vocard.xml"));
+			System.out.println(xmlFile.getAbsolutePath());
 			SAXParser saxParser = factory.newSAXParser();
 			System.out
 					.println("Creation of the flow to CIC portal (may take up till one minute)");
@@ -540,6 +537,9 @@ public class VOConfigTask extends Task {
 			//saxParser.parse(xmlFile, handler);
 			System.out.println("Templates created");
 		} catch (Exception e) {
+			System.out.println("Bad XML, contact CIC operations portal for more informations");
+			System.exit(-1);
+			e.printStackTrace();
 		}
 		write("       );", bwDN);
 		closeFile(filename, bwDN);
@@ -561,28 +561,22 @@ public class VOConfigTask extends Task {
 			String VOname) {
 		boolean result = false;
 		X509Certificate c = null;
+		try {
+			c = extractCertificates(certificat);
 
-		if (VOname.equals("auvergrid")) {
-			result = false;
-		} else {
-
-			try {
-				c = extractCertificates(certificat);
-
-				if (c != null) {
-					X500Principal subject = c.getSubjectX500Principal();
-					X500Principal issuer = c.getIssuerX500Principal();
-					write("       \"" + hostname + "\", list(\""
-							+ subject.toString()
-							+ "\",\n             \""
-							+ issuer.toString() + "\"),\n", bwDN);
-					result = true;
-				}
-
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			if (c != null) {
+				X500Principal subject = c.getSubjectX500Principal();
+				X500Principal issuer = c.getIssuerX500Principal();
+				write("       \"" + hostname + "\", list(\""
+						+ subject.toString()
+						+ "\",\n             \""
+						+ issuer.toString() + "\"),\n", bwDN);
+				result = true;
 			}
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		return result;
 	}
@@ -1044,3 +1038,13 @@ public class VOConfigTask extends Task {
 		}
 	}
 }
+
+
+/*Serveurs VOMS dans VO cern : pls mais 1 seul dans la IDcard
+ *Repérer mauvais XML et mettre un message 
+ *NA48 port = 15000
+ *LHCB port = 15003
+ * 
+ * 
+ * 
+ */
