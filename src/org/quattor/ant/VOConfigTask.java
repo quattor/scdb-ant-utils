@@ -1038,13 +1038,3 @@ public class VOConfigTask extends Task {
 		}
 	}
 }
-
-
-/*Serveurs VOMS dans VO cern : pls mais 1 seul dans la IDcard
- *Repérer mauvais XML et mettre un message 
- *NA48 port = 15000
- *LHCB port = 15003
- * 
- * 
- * 
- */
