@@ -3,9 +3,7 @@ package org.quattor.ant;
 import java.io.*;
 import java.net.URL;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -77,28 +75,7 @@ public class VOConfigTask extends Task {
 				VOname = attrs.getValue("Name");
 				VOname = VOname.toLowerCase();
 				VOid = attrs.getValue("ID");
-				boolean isShort = false;
-				isShort = verifyShortNamedFileExists(VOname);
-				if (isShort) {
-					fileTplName = getFileName(VOname, false, true);
-				} else {
-					fileTplName = getFileName(VOname, false, false);
-				}
-				bw = initFile(fileTplName);
-				String siteParamsFileName = getNameSiteParamsDir();
-				String siteParamName = VOname;
-				siteParamsFileName = siteParamsFileName.concat("/").concat(
-						siteParamName);
-				if (isShort) {
-					write("structure template " + nameAliasDirTpl + "/"
-							+ VOname + ";", bw);
-				} else {
-					write("structure template " + nameParamDirTpl + "/"
-							+ VOname + ";", bw);
-				}
-				write("", bw);
-				write("include {if_exists('" + siteParamsFileName + "')};", bw);
-				write("", bw);
+				fileTplName = getFileName(VOname, false, false);
 			} else {
 				buffer = new StringBuffer();
 			}
@@ -111,6 +88,16 @@ public class VOConfigTask extends Task {
 		public void endElement(String namespaceURI, String simpleName,
 				String qualifiedName) throws SAXException {
 			if (qualifiedName.equals("VO")) {
+				bw = initFile(fileTplName);
+				String siteParamsFileName = getNameSiteParamsDir();
+				String siteParamName = VOname;
+				siteParamsFileName = siteParamsFileName.concat("/").concat(
+						siteParamName);
+				write("structure template " + nameParamDirTpl + "/"
+							+ VOname + ";", bw);
+				write("", bw);
+				write("include {if_exists('" + siteParamsFileName + "')};", bw);
+				write("", bw);
 				// String nList = initNList(VOname);
 				int Id = Integer.parseInt(VOid);
 				String accountPrefix = createAccount(VOname, Id);
@@ -187,7 +174,6 @@ public class VOConfigTask extends Task {
 				port = null;
 				certificat = null;
 				closeFile(fileTplName, bw);
-				System.out.println("VO = "+VOname);
 			} else if (qualifiedName.equals("GROUP_ROLE")) {
 				Matcher m = padmin.matcher(buffer.toString());
 				Matcher mbis = padmin2.matcher(buffer.toString());
@@ -267,24 +253,18 @@ public class VOConfigTask extends Task {
 	/* the name of the directory containing generated certificates templates */
 	private static String nameCertDirTpl = null;
 
-	/* the name of the url wherre to find the XML document */
+	/* the name of the file  containing VOs informations*/
 	private static String urlFile = null;
+	
+	/* the name of the url where to find the XML document */
+	private static String inputFile = null;
 
 	/* the name of the directory containing customization templates */
 	private static String nameSiteParamsDir = null;
 
-	/*
-	 * the name of the directory containing generated templates for alias named
-	 * VOs
-	 */
-	private static String nameAliasDirTpl = null;
-
 	/* the name of the file containing proxy */
 	private static String proxyFile = null;
 
-	/* the name of the file containing short names associated to some VOs */
-	private static String shortNameFile = null;
-		
 	/* the name of the VO */
 	private static String VOname = null;
 
@@ -363,12 +343,6 @@ public class VOConfigTask extends Task {
 
 	private static int base_uid = 0;
 
-	/* List containing all the alias names of VO */
-	private static List<String> fileAliases = new ArrayList<String>();
-
-	/* List containing all the entire names of VO which are mames with alias */
-	private static List<String> VONamesAssociated = new ArrayList<String>();
-
 	final public static CertificateFactory cf;
 	static {
 		try {
@@ -442,6 +416,16 @@ public class VOConfigTask extends Task {
 	}
 
 	/**
+	 * Set the  xml file containing data about VOs.
+	 * 
+	 * @param inputFile
+	 *            String containing the  path to the file
+	 * 
+	 */
+	public void setInputFile(String inputFile) {
+		this.inputFile = inputFile;
+	}
+	/**
 	 * Set the directory for the customization templates .
 	 * 
 	 * @param nameCustomDir
@@ -465,17 +449,6 @@ public class VOConfigTask extends Task {
 	}
 
 	/**
-	 * Set the directory for the generated templates named with an alias name.
-	 * 
-	 * @param nameShortNamedDirTpl
-	 *            String containing full path to the directory
-	 * 
-	 */
-	public void setNameAliasDirTpl(String nameAliasDirTpl) {
-		this.nameAliasDirTpl = nameAliasDirTpl;
-	}
-
-	/**
 	 * Set the file containing the proxy name.
 	 * 
 	 * @param proxyFile
@@ -486,17 +459,6 @@ public class VOConfigTask extends Task {
 		this.proxyFile = proxyFile;
 	}
 
-	/**
-	 * Set the file containing the short names of some VOs.
-	 * 
-	 * @param shortNameFile
-	 *            String containing full path to file
-	 * 
-	 */
-	public void setShortNameFile(String shortNameFile) {
-		this.shortNameFile = shortNameFile;
-	}
-	
 	/*
 	 * Method used by ant to execute this task.
 	 */
@@ -504,17 +466,7 @@ public class VOConfigTask extends Task {
 		// Checking we have enough parameters
 		String urlName = urlFile;
 		//String fileName = nameFile;
-		proxy = readFile1(proxyFile);
-		LinkedList<String> aliasesVO = new LinkedList<String>();
-		if (shortNameFile != null){
-			aliasesVO = readFile2(shortNameFile);
-			Pattern p = Pattern.compile("=");
-			for (String aliaseVO : aliasesVO){
-				String[] objects = p.split(aliaseVO);
-				VONamesAssociated.add(objects[0].trim());
-				fileAliases.add(objects[1].trim());
-			}
-		}
+		proxy = readFile(proxyFile);
 		// On cree une instance de SAXBuilder
 		DefaultHandler handler = new MyHandler();
 		SAXParserFactory factory = SAXParserFactory.newInstance();
@@ -526,20 +478,26 @@ public class VOConfigTask extends Task {
 		write("variable VOS_DN_LIST = nlist(", bwDN);
 		try {
 			URL url = new URL(urlName);
-			File xmlFile = new File(configRootDir.concat("/vo/all_vocard.xml"));
-			System.out.println(xmlFile.getAbsolutePath());
+			File xmlFile = new File(inputFile);
 			SAXParser saxParser = factory.newSAXParser();
-			System.out
-					.println("Creation of the flow to CIC portal (may take up till one minute)");
-			InputStream urlstream = url.openStream();
-			System.out.println("Document parsing and templates creation");
-			saxParser.parse(urlstream, handler);
-			//saxParser.parse(xmlFile, handler);
+			if (xmlFile.exists()){
+				System.out.println("Reading File : "+xmlFile.getAbsolutePath());
+				System.out.println("Document parsing and templates creation");
+				saxParser.parse(xmlFile, handler);				
+			}else{
+				System.out
+				.println("Creation of the flow to CIC portal (may take up till one minute)");
+				InputStream urlstream = url.openStream();
+				System.out.println("Document parsing and templates creation");
+				saxParser.parse(urlstream, handler);
+			}			
 			System.out.println("Templates created");
 		} catch (Exception e) {
-			System.out.println("Bad XML, contact CIC operations portal for more informations");
+			System.out.println("\n--\nBAD XML FORMAT - Contact CIC operations portal for more informations\n--\n");
+			System.out.println("Templates generation for VO "+ VOname+" and followers failed\n--\n");
+			System.err.println("BUILD FAILED : "+e);
+			//e.printStackTrace();
 			System.exit(-1);
-			e.printStackTrace();
 		}
 		write("       );", bwDN);
 		closeFile(filename, bwDN);
@@ -601,7 +559,7 @@ public class VOConfigTask extends Task {
 	 * 
 	 */
 
-	public static String readFile1(String filepath) {
+	public static String readFile(String filepath) {
 		LinkedList<String> objects = new LinkedList<String>();
 		BufferedReader bfrd = null;
 		String ligne;
@@ -639,49 +597,6 @@ public class VOConfigTask extends Task {
 	}
 
 	/**
-	 * Reading a file line by line filling them in a list of String
-	 * 
-	 * @param file
-	 *            the file to be readen
-	 */
-	public static LinkedList<String> readFile2(String filepath) {
-		LinkedList<String> objects = new LinkedList<String>();
-		File file = new File(filepath);
-		BufferedReader bfrd = null;
-		String ligne;
-		veriFile(file);
-		boolean error = false;
-		try {
-			bfrd = new BufferedReader(new FileReader(file));
-			while ((ligne = bfrd.readLine()) != null) {
-				if (!(ligne.equals(""))) {
-					objects.add(ligne);
-				}
-			}
-		} catch (FileNotFoundException exc) {
-
-			System.out.println("File " + file.getName() + " Opening Error");
-			error = true;
-		} catch (IOException e) {
-			System.out.println("Reading " + file.getName() + " Error");
-			error = true;
-		} finally {
-			try {
-				if (bfrd != null) {
-					bfrd.close();
-				}
-			} catch (IOException e) {
-				System.out.println("Closing " + file.getName() + " Error");
-				error = true;
-			}
-		}
-		if (error) {
-			System.exit(-1);
-		}
-		return objects;
-	}
-
-	/**
 	 * Creates and gets the full path of a generated templates.
 	 * 
 	 * @param name
@@ -699,11 +614,7 @@ public class VOConfigTask extends Task {
 		String filename = null;
 		name = name.toLowerCase();
 		String paramDirName = null;
-		if (isAliasNamed) {
-			paramDirName = configRootDir.concat("/" + nameAliasDirTpl);
-		} else {
-			paramDirName = configRootDir.concat("/" + nameParamDirTpl);
-		}
+		paramDirName = configRootDir.concat("/" + nameParamDirTpl);
 		filename = name.trim();
 		if (iscert) {
 			// String DNListDirName =
@@ -764,43 +675,6 @@ public class VOConfigTask extends Task {
 			filename = paramDirName.concat("/" + filename.concat(".tpl"));
 		}
 		return filename;
-	}
-
-	/**
-	 * Verify the VO is alias named or not and modify the associated template.
-	 * 
-	 * @param nameVO
-	 *            String containing the name of the VO
-	 * 
-	 */
-	public static boolean verifyShortNamedFileExists(String nameVO) {
-		boolean result = false;
-		String dirName = configRootDir.concat("/" + nameParamDirTpl);
-		File dirTpl = new File(dirName);
-		if (!dirTpl.isDirectory()) {
-			catchError(dirName + " should be a directory");
-		}
-		for (String VONameAssociated : VONamesAssociated) {
-			if (nameVO.equals(VONameAssociated)) {
-				File[] files = dirTpl.listFiles();
-				for (File file : files) {
-					String fileAlias = fileAliases.get(VONamesAssociated
-							.indexOf(nameVO));
-					if ((file.getName()).equals(fileAlias.concat(".tpl"))) {
-						BufferedWriter bwr = initFile(file.getAbsolutePath());
-						write("structure template " + nameParamDirTpl + "/"
-								+ fileAlias + ";", bwr);
-						write("", bwr);
-						write(
-								"include " + nameAliasDirTpl + "/" + nameVO
-										+ ";", bwr);
-						closeFile(file.getName(), bwr);
-						result = true;
-					}
-				}
-			}
-		}
-		return result;
 	}
 
 	/**
