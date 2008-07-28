@@ -6,6 +6,8 @@ import java.net.URL;
 import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.tools.ant.types.DirSet;
+import org.apache.tools.ant.types.FileSet;
 
 import org.xml.sax.*;
 import org.xml.sax.helpers.DefaultHandler;
@@ -19,7 +21,9 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 
 import org.apache.tools.ant.BuildException;
+import org.apache.tools.ant.DirectoryScanner;
 import org.apache.tools.ant.Task;
+import org.apache.tools.ant.types.FileSet;
 
 /**
  * This task creates pan templates from data given by the CIC portal
@@ -93,8 +97,8 @@ public class VOConfigTask extends Task {
 				String siteParamName = VOname;
 				siteParamsFileName = siteParamsFileName.concat("/").concat(
 						siteParamName);
-				write("structure template " + nameParamDirTpl + "/"
-							+ VOname + ";", bw);
+				write("structure template " + nameParamDirTpl + "/" + VOname
+						+ ";", bw);
 				write("", bw);
 				write("include {if_exists('" + siteParamsFileName + "')};", bw);
 				write("", bw);
@@ -138,9 +142,7 @@ public class VOConfigTask extends Task {
 							write("       \"suffix\", \"p\"),", bw);
 						}
 						if (roleAtl != null) {
-							write(
-									"     nlist(\"description\", \"ATLAS\",",
-									bw);
+							write("     nlist(\"description\", \"ATLAS\",", bw);
 							write("       \"fqan\", \"atlas\",", bw);
 							write("       \"suffix\", \"atl\"),", bw);
 						}
@@ -148,9 +150,7 @@ public class VOConfigTask extends Task {
 							write(
 									"     nlist(\"description\", \"SW manager\",",
 									bw);
-							write(
-									"       \"fqan\", \"SoftwareManager\",",
-									bw);
+							write("       \"fqan\", \"SoftwareManager\",", bw);
 							write("       \"suffix\", \"s\"),", bw);
 						}
 						write("     );", bw);
@@ -242,6 +242,9 @@ public class VOConfigTask extends Task {
 	private StringBuffer buffer;
 
 	/* the name of the root directory */
+	private static DirSet configDirs = null;
+
+	/* the name of the root directory */
 	private static String configRootDir = null;
 
 	/* the name of the directory containing generated templates */
@@ -253,9 +256,9 @@ public class VOConfigTask extends Task {
 	/* the name of the directory containing generated certificates templates */
 	private static String nameCertDirTpl = null;
 
-	/* the name of the file  containing VOs informations*/
+	/* the name of the file containing VOs informations */
 	private static String urlFile = null;
-	
+
 	/* the name of the url where to find the XML document */
 	private static String inputFile = null;
 
@@ -359,14 +362,15 @@ public class VOConfigTask extends Task {
 	// DECLARATION DE METHODES
 
 	/**
-	 * Set the directory for the generated VO templates.
+	 * Support nested dirset elements. This is called by ant only after all of
+	 * the children of the dirset have been processed. Collect all of the
+	 * selected directories from the dirset.
 	 * 
-	 * @param nameDirTpl
-	 *            String containing full path of the directory
-	 * 
+	 * @param dirset
+	 *            a configured DirSet
 	 */
-	public void setConfigRootDir(String configRootDir) {
-		this.configRootDir = configRootDir;
+	public void addConfiguredDirSet(DirSet configDirs) {
+		this.configDirs = configDirs;
 	}
 
 	/**
@@ -416,15 +420,16 @@ public class VOConfigTask extends Task {
 	}
 
 	/**
-	 * Set the  xml file containing data about VOs.
+	 * Set the xml file containing data about VOs.
 	 * 
 	 * @param inputFile
-	 *            String containing the  path to the file
+	 *            String containing the path to the file
 	 * 
 	 */
 	public void setInputFile(String inputFile) {
 		this.inputFile = inputFile;
 	}
+
 	/**
 	 * Set the directory for the customization templates .
 	 * 
@@ -463,10 +468,20 @@ public class VOConfigTask extends Task {
 	 * Method used by ant to execute this task.
 	 */
 	public void execute() throws BuildException {
+		DirectoryScanner ds = configDirs.getDirectoryScanner(getProject());
+		// Loop over each file creating a File object.
+		File basedir = ds.getBasedir();
+		for (String f : ds.getIncludedDirectories()) {
+			executeBranch(new File(basedir, f).getAbsolutePath());
+		}
+	}
+
+	public void executeBranch(String dir) throws BuildException {
+		configRootDir = dir;
 		// Checking we have enough parameters
 		String urlName = urlFile;
-		//String fileName = nameFile;
-		proxy = readFile(proxyFile);
+		String proxyName = configRootDir.concat("/" + proxyFile);
+		proxy = readFile(proxyName);
 		// On cree une instance de SAXBuilder
 		DefaultHandler handler = new MyHandler();
 		SAXParserFactory factory = SAXParserFactory.newInstance();
@@ -480,23 +495,29 @@ public class VOConfigTask extends Task {
 			URL url = new URL(urlName);
 			File xmlFile = new File(inputFile);
 			SAXParser saxParser = factory.newSAXParser();
-			if (xmlFile.exists()){
-				System.out.println("Reading File : "+xmlFile.getAbsolutePath());
+			if (xmlFile.exists()) {
+				System.out.println("Reading File : "
+						+ xmlFile.getAbsolutePath());
 				System.out.println("Document parsing and templates creation");
-				saxParser.parse(xmlFile, handler);				
-			}else{
+				saxParser.parse(xmlFile, handler);
+			} else {
 				System.out
-				.println("Creation of the flow to CIC portal (may take up till one minute)");
+						.println("Creation of the flow to CIC portal (may take up till one minute)");
 				InputStream urlstream = url.openStream();
 				System.out.println("Document parsing and templates creation");
 				saxParser.parse(urlstream, handler);
-			}			
+			}
 			System.out.println("Templates created");
 		} catch (Exception e) {
-			System.out.println("\n--\nBAD XML FORMAT - Contact CIC operations portal for more informations\n--\n");
-			System.out.println("Templates generation for VO "+ VOname+" and followers failed\n--\n");
-			System.err.println("BUILD FAILED : "+e);
-			//e.printStackTrace();
+			System.err
+					.println("\n--\nBAD XML FORMAT - Contact CIC operations portal for more informations\n--\n");
+			System.out.println("Templates generation for VO " + VOname
+					+ " and followers failed\n--\n");
+			System.out.println("All VO Identity Card can be found at: \n");
+			System.out
+					.println("https://cic.gridops.org/downloadRP.php?section=lavoisier&rpname=vocard&vo=all\n--\n");
+			System.err.println("BUILD FAILED : " + e);
+			// e.printStackTrace();
 			System.exit(-1);
 		}
 		write("       );", bwDN);
@@ -526,8 +547,7 @@ public class VOConfigTask extends Task {
 				X500Principal subject = c.getSubjectX500Principal();
 				X500Principal issuer = c.getIssuerX500Principal();
 				write("       \"" + hostname + "\", list(\""
-						+ subject.toString()
-						+ "\",\n             \""
+						+ subject.toString() + "\",\n             \""
 						+ issuer.toString() + "\"),\n", bwDN);
 				result = true;
 			}
