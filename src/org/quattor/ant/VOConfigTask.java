@@ -7,7 +7,6 @@ import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.tools.ant.types.DirSet;
-import org.apache.tools.ant.types.FileSet;
 
 import org.xml.sax.*;
 import org.xml.sax.helpers.DefaultHandler;
@@ -23,7 +22,6 @@ import java.security.cert.X509Certificate;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.DirectoryScanner;
 import org.apache.tools.ant.Task;
-import org.apache.tools.ant.types.FileSet;
 
 /**
  * This task creates pan templates from data given by the CIC portal
@@ -507,7 +505,7 @@ public class VOConfigTask extends Task {
 				System.out.println("Document parsing and templates creation");
 				saxParser.parse(urlstream, handler);
 			}
-			System.out.println("Templates created");
+			System.out.println("Templates created for "+configRootDir+"\n");
 		} catch (Exception e) {
 			System.err
 					.println("\n--\nBAD XML FORMAT - Contact CIC operations portal for more informations\n--\n");
