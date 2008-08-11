@@ -19,6 +19,7 @@ import org.apache.tools.ant.types.FileSet;
  * @deprecated
  * 
  */
+@Deprecated
 public class PanSyntaxTask extends Task {
 
 	/* The command for the pan compiler. */
@@ -29,13 +30,11 @@ public class PanSyntaxTask extends Task {
 
 	/* The list of files to check. */
 	private LinkedList<String> files = new LinkedList<String>();
-	
-	/* Print debugging messages */
-	private boolean debugTask = false;
 
 	/*
 	 * Method used by ant to execute this task.
 	 */
+	@Override
 	public void execute() throws BuildException {
 
 		// Print out a summary of the results.
@@ -113,24 +112,14 @@ public class PanSyntaxTask extends Task {
 		// If there were no problems, then touch the timestamp file.
 		try {
 			if (timestamp != null && !timestamp.createNewFile()) {
-				timestamp.setLastModified(System.currentTimeMillis());
+				if (!timestamp.setLastModified(System.currentTimeMillis())) {
+					System.err.println("Error touching timestamp file.");
+				}
 			}
 		} catch (IOException ioe) {
 			System.err.println("Error touching timestamp file.");
 			System.err.println(ioe.getMessage());
 		}
-	}
-
-	/**
-	 * Setting this flag will print debugging information from the task itself.
-	 * This is primarily useful if one wants to debug a build using the command
-	 * line interface.
-	 * 
-	 * @param debugTask
-	 *            flag to print task debugging information
-	 */
-	public void setDebugTask(boolean debugTask) {
-		this.debugTask = debugTask;
 	}
 
 	/*

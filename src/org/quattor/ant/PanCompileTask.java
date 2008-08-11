@@ -25,6 +25,7 @@ import org.apache.tools.ant.types.Path;
  * @deprecated
  * 
  */
+@Deprecated
 public class PanCompileTask extends Task implements java.io.FileFilter {
 
 	/* Determine whether or not to print debug information. */
@@ -60,6 +61,7 @@ public class PanCompileTask extends Task implements java.io.FileFilter {
 	/*
 	 * Method used by ant to execute this task.
 	 */
+	@Override
 	public void execute() throws BuildException {
 
 		// Sanity checks on the output directory.
