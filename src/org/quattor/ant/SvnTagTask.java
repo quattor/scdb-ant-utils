@@ -1,20 +1,19 @@
 package org.quattor.ant;
 
 import java.io.File;
-import java.util.*;
+import java.util.Iterator;
+import java.util.LinkedList;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Task;
-
-import org.tmatesoft.svn.core.SVNDirEntry;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
-import org.tmatesoft.svn.core.io.SVNRepository;
-import org.tmatesoft.svn.core.io.SVNRepositoryFactory;
 import org.tmatesoft.svn.core.internal.io.dav.DAVRepositoryFactory;
 import org.tmatesoft.svn.core.internal.io.svn.SVNRepositoryFactoryImpl;
+import org.tmatesoft.svn.core.io.SVNRepository;
+import org.tmatesoft.svn.core.io.SVNRepositoryFactory;
 import org.tmatesoft.svn.core.wc.ISVNStatusHandler;
 import org.tmatesoft.svn.core.wc.SVNClientManager;
 import org.tmatesoft.svn.core.wc.SVNCommitClient;
@@ -58,7 +57,6 @@ public class SvnTagTask extends Task {
 	/* Control printing of debugging messages in this task */
 	private boolean debugTask = false;
 
-
 	/**
 	 * Setting this flag will print debugging information from the task itself.
 	 * This is primarily useful if one wants to debug a build using the command
@@ -93,6 +91,7 @@ public class SvnTagTask extends Task {
 	/*
 	 * Method used by ant to execute this task.
 	 */
+	@Override
 	public void execute() throws BuildException {
 
 		// Verify that all of the required parameters are there.
@@ -124,7 +123,7 @@ public class SvnTagTask extends Task {
 
 		// Create a handler to collect the information.
 		StatusHandler handler = new StatusHandler(debugTask);
-		
+
 		// Retrieve the URL for the repository.
 		SVNInfo info = null;
 		try {
@@ -155,48 +154,54 @@ public class SvnTagTask extends Task {
 		try {
 			tagUrl = SVNURL.parseURIEncoded(tagPath);
 		} catch (SVNException e) {
-			throw new BuildException("Error parsing tag URL "+tagPath+": "+e.getMessage());
+			throw new BuildException("Error parsing tag URL " + tagPath + ": "
+					+ e.getMessage());
 		}
 
 		// Create a repository instance for tags
 		// Check tag branch root exists
 		SVNRepository repositoryTags = null;
 		try {
-			repositoryTags = SVNRepositoryFactory.create(SVNURL.parseURIEncoded(tagsBranch));
+			repositoryTags = SVNRepositoryFactory.create(SVNURL
+					.parseURIEncoded(tagsBranch));
 		} catch (SVNException e) {
 			throw new BuildException(
-					"Error creating SVNRepository instance for location "+tagsBranch+": "+e.getMessage());
+					"Error creating SVNRepository instance for location "
+							+ tagsBranch + ": " + e.getMessage());
 		}
-		ISVNAuthenticationManager authManager = SVNWCUtil.createDefaultAuthenticationManager();
+		ISVNAuthenticationManager authManager = SVNWCUtil
+				.createDefaultAuthenticationManager();
 		repositoryTags.setAuthenticationManager(authManager);
 		try {
-			SVNNodeKind tagNodeKind = repositoryTags.checkPath("",-1);
-			if ( tagNodeKind != SVNNodeKind.DIR ) {
-				throw new BuildException(
-						"Error : SVN branch "+tagsBranch+" must exist and be a directory");
+			SVNNodeKind tagNodeKind = repositoryTags.checkPath("", -1);
+			if (tagNodeKind != SVNNodeKind.DIR) {
+				throw new BuildException("Error : SVN branch " + tagsBranch
+						+ " must exist and be a directory");
 			}
-		} catch ( SVNException e ) {
+		} catch (SVNException e) {
 			throw new BuildException(
-					"Error getting information about SVN branch "+tagsBranch+": "+e.getMessage());
+					"Error getting information about SVN branch " + tagsBranch
+							+ ": " + e.getMessage());
 		}
-		
+
 		// Check for any local or remote modifications. With the flags below,
-		// it will do a recursive search of the workspace. The handler will 
+		// it will do a recursive search of the workspace. The handler will
 		// not be called for ignored or normal (unmodified, uptodate) files.
 		System.out.println("Checking for local and remote modifications...");
 		handler.reset();
 		try {
 			status.doStatus(workspacePath, true, true, false, false, handler);
 		} catch (SVNException e) {
-			throw new BuildException(
-					"Check failed ("+e.toString()+")");
+			throw new BuildException("Check failed (" + e.toString() + ")");
 		}
 		if (handler.isModified()) {
-			if ( handler.isModifiedLocally() ) {
-				System.err.println("Some files found with local modifications : commit your changes before deploy.");
+			if (handler.isModifiedLocally()) {
+				System.err
+						.println("Some files found with local modifications : commit your changes before deploy.");
 			}
-			if ( handler.isModifiedRemotely() ) {
-				System.err.println("Some files are not up-to-date : use 'svn update' to update your working copy.");
+			if (handler.isModifiedRemotely()) {
+				System.err
+						.println("Some files are not up-to-date : use 'svn update' to update your working copy.");
 			}
 			throw new BuildException(
 					"workspace has local and/or remote modifications; deploy aborted");
@@ -211,51 +216,57 @@ public class SvnTagTask extends Task {
 		SVNNodeKind tagParentNodeKind = null;
 		int parentIndex = tagParent.lastIndexOf("/");
 		i = parentIndex;
-		while ( !tagDirExists && (i>0)) {
-			tagParent = tagParent.substring(0,i);
-			if ( debugTask )
-				System.out.println("Checking existence of tag parent "+tagParent);
+		while (!tagDirExists && (i > 0)) {
+			tagParent = tagParent.substring(0, i);
+			if (debugTask)
+				System.out.println("Checking existence of tag parent "
+						+ tagParent);
 			try {
 				tagParentNodeKind = repositoryTags.checkPath(tagParent, -1);
 			} catch (SVNException e) {
 				throw new BuildException(
-						"Error checking existence of SVN branch "+tagParent+": "+e.getMessage());
+						"Error checking existence of SVN branch " + tagParent
+								+ ": " + e.getMessage());
 			}
-			if ( tagParentNodeKind == SVNNodeKind.NONE ) {
-				branchesToCreate.addFirst(tagsBranch+tagParent);
+			if (tagParentNodeKind == SVNNodeKind.NONE) {
+				branchesToCreate.addFirst(tagsBranch + tagParent);
 				i = tagParent.lastIndexOf("/");
-			} else if ( tagParentNodeKind != SVNNodeKind.DIR ) {
-				throw new BuildException(
-						"Error: "+tagParent+" exists in repository but is not a directory");
+			} else if (tagParentNodeKind != SVNNodeKind.DIR) {
+				throw new BuildException("Error: " + tagParent
+						+ " exists in repository but is not a directory");
 			} else {
 				tagDirExists = true;
 			}
 		}
-		if ( ! branchesToCreate.isEmpty() ) {
+		if (!branchesToCreate.isEmpty()) {
 			SVNURL[] urlsToCreate = new SVNURL[branchesToCreate.size()];
 			int j = 0;
-			for (Iterator<String> it=branchesToCreate.iterator(); it.hasNext(); ) {
+			for (Iterator<String> it = branchesToCreate.iterator(); it
+					.hasNext();) {
 				String branchPath = it.next();
-				if ( debugTask )
-					System.out.println("Adding "+branchPath+" to branch list to create");
+				if (debugTask)
+					System.out.println("Adding " + branchPath
+							+ " to branch list to create");
 				try {
 					urlsToCreate[j] = SVNURL.parseURIEncoded(branchPath);
-				} catch ( SVNException e) {
-					throw new BuildException(
-							"Error converting "+branchPath+" to URL:"+e.getMessage());
+				} catch (SVNException e) {
+					throw new BuildException("Error converting " + branchPath
+							+ " to URL:" + e.getMessage());
 				}
 				j++;
 			}
-			System.out.println("Creating tag branch "+tagParent);
+			System.out.println("Creating tag branch " + tagParent);
 			try {
-				commit.doMkDir(urlsToCreate,"SCDB ant tools : create new tag branch");
+				commit.doMkDir(urlsToCreate,
+						"SCDB ant tools : create new tag branch");
 			} catch (SVNException e) {
 				String tagRoot = tagsBranch;
-				if ( parentIndex > 0 ) {
-					tagRoot += tag.substring(0,parentIndex);
+				if (parentIndex > 0) {
+					tagRoot += tag.substring(0, parentIndex);
 
 				}
-				throw new BuildException("Error creating tag branch "+tagRoot+": " + e.getMessage());
+				throw new BuildException("Error creating tag branch " + tagRoot
+						+ ": " + e.getMessage());
 			}
 		}
 
@@ -273,103 +284,105 @@ public class SvnTagTask extends Task {
 	 * A private class to collect the status information for the subversion
 	 * workspace.
 	 */
-	private class StatusHandler implements ISVNStatusHandler {
+	private static class StatusHandler implements ISVNStatusHandler {
 
 		/**
-		 * A private flag to indicate whether there are any local modifications to the
-		 * workspace.
+		 * A private flag to indicate whether there are any local modifications
+		 * to the workspace.
 		 */
 		private boolean localModifications = false;
-		
+
 		/**
-		 * A private flag to indicate whether there are any remote modifications to the
-		 * workspace.
+		 * A private flag to indicate whether there are any remote modifications
+		 * to the workspace.
 		 */
 		private boolean remoteModifications = false;
-		
+
 		/**
 		 * Flag enabling debugging message in the handler
 		 */
 		private boolean debugHandler = false;
-		
 
 		public StatusHandler(boolean debugTask) {
-		  debugHandler = debugTask;	
+			debugHandler = debugTask;
 		}
-		
-		
+
 		/**
 		 * Implement the method to retrieve the status of a file or directory.
 		 */
 		public void handleStatus(SVNStatus status) {
 
-			// A file is considered locally modified if it is not in a 'normal' status,
-			// an ignored file, or an external reference. STATUS_NONE means the file
-			// has no local modifications but only remote ones (this happens only if
+			// A file is considered locally modified if it is not in a 'normal'
+			// status,
+			// an ignored file, or an external reference. STATUS_NONE means the
+			// file
+			// has no local modifications but only remote ones (this happens
+			// only if
 			// remote=true in doStatus() call.
 			// If the file has no modification, check its properties.
-			
+
 			SVNStatusType ls = status.getContentsStatus();
 			boolean fileModifiedLocally = (ls != SVNStatusType.STATUS_NORMAL)
 					&& (ls != SVNStatusType.STATUS_IGNORED)
 					&& (ls != SVNStatusType.STATUS_EXTERNAL)
 					&& (ls != SVNStatusType.STATUS_NONE);
 
-			if ( debugHandler ) {
-				System.out.println("File="+status.getFile()+", Local status="+ls.toString());
+			if (debugHandler) {
+				System.out.println("File=" + status.getFile()
+						+ ", Local status=" + ls.toString());
 			}
 
 			String localStatus = null;
-			if ( fileModifiedLocally ) {
+			if (fileModifiedLocally) {
 				localStatus = ls.toString();
 			} else {
 				SVNStatusType lps = status.getPropertiesStatus();
 				fileModifiedLocally = (lps != SVNStatusType.STATUS_NORMAL)
-									&& (lps != SVNStatusType.STATUS_NONE);
-				if ( fileModifiedLocally ) {
+						&& (lps != SVNStatusType.STATUS_NONE);
+				if (fileModifiedLocally) {
 					localStatus = "property";
 				}
 			}
-			
-			
-			// A file is considered remotly modified if the status is not STATUS_NONE 
+
+			// A file is considered remotly modified if the status is not
+			// STATUS_NONE
 
 			SVNStatusType rs = status.getRemoteContentsStatus();
 			boolean fileModifiedRemotely = (rs != SVNStatusType.STATUS_NONE);
-			if ( debugHandler ) {
-				System.out.println("File="+status.getFile()+", Remote status="+rs.toString());
+			if (debugHandler) {
+				System.out.println("File=" + status.getFile()
+						+ ", Remote status=" + rs.toString());
 			}
-			
+
 			String remoteStatus = null;
-			if ( fileModifiedRemotely ) {
+			if (fileModifiedRemotely) {
 				remoteStatus = rs.toString();
 			} else {
 				SVNStatusType rps = status.getRemotePropertiesStatus();
 				fileModifiedRemotely = (rps != SVNStatusType.STATUS_NORMAL)
-									&& (rps != SVNStatusType.STATUS_NONE);
-				if ( fileModifiedRemotely ) {
+						&& (rps != SVNStatusType.STATUS_NONE);
+				if (fileModifiedRemotely) {
 					remoteStatus = "property";
 				}
 			}
-			
-			
+
 			// Print message if the file has been modified or is not uptodate
-			if ( fileModifiedLocally || fileModifiedRemotely ) {
-				if ( fileModifiedLocally ) {
+			if (fileModifiedLocally || fileModifiedRemotely) {
+				if (fileModifiedLocally) {
 					localModifications = true;
 				}
-				if ( fileModifiedRemotely ) {
+				if (fileModifiedRemotely) {
 					remoteModifications = true;
 				}
-				System.err.println(
-						(fileModifiedLocally ? localStatus : remoteStatus) +
-						" (" +
-						(fileModifiedLocally ? "locally" : "") +
-						(fileModifiedLocally && fileModifiedRemotely ? "," : "") +
-						(fileModifiedRemotely ? "remotely" : "") +
-						") : " +
-						status.getFile().getPath()
-						);
+				System.err.println((fileModifiedLocally ? localStatus
+						: remoteStatus)
+						+ " ("
+						+ (fileModifiedLocally ? "locally" : "")
+						+ (fileModifiedLocally && fileModifiedRemotely ? ","
+								: "")
+						+ (fileModifiedRemotely ? "remotely" : "")
+						+ ") : "
+						+ status.getFile().getPath());
 			}
 		}
 
@@ -405,4 +418,3 @@ public class SvnTagTask extends Task {
 	}
 
 }
-	

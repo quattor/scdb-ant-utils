@@ -11,12 +11,12 @@
 
 	<!-- source location for support software -->
 	<property name="src" location="src" />
-	<property name="src.java" location="${src}/java" />
 
 	<!-- build subdirectories (local to sub-ant builds) -->
 	<property name="build" location="build" />
 	<property name="build.java" location="${build}/java" />
 	<property name="build.jar" location="${build}/jar" />
+	<property name="build.reports" location="${build}/reports" />
 
 	<!-- externals -->
 	<property name="external" location="${basedir}/external" />
@@ -24,10 +24,19 @@
 	<!-- apache-ant -->
 	<property name="apache-ant" location="${external}/apache-ant" />
 	<property name="apache-ant.jar" location="${apache-ant}/lib/ant.jar" />
+	<property name="apache-ant-launcher.jar"
+	          location="${apache-ant}/lib/ant-launcher.jar" />
 
 	<!-- svnkit -->
 	<property name="svnkit" location="${external}/svnkit" />
 	<property name="svnkit.jar" location="${svnkit}/svnkit.jar" />
+
+	<!-- findbugs -->
+	<property name="external.findbugs" location="${external}/findbugs" />
+	<property name="external.findbugs.jar"
+	          location="${external.findbugs}/lib/findbugs.jar" />
+	<property name="external.findbugs-ant.jar"
+	          location="${external.findbugs}/lib/findbugs-ant.jar" />
 
 	<!-- final jar file to create -->
 	<property name="quattor.jar" location="${build.jar}/quattor.jar" />
@@ -45,8 +54,16 @@
 		<mkdir dir="${build.java}" />
 		<mkdir dir="${build.jar}" />
 
-	</target>
+		<!-- Define the findbugs task. -->
+		<taskdef name="findbugs"
+		         classname="edu.umd.cs.findbugs.anttask.FindBugsTask">
+			<classpath>
+				<pathelement path="${external.findbugs-ant.jar}" />
+				<pathelement path="${external.findbugs.jar}" />
+			</classpath>
+		</taskdef>
 
+	</target>
 
 	<!-- **************************************************************************
      Clean up the generated files.
@@ -65,8 +82,14 @@
  ************************************************************************** -->
 
 	<target name="compile" depends="init" description="Compile tools in java">
-		
-		<javac srcdir="${src}" destdir="${build.java}" includes="**/*.java" deprecation="on">
+
+		<javac srcdir="${src}"
+		       destdir="${build.java}"
+		       includes="**/*.java"
+		       deprecation="on"
+		       debug="true"
+		       debuglevel="lines,vars,source"
+		       optimize="false">
 
 			<compilerarg value="-Xlint:unchecked" />
 
@@ -82,7 +105,9 @@
      Package the jar file
  ************************************************************************** -->
 
-	<target name="package" depends="compile" description="Package code into jar">
+	<target name="package"
+	        depends="compile"
+	        description="Package code into jar">
 
 		<copy todir="${build.java}">
 			<fileset dir="${src}" includes="**/*.xml" />
@@ -92,6 +117,29 @@
 
 	</target>
 
+
+	<!-- **************************************************************************
+	     findbugs: run static analysis of code to find potential errors
+	 ************************************************************************** -->
+
+	<target name="findbugs" depends="init, package" description="run findbugs">
+
+		<mkdir dir="${build.reports}" />
+
+		<findbugs home="${external.findbugs}"
+		          jvmargs="-Xmx1500M"
+		          output="xml"
+		          effort="max"
+		          reportLevel="medium"
+		          outputFile="${build.reports}/findbugs-scdb-ant-utils.xml"
+		          failOnError="true">
+			<sourcePath path="${src}" />
+			<auxClasspath path="${apache-ant.jar}" />
+			<auxClasspath path="${apache-ant-launcher.jar}" />
+			<auxClasspath path="${svnkit.jar}" />
+			<class location="${quattor.jar}" />
+		</findbugs>
+	</target>
 
 	<!-- **************************************************************************
      all: compile and build the quattor jar file
@@ -105,7 +153,9 @@
      forced all: generate xml profiles from scratch
  ************************************************************************** -->
 
-	<target name="all.force" depends="clean,all" description="Create quattor jar from scratch">
+	<target name="all.force"
+	        depends="clean,all"
+	        description="Create quattor jar from scratch">
 	</target>
 
 </project>

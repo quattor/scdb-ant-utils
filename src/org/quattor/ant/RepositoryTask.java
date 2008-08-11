@@ -63,10 +63,10 @@ public class RepositoryTask extends Task {
 	/* Control printing of debugging messages in this task */
 	private boolean debugTask = false;
 
-
 	/*
 	 * Method used by ant to execute this task.
 	 */
+	@Override
 	public void execute() throws BuildException {
 
 		// Loop over all of the given files. Write those that are repository
@@ -137,9 +137,9 @@ public class RepositoryTask extends Task {
 	 * code does NOT attempt to parse the pan syntax; instead this information
 	 * should be embedded in comments in the template header. The format is "#
 	 * name = <name>" for the repository name; use a similar syntax for the
-	 * owner and URL.
-	 * If 'structure template' line exists in the template, the template name is
-	 * retrieved from this line to be preserved if updating the template.
+	 * owner and URL. If 'structure template' line exists in the template, the
+	 * template name is retrieved from this line to be preserved if updating the
+	 * template.
 	 */
 	public Repository parseTemplate(File f) {
 
@@ -154,17 +154,20 @@ public class RepositoryTask extends Task {
 		URL url = null;
 		TreeSet<String> packages = new TreeSet<String>();
 
+		LineNumberReader reader = null;
 		try {
 
 			// Open the file for reading.
-			LineNumberReader reader = new LineNumberReader(new FileReader(f));
+			reader = new LineNumberReader(new FileReader(template));
 
-			// Loop over all lines searching for key/value pair matches in comment lines.
+			// Loop over all lines searching for key/value pair matches in
+			// comment lines.
 			// If more than one line has the same value, the later one is used.
-			// The whole file is parsed to build the list of current packages used
+			// The whole file is parsed to build the list of current packages
+			// used
 			// later to check if repository template content has changed.
 			String line = reader.readLine();
-			while ( line != null ) {
+			while (line != null) {
 
 				Matcher m = namePattern.matcher(line);
 				if (m.matches()) {
@@ -181,6 +184,7 @@ public class RepositoryTask extends Task {
 					try {
 						url = new URL(m.group(1));
 					} catch (MalformedURLException mul) {
+						// Consumed exception.
 					}
 				}
 
@@ -203,19 +207,33 @@ public class RepositoryTask extends Task {
 			}
 
 		} catch (java.io.IOException ioe) {
-			throw new BuildException("Error reading template "+f.getAbsolutePath()+": ("+ioe.toString()+")");
+			throw new BuildException("Error reading template "
+					+ template.getAbsolutePath() + ": (" + ioe.toString() + ")");
+		} finally {
+			if (reader != null) {
+				try {
+					reader.close();
+				} catch (IOException ioe) {
+					throw new BuildException("Error closing template "
+							+ template.getAbsolutePath() + ": ("
+							+ ioe.toString() + ")");
+				}
+			}
 		}
 
-		if ((template != null) && (name != null) && (owner != null)
-				&& (url != null)) {
-			repository = new Repository(template, name, owner,
-					url, packages, templateName, nameProperty, debugTask);
-		} else if ( debugTask ) {
-			System.out.println("Template "+f.getAbsolutePath()+" not recognized as a template");
-			System.out.println("    template=" + (template != null ? template : "not specified"));
-			System.out.println("    name=" + (name != null ? name : "not specified"));
-			System.out.println("    url=" + (url != null ? url : "not specified"));
-			System.out.println("    owner=" + (owner != null ? owner : "not specified"));
+		if ((name != null) && (owner != null) && (url != null)) {
+			repository = new Repository(template, name, owner, url, packages,
+					templateName, nameProperty, debugTask);
+		} else if (debugTask) {
+			System.out.println("Template " + template.getAbsolutePath()
+					+ " not recognized as a template");
+			System.out.println("    template=" + template);
+			System.out.println("    name="
+					+ (name != null ? name : "not specified"));
+			System.out.println("    url="
+					+ (url != null ? url : "not specified"));
+			System.out.println("    owner="
+					+ (owner != null ? owner : "not specified"));
 		}
 
 		return repository;
@@ -273,14 +291,15 @@ public class RepositoryTask extends Task {
 		private final URL url;
 
 		private final Set<String> existingPkgs;
-		
+
 		private final boolean debugTask;
 
 		/**
 		 * Create a new repository based on the given values.
 		 */
 		public Repository(File template, String name, String owner, URL url,
-				Set<String> packages, String templateName, String nameProperty, boolean debugTask) {
+				Set<String> packages, String templateName, String nameProperty,
+				boolean debugTask) {
 			this.template = template;
 			this.name = name;
 			this.nameProperty = nameProperty;
@@ -302,23 +321,30 @@ public class RepositoryTask extends Task {
 			parseURL(pkgs);
 
 			// Compare the packages with what already exists. If the packages
-			// are the same, then there is nothing to do with the following exceptions :
-			//   - If no 'structure template' line has been found, existing template is
-			//     malformed and need to be rebuilt, even if the package list is the same.
-			//   - If 'name' property is missing or its value differs from 'name' tag in comments,
-			//     the template is considered malformed and rebuilt.
+			// are the same, then there is nothing to do with the following
+			// exceptions :
+			// - If no 'structure template' line has been found, existing
+			// template is
+			// malformed and need to be rebuilt, even if the package list is the
+			// same.
+			// - If 'name' property is missing or its value differs from 'name'
+			// tag in comments,
+			// the template is considered malformed and rebuilt.
 			Set<String> newPkgs = pkgs.keySet();
-			boolean write = !(newPkgs.equals(existingPkgs)) || (templateName==null) || !(name.equals(nameProperty));
+			boolean write = !(newPkgs.equals(existingPkgs))
+					|| (templateName == null) || !(name.equals(nameProperty));
 
 			// Write out the template if necessary.
 			if (write) {
-				
+
 				if (debugTask) {
-					if ( templateName == null )
-						System.out.println(template+": no 'structure template line' found");
-					if ( !name.equals(nameProperty) )
-						System.out.println(template+": 'name' tag ("+name+") doesn't match 'name' property ("+
-								nameProperty+")");
+					if (templateName == null)
+						System.out.println(template
+								+ ": no 'structure template line' found");
+					if (!name.equals(nameProperty))
+						System.out.println(template + ": 'name' tag (" + name
+								+ ") doesn't match 'name' property ("
+								+ nameProperty + ")");
 				}
 
 				String contents = format(pkgs);
@@ -330,9 +356,9 @@ public class RepositoryTask extends Task {
 						writer.write(contents);
 						writer.close();
 					} catch (IOException ioe) {
-						throw new BuildException ("Error writing template "
-								+ template.getAbsolutePath()
-								+ ": ("+ioe.toString()+")");
+						throw new BuildException("Error writing template "
+								+ template.getAbsolutePath() + ": ("
+								+ ioe.toString() + ")");
 					}
 				}
 			}
@@ -344,7 +370,7 @@ public class RepositoryTask extends Task {
 		 */
 		public String format(Map<String, String> pkgs) {
 
-			if ( templateName == null ) {
+			if (templateName == null) {
 				templateName = "repository/" + name;
 			}
 
@@ -357,8 +383,7 @@ public class RepositoryTask extends Task {
 			buffer.append("# owner = " + owner + "\n");
 			buffer.append("# url = " + url + "\n");
 			buffer.append("#\n\n");
-			buffer.append("structure template " + templateName + ";"
-					+ "\n\n");
+			buffer.append("structure template " + templateName + ";" + "\n\n");
 			buffer.append("\"name\" = \"" + name + "\";" + "\n");
 			buffer.append("\"owner\" = \"" + owner + "\";" + "\n");
 			buffer.append("\"protocols\" = list(" + "\n");
@@ -416,12 +441,12 @@ public class RepositoryTask extends Task {
 
 			} catch (java.io.IOException ioe) {
 				throw new BuildException("Error getting RPM list from URL "
-						+ url
-						+ ": ("+ioe.toString()+")");
+						+ url + ": (" + ioe.toString() + ")");
 			}
 
 		}
 
+		@Override
 		public String toString() {
 			return template.getAbsolutePath();
 		}

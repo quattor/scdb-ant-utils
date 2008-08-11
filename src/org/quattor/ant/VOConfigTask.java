@@ -38,7 +38,6 @@ public class VOConfigTask extends Task {
 	public class MyHandler extends DefaultHandler {
 		/*
 		 * Constructor.
-		 * 
 		 */
 		public MyHandler() {
 			super();
@@ -46,31 +45,31 @@ public class VOConfigTask extends Task {
 
 		/*
 		 * Error thrower.
-		 * 
 		 */
+		@Override
 		public void error(SAXParseException e) throws SAXParseException {
 			throw e;
 		}
 
 		/*
 		 * The document is in parsing.
-		 * 
 		 */
+		@Override
 		public void startDocument() throws SAXException {
 
 		}
 
 		/*
 		 * The parsing of the document is finished.
-		 * 
 		 */
+		@Override
 		public void endDocument() throws SAXException {
 		}
 
 		/*
 		 * Opening of an element.
-		 * 
 		 */
+		@Override
 		public void startElement(String namespaceURI, String simpleName,
 				String qualifiedName, Attributes attrs) throws SAXException {
 			if (qualifiedName.equals("VO")) {
@@ -85,8 +84,8 @@ public class VOConfigTask extends Task {
 
 		/*
 		 * The element is closed.
-		 * 
 		 */
+		@Override
 		public void endElement(String namespaceURI, String simpleName,
 				String qualifiedName) throws SAXException {
 			if (qualifiedName.equals("VO")) {
@@ -225,6 +224,7 @@ public class VOConfigTask extends Task {
 			}
 		}
 
+		@Override
 		public void characters(char buf[], int offset, int len)
 				throws SAXException {
 			String s = new String(buf, offset, len);
@@ -465,6 +465,7 @@ public class VOConfigTask extends Task {
 	/*
 	 * Method used by ant to execute this task.
 	 */
+	@Override
 	public void execute() throws BuildException {
 		DirectoryScanner ds = configDirs.getDirectoryScanner(getProject());
 		// Loop over each file creating a File object.
@@ -505,7 +506,7 @@ public class VOConfigTask extends Task {
 				System.out.println("Document parsing and templates creation");
 				saxParser.parse(urlstream, handler);
 			}
-			System.out.println("Templates created for "+configRootDir+"\n");
+			System.out.println("Templates created for " + configRootDir + "\n");
 		} catch (Exception e) {
 			System.err
 					.println("\n--\nBAD XML FORMAT - Contact CIC operations portal for more informations\n--\n");

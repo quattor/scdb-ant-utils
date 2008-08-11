@@ -17,6 +17,7 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 	/*
 	 * Method used by ant to execute this task.
 	 */
+	@Override
 	public void execute() throws BuildException {
 
 		// Sanity checks on the output directory.
