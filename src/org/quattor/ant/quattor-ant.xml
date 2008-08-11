@@ -4,12 +4,6 @@
   <taskdef name="quattor-notify"
            classname="org.quattor.ant.NotifyClientTask"/>
 
-  <taskdef name="pan-syntax"
-           classname="org.quattor.ant.PanSyntaxTask"/>
-
-  <taskdef name="pan-compile"
-           classname="org.quattor.ant.PanCompileTask"/>
-
   <taskdef name="pan-profile-info"
            classname="org.quattor.ant.ProfileInfoTask"/>
 
