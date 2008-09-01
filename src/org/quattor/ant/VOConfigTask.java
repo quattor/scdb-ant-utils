@@ -66,7 +66,7 @@ public class VOConfigTask extends Task {
 	private BufferedWriter bw = null;
 
 	/* Default values of the proxy, nshosts and lbhosts */
-	private static String proxy = "";
+	private String proxy = "";
 
 	final public static CertificateFactory cf;
 	static {
@@ -189,6 +189,7 @@ public class VOConfigTask extends Task {
 	/*
 	 * Method used by ant to execute this task.
 	 */
+	@Override
 	public void execute() throws BuildException {
 		DirectoryScanner ds = configDirs.getDirectoryScanner(getProject());
 		// Loop over each file creating a File object.
@@ -227,8 +228,7 @@ public class VOConfigTask extends Task {
 				saxParser.parse(urlstream, handler);
 			}
 
-			LinkedList<LinkedList<String>> infos = new LinkedList<LinkedList<String>>();
-			infos = ((MyHandler) handler).getInfos();
+			LinkedList<LinkedList<String>> infos = ((MyHandler) handler).getInfos();
 			for (LinkedList<String> list : infos) {
 				VOname = list.getFirst();
 				bw = initFile(list.get(1));
@@ -444,9 +444,9 @@ public class VOConfigTask extends Task {
 
 		private String roleAtl = null;
 
-		private final String nshosts = "node04.datagrid.cea.fr:7772";
+		private final static String nshosts = "node04.datagrid.cea.fr:7772";
 
-		private final String lbhosts = "node04.datagrid.cea.fr:9000";
+		private final static String lbhosts = "node04.datagrid.cea.fr:9000";
 
 		/* Default values of pool size and base uid */
 		private String pool_size = "200";
@@ -468,7 +468,7 @@ public class VOConfigTask extends Task {
 
 		private String nameDNListDirTpl;
 
-		private static String VO = null;
+		private String VO = null;
 
 		private String fileTplName = null;
 
@@ -502,6 +502,7 @@ public class VOConfigTask extends Task {
 		 * Error thrower.
 		 * 
 		 */
+		@Override
 		public void error(SAXParseException e) throws SAXParseException {
 			BuildException be = new BuildException(e.getLocalizedMessage());
 			throw be;
@@ -511,6 +512,7 @@ public class VOConfigTask extends Task {
 		 * The document is in parsing.
 		 * 
 		 */
+		@Override
 		public void startDocument() throws SAXException {
 			String dnlistfilename = root.concat("/" + nameDNListDirTpl
 					+ "/vos_dn_list.tpl");
@@ -526,6 +528,7 @@ public class VOConfigTask extends Task {
 		 * The parsing of the document is finished.
 		 * 
 		 */
+		@Override
 		public void endDocument() throws SAXException {
 			dnList.add("       );");
 			allInfos.add(dnList);
@@ -535,6 +538,7 @@ public class VOConfigTask extends Task {
 		 * Opening of an element.
 		 * 
 		 */
+		@Override
 		public void startElement(String namespaceURI, String simpleName,
 				String qualifiedName, Attributes attrs) throws SAXException {
 			if (qualifiedName.equals("VO")) {
@@ -553,6 +557,7 @@ public class VOConfigTask extends Task {
 		 * The element is closed.
 		 * 
 		 */
+		@Override
 		public void endElement(String namespaceURI, String simpleName,
 				String qualifiedName) throws SAXException {
 			if (qualifiedName.equals("VO")) {
@@ -702,6 +707,7 @@ public class VOConfigTask extends Task {
 			}
 		}
 
+		@Override
 		public void characters(char buf[], int offset, int len)
 				throws SAXException {
 			String s = new String(buf, offset, len);
@@ -888,7 +894,7 @@ public class VOConfigTask extends Task {
 		 * 
 		 * @throws IOException
 		 */
-		private static X509Certificate extractCertificates(String certif)
+		private X509Certificate extractCertificates(String certif)
 				throws IOException {
 
 			X509Certificate cert = null;
