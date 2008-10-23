@@ -235,11 +235,10 @@ public class VOConfigTask extends Task {
 				for (int i = 2; i < list.size(); i++) {
 					/*
 					 * Each LinkedList has the same construction : first element
-					 * is the VO name or 1 second the complete path of the file
-					 * all the datas for a tpl file
+					 * is the VO name or 1 second is the complete path of the file
+					 * all others contain the datas for a tpl file
 					 */
 					write(list.get(i), bw);
-					// System.out.println("s : "+s);
 				}
 				closeFile(list.get(1), bw);
 			}
@@ -417,6 +416,8 @@ public class VOConfigTask extends Task {
 
 		private final Pattern pswman = Pattern.compile("Role=SoftwareManager",
 				Pattern.CASE_INSENSITIVE);
+		private final Pattern pswman2 = Pattern.compile("Role=Software-Manager",
+				Pattern.CASE_INSENSITIVE);
 
 		private final Pattern pswadmin = Pattern.compile("Role=swadmin",
 				Pattern.CASE_INSENSITIVE);
@@ -453,8 +454,8 @@ public class VOConfigTask extends Task {
 
 		private int base_uid = 0;
 
-		/* the BufferedWriter associated to the certificat template */
 		private boolean certExists = false;
+		private boolean isOldCert = false;
 
 		private String siteParamsFileName;
 
@@ -479,6 +480,7 @@ public class VOConfigTask extends Task {
 		private String hostname = null;
 
 		private String certificat = null;
+		private String oldCertificat = null;
 
 		LinkedList<LinkedList<String>> allInfos = new LinkedList<LinkedList<String>>();
 
@@ -661,6 +663,7 @@ public class VOConfigTask extends Task {
 				Matcher m3 = patlas.matcher(buffer.toString());
 				Matcher m4 = pswadmin.matcher(buffer.toString());
 				Matcher m5 = pswman.matcher(buffer.toString());
+				Matcher m6 = pswman2.matcher(buffer.toString());
 				if ((m.find()) || (mbis.find()) || (mter.find())
 						|| (mqua.find())) {
 					roleAdmin = buffer.toString();
@@ -670,7 +673,7 @@ public class VOConfigTask extends Task {
 					roleAtl = buffer.toString();
 				} else if (m4.find()) {
 					roleSwAdmin = buffer.toString();
-				} else if (m5.find()) {
+				} else if ((m5.find()) || (m6.find())) {
 					roleSwMan = buffer.toString();
 				}
 				buffer = null;
@@ -733,6 +736,13 @@ public class VOConfigTask extends Task {
 				certtpl.add("'cert' = {<<EOF};");
 				certtpl.add(certificat);
 				certtpl.add("EOF");
+				if (isOldCert){
+					certtpl.add("");
+					certtpl.add("'oldcert' = {<<EOF};");
+					certtpl.add(oldCertificat);
+					certtpl.add("EOF");
+					isOldCert = false;
+				}
 				allInfos.add(certtpl);
 			} else {
 				certExists = false;
@@ -759,6 +769,8 @@ public class VOConfigTask extends Task {
 			String paramDirName = null;
 			paramDirName = root.concat("/" + nameParamDirTpl);
 			filename = name.trim();
+			
+			// name for a certificat file
 			if (iscert) {
 				String certDirName = root.concat("/" + nameCertDirTpl);
 				filename = certDirName.concat("/" + filename.concat(".tpl"));
@@ -767,11 +779,14 @@ public class VOConfigTask extends Task {
 					catchError("Directory " + certDirName
 							+ " does not exist for VOMS certificates");
 				} else {
+					// does the file exist?
 					for (File file : dir.listFiles()) {
-						if ((file.getName()).equals(filename.substring(filename
-								.length()))
+						if ((file.getName()).equals(filename.substring(certDirName
+								.length()+1))
 								&& !file.isDirectory()) {
 							String readenCert = "";
+							String readenOldCert = "";
+							String cert = "";
 							BufferedReader br = null;
 							String line;
 							try {
@@ -781,23 +796,41 @@ public class VOConfigTask extends Task {
 										+ " unreadable");
 							}
 							try {
-								int i = 0;
+								boolean inoldcert = false;
 								while ((line = br.readLine()) != null) {
-									if ((!line.startsWith("structure"))
-											&& (!line.startsWith("\'cert\'"))
-											&& (!line.endsWith("EOF"))) {
-										readenCert = readenCert.concat(line);
+									if (!inoldcert){
+										if ((!line.startsWith("structure"))
+												&& (!line.startsWith("\'cert\'"))
+												&& (!line.endsWith("EOF"))) {
+											
+											if (!line.startsWith("\'oldcert\'")) {
+												readenCert = readenCert.concat(line.trim());
+												cert = cert.concat(line).concat("\n");
+											} else {
+												inoldcert = true;
+											}
+										}
+									} else {
+										if ((!line.endsWith("EOF"))) {
+											readenOldCert = readenOldCert.concat(line.trim());
+										}									
 									}
-									i++;
 								}
+								
 								String usedCertificat = certificat.replaceAll(
 										"\n", "");
+								
+								//the file already exists with the same key
 								if (readenCert.equals(usedCertificat)) {
 									certExists = true;
+								} else if (readenOldCert.equals(usedCertificat)) {
+									//the file already exists with the old key
+									System.err.println("Certificat warning : Key is not up to date for VO" + VO);
+									certExists = true;
 								} else {
-									System.err
-											.println("Certificat maybe corrupted for VOMS server "
-													+ hostname + "in VO" + VO);
+									//there's a new key and we have to create the oldcert entry
+									isOldCert = true;
+									oldCertificat = cert;
 								}
 							} catch (IOException e) {
 								e.printStackTrace();
