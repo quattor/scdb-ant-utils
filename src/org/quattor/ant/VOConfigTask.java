@@ -227,7 +227,12 @@ public class VOConfigTask extends Task {
 				System.out.println("Document parsing and templates creation");
 				saxParser.parse(urlstream, handler);
 			}
-
+			String fileN = configRootDir.concat("/"+nameParamDirTpl.concat("/allvos.tpl"));
+			BufferedWriter bwavo = initFile(fileN);
+			write("unique template "+ nameParamDirTpl.concat("/allvos;"),bwavo);
+			write("",bwavo);
+			write("variable ALLVOS ?= list(",bwavo);
+			
 			LinkedList<LinkedList<String>> infos = ((MyHandler) handler).getInfos();
 			for (LinkedList<String> list : infos) {
 				VOname = list.getFirst();
@@ -241,7 +246,10 @@ public class VOConfigTask extends Task {
 					write(list.get(i), bw);
 				}
 				closeFile(list.get(1), bw);
+				write("    \'"+VOname+"\'" +",",bwavo);
 			}
+			write(");",bwavo);
+			closeFile(fileN, bwavo);
 			System.out.println("Templates created for " + configRootDir + "\n");
 		} catch (Exception e) {
 			System.err
