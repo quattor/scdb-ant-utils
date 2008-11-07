@@ -57,7 +57,7 @@ public class VOConfigTask extends Task {
 	private String nameSiteParamsDir = null;
 
 	/* the name of the file containing proxy */
-	private String proxyFile = null;
+	private String proxyHostsFile = null;
 
 	/* the name of the VO */
 	private String VOname = null;
@@ -67,6 +67,9 @@ public class VOConfigTask extends Task {
 
 	/* Default values of the proxy, nshosts and lbhosts */
 	private String proxy = "";
+	private String nshosts = "";
+	private String lbhosts = "";
+
 
 	final public static CertificateFactory cf;
 	static {
@@ -178,12 +181,12 @@ public class VOConfigTask extends Task {
 	/**
 	 * Set the file containing the proxy name.
 	 * 
-	 * @param proxyFile
+	 * @param proxyHostsFile
 	 *            String containing full path to file
 	 * 
 	 */
-	public void setProxyFile(String proxyFile) {
-		this.proxyFile = proxyFile;
+	public void setProxyHostsFile(String proxyHostsFile) {
+		this.proxyHostsFile = proxyHostsFile;
 	}
 
 	/*
@@ -203,12 +206,14 @@ public class VOConfigTask extends Task {
 		configRootDir = dir;
 		// Checking we have enough parameters
 		String urlName = urlFile;
-		String proxyName = configRootDir.concat("/" + proxyFile);
-		proxy = readFile(proxyName);
+		String proxyName = configRootDir.concat("/" + proxyHostsFile);
+		proxy = readFile(proxyName, "proxy");
+		nshosts = readFile(proxyName, "nshosts");
+		lbhosts = readFile(proxyName, "lbhosts");
 		// On cree une instance de SAXBuilder
 		String siteParamsFileName = getNameSiteParamsDir();
 		DefaultHandler handler = new MyHandler(siteParamsFileName,
-				configRootDir, nameParamDirTpl, proxy, nameCertDirTpl,
+				configRootDir, nameParamDirTpl, proxy, nshosts, lbhosts, nameCertDirTpl,
 				nameDNListDirTpl);
 		SAXParserFactory factory = SAXParserFactory.newInstance();
 		try {
@@ -246,7 +251,9 @@ public class VOConfigTask extends Task {
 					write(list.get(i), bw);
 				}
 				closeFile(list.get(1), bw);
-				write("    \'"+VOname+"\'" +",",bwavo);
+				if (!VOname.equals("0")) {
+					write("    \'"+VOname+"\'" +",",bwavo);
+				}
 			}
 			write(");",bwavo);
 			closeFile(fileN, bwavo);
@@ -277,16 +284,22 @@ public class VOConfigTask extends Task {
 	 */
 
 	/**
-	 * Reads a text file and returns the first line.
+	 * Reads a text file and returns the specified value.
 	 * 
 	 * @param filepath
 	 *            String containing the full path to the file
+	 *            
+	 * @param element
+	 * 			  String containing the element for which we want the value
 	 * 
 	 */
 
-	public static String readFile(String filepath) {
-		LinkedList<String> objects = new LinkedList<String>();
-		BufferedReader bfrd = null;
+	public static String readFile(String filepath, String element) {		
+		Pattern p = Pattern.compile("=");
+		String value = "";
+		String[] keyvalue;
+		
+	    BufferedReader bfrd = null;
 		String ligne;
 		File file = new File(filepath);
 		veriFile(file);
@@ -294,8 +307,11 @@ public class VOConfigTask extends Task {
 			bfrd = new BufferedReader(new FileReader(file));
 
 			while ((ligne = bfrd.readLine()) != null) {
-				if (!(ligne.equals(""))) {
-					objects.add(ligne);
+				if (!(ligne.equals(""))) {					
+					keyvalue = p.split(ligne);
+					if ((keyvalue[0].trim()).equals(element)) {
+						value = keyvalue[1].trim();
+					}
 				}
 			}
 		} catch (FileNotFoundException exc) {
@@ -314,7 +330,7 @@ public class VOConfigTask extends Task {
 				throw new BuildException(e.getMessage());
 			}
 		}
-		return objects.getFirst();
+		return value;
 	}
 
 	/**
@@ -453,10 +469,6 @@ public class VOConfigTask extends Task {
 
 		private String roleAtl = null;
 
-		private final static String nshosts = "node04.datagrid.cea.fr:7772";
-
-		private final static String lbhosts = "node04.datagrid.cea.fr:9000";
-
 		/* Default values of pool size and base uid */
 		private String pool_size = "200";
 
@@ -472,6 +484,9 @@ public class VOConfigTask extends Task {
 		private String nameParamDirTpl;
 
 		private String proxy;
+		private String nshosts;
+		private String lbhosts;
+
 
 		private String nameCertDirTpl;
 
@@ -498,12 +513,14 @@ public class VOConfigTask extends Task {
 		 * Constructor.
 		 * 
 		 */
-		public MyHandler(String spfn, String cfrd, String npdt, String prox,
+		public MyHandler(String spfn, String cfrd, String npdt, String prox, String nsh, String lbh,
 				String ncdt, String ndnldt) {
 			siteParamsFileName = spfn;
 			root = cfrd;
 			nameParamDirTpl = npdt;
 			proxy = prox;
+			nshosts = nsh;
+			lbhosts = lbh;
 			nameCertDirTpl = ncdt;
 			nameDNListDirTpl = ndnldt;
 		}
@@ -833,7 +850,7 @@ public class VOConfigTask extends Task {
 									certExists = true;
 								} else if (readenOldCert.equals(usedCertificat)) {
 									//the file already exists with the old key
-									System.err.println("Certificat warning : Key is not up to date for VO" + VO);
+									System.err.println("Certificat warning : Key is not up to date for VO " + VO);
 									certExists = true;
 								} else {
 									//there's a new key and we have to create the oldcert entry
