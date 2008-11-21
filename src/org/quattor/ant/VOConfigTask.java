@@ -67,9 +67,10 @@ public class VOConfigTask extends Task {
 
 	/* Default values of the proxy, nshosts and lbhosts */
 	private String proxy = "";
-	private String nshosts = "";
-	private String lbhosts = "";
 
+	private String nshosts = "";
+
+	private String lbhosts = "";
 
 	final public static CertificateFactory cf;
 	static {
@@ -213,8 +214,8 @@ public class VOConfigTask extends Task {
 		// On cree une instance de SAXBuilder
 		String siteParamsFileName = getNameSiteParamsDir();
 		DefaultHandler handler = new MyHandler(siteParamsFileName,
-				configRootDir, nameParamDirTpl, proxy, nshosts, lbhosts, nameCertDirTpl,
-				nameDNListDirTpl);
+				configRootDir, nameParamDirTpl, proxy, nshosts, lbhosts,
+				nameCertDirTpl, nameDNListDirTpl);
 		SAXParserFactory factory = SAXParserFactory.newInstance();
 		try {
 			URL url = new URL(urlName);
@@ -232,30 +233,35 @@ public class VOConfigTask extends Task {
 				System.out.println("Document parsing and templates creation");
 				saxParser.parse(urlstream, handler);
 			}
-			String fileN = configRootDir.concat("/"+nameParamDirTpl.concat("/allvos.tpl"));
+			String fileN = configRootDir.concat("/"
+					+ nameParamDirTpl.concat("/allvos.tpl"));
 			BufferedWriter bwavo = initFile(fileN);
-			write("unique template "+ nameParamDirTpl.concat("/allvos;"),bwavo);
-			write("",bwavo);
-			write("variable ALLVOS ?= list(",bwavo);
-			
-			LinkedList<LinkedList<String>> infos = ((MyHandler) handler).getInfos();
+			write("unique template " + nameParamDirTpl.concat("/allvos;"),
+					bwavo);
+			write("", bwavo);
+			write("variable ALLVOS ?= list(", bwavo);
+
+			LinkedList<LinkedList<String>> infos = ((MyHandler) handler)
+					.getInfos();
 			for (LinkedList<String> list : infos) {
-				VOname = list.getFirst();
-				bw = initFile(list.get(1));
-				for (int i = 2; i < list.size(); i++) {
+				VOname = list.get(1);
+				bw = initFile(list.get(2));
+				for (int i = 3; i < list.size(); i++) {
 					/*
 					 * Each LinkedList has the same construction : first element
-					 * is the VO name or 1 second is the complete path of the file
-					 * all others contain the datas for a tpl file
+					 * is the type of template (t = vo template, c = certificat
+					 * template, d = dn teplate), the second is the VO name or 1
+					 * and the third is the complete path of the file. All the
+					 * others contain the datas for a tpl file
 					 */
 					write(list.get(i), bw);
 				}
-				closeFile(list.get(1), bw);
-				if (!VOname.equals("0")) {
-					write("    \'"+VOname+"\'" +",",bwavo);
+				closeFile(list.get(2), bw);
+				if (list.getFirst().equals("t")) {
+					write("    \'" + VOname + "\'" + ",", bwavo);
 				}
 			}
-			write(");",bwavo);
+			write(");", bwavo);
 			closeFile(fileN, bwavo);
 			System.out.println("Templates created for " + configRootDir + "\n");
 		} catch (Exception e) {
@@ -288,18 +294,18 @@ public class VOConfigTask extends Task {
 	 * 
 	 * @param filepath
 	 *            String containing the full path to the file
-	 *            
+	 * 
 	 * @param element
-	 * 			  String containing the element for which we want the value
+	 *            String containing the element for which we want the value
 	 * 
 	 */
 
-	public static String readFile(String filepath, String element) {		
+	public static String readFile(String filepath, String element) {
 		Pattern p = Pattern.compile("=");
 		String value = "";
 		String[] keyvalue;
-		
-	    BufferedReader bfrd = null;
+
+		BufferedReader bfrd = null;
 		String ligne;
 		File file = new File(filepath);
 		veriFile(file);
@@ -307,7 +313,7 @@ public class VOConfigTask extends Task {
 			bfrd = new BufferedReader(new FileReader(file));
 
 			while ((ligne = bfrd.readLine()) != null) {
-				if (!(ligne.equals(""))) {					
+				if (!(ligne.equals(""))) {
 					keyvalue = p.split(ligne);
 					if ((keyvalue[0].trim()).equals(element)) {
 						value = keyvalue[1].trim();
@@ -440,8 +446,9 @@ public class VOConfigTask extends Task {
 
 		private final Pattern pswman = Pattern.compile("Role=SoftwareManager",
 				Pattern.CASE_INSENSITIVE);
-		private final Pattern pswman2 = Pattern.compile("Role=Software-Manager",
-				Pattern.CASE_INSENSITIVE);
+
+		private final Pattern pswman2 = Pattern.compile(
+				"Role=Software-Manager", Pattern.CASE_INSENSITIVE);
 
 		private final Pattern pswadmin = Pattern.compile("Role=swadmin",
 				Pattern.CASE_INSENSITIVE);
@@ -451,6 +458,8 @@ public class VOConfigTask extends Task {
 
 		private final Pattern patlas = Pattern.compile("Role=atlas",
 				Pattern.CASE_INSENSITIVE);
+
+		private final Pattern prolegen = Pattern.compile("Role=(.*)");
 
 		/* the id of the VO */
 		private String VOid = null;
@@ -469,12 +478,17 @@ public class VOConfigTask extends Task {
 
 		private String roleAtl = null;
 
+		private LinkedList<String> roleGen;
+		
+		private LinkedList<String> fqans;
+
 		/* Default values of pool size and base uid */
 		private String pool_size = "200";
 
 		private int base_uid = 0;
 
 		private boolean certExists = false;
+
 		private boolean isOldCert = false;
 
 		private String siteParamsFileName;
@@ -484,9 +498,10 @@ public class VOConfigTask extends Task {
 		private String nameParamDirTpl;
 
 		private String proxy;
-		private String nshosts;
-		private String lbhosts;
 
+		private String nshosts;
+
+		private String lbhosts;
 
 		private String nameCertDirTpl;
 
@@ -503,7 +518,10 @@ public class VOConfigTask extends Task {
 		private String hostname = null;
 
 		private String certificat = null;
+
 		private String oldCertificat = null;
+
+		private int createCount;
 
 		LinkedList<LinkedList<String>> allInfos = new LinkedList<LinkedList<String>>();
 
@@ -513,8 +531,8 @@ public class VOConfigTask extends Task {
 		 * Constructor.
 		 * 
 		 */
-		public MyHandler(String spfn, String cfrd, String npdt, String prox, String nsh, String lbh,
-				String ncdt, String ndnldt) {
+		public MyHandler(String spfn, String cfrd, String npdt, String prox,
+				String nsh, String lbh, String ncdt, String ndnldt) {
 			siteParamsFileName = spfn;
 			root = cfrd;
 			nameParamDirTpl = npdt;
@@ -543,12 +561,13 @@ public class VOConfigTask extends Task {
 		public void startDocument() throws SAXException {
 			String dnlistfilename = root.concat("/" + nameDNListDirTpl
 					+ "/vos_dn_list.tpl");
+			dnList.add("d");
 			dnList.add("0");
 			dnList.add(dnlistfilename);
 			dnList.add("unique template " + nameDNListDirTpl + "/vos_dn_list;");
 			dnList.add("");
 			dnList.add("variable VOS_DN_LIST = nlist(");
-
+			roleGen = new LinkedList<String>();
 		}
 
 		/*
@@ -575,6 +594,7 @@ public class VOConfigTask extends Task {
 				fileTplName = getFileName(VO, false, false);
 				hostList = new LinkedList<String>();
 				portList = new LinkedList<String>();
+				fqans = new LinkedList<String>();
 			} else {
 				buffer = new StringBuffer();
 			}
@@ -589,9 +609,13 @@ public class VOConfigTask extends Task {
 				String qualifiedName) throws SAXException {
 			if (qualifiedName.equals("VO")) {
 				LinkedList<String> tpl = new LinkedList<String>();
+				Pattern p =  Pattern.compile(",");
+				tpl.add("t");
 				tpl.add(VO);
 				tpl.add(fileTplName);
 				String siteParamsFileName = this.siteParamsFileName;
+				String siteAliasesFileName = root.concat("/"
+						+ siteParamsFileName.concat("/aliases.tpl"));
 				String siteParamName = VO;
 				siteParamsFileName = siteParamsFileName.concat("/").concat(
 						siteParamName);
@@ -602,7 +626,9 @@ public class VOConfigTask extends Task {
 				tpl.add("");
 				// String nList = initNList(VO);
 				int Id = Integer.parseInt(VOid);
-				String accountPrefix = createAccount(VO, Id);
+				createCount = 0;
+				String accountPrefix = createAccount(VO, Id,
+						siteAliasesFileName, true);
 				// write(nList, bw);
 				tpl.add("\"name\" ?= '" + VO + "';");
 				tpl.add("\"account_prefix\" ?= '" + accountPrefix + "';");
@@ -634,17 +660,20 @@ public class VOConfigTask extends Task {
 							|| (roleSwMan != null)) {
 						tpl.add("\"voms_roles\" ?= list(");
 						if (roleAdmin != null) {
-							tpl.add("     nlist(\"description\", \"SW manager\",");
+							tpl
+									.add("     nlist(\"description\", \"SW manager\",");
 							tpl.add("       \"fqan\", \"lcgadmin\",");
 							tpl.add("       \"suffix\", \"s\"),");
 						}
 						if (roleSwAdmin != null) {
-							tpl.add("     nlist(\"description\", \"SW manager\",");
+							tpl
+									.add("     nlist(\"description\", \"SW manager\",");
 							tpl.add("       \"fqan\", \"swadmin\",");
 							tpl.add("       \"suffix\", \"s\"),");
 						}
 						if (roleProd != null) {
-							tpl.add("     nlist(\"description\", \"production\",");
+							tpl
+									.add("     nlist(\"description\", \"production\",");
 							tpl.add("       \"fqan\", \"production\",");
 							tpl.add("       \"suffix\", \"p\"),");
 						}
@@ -654,9 +683,32 @@ public class VOConfigTask extends Task {
 							tpl.add("       \"suffix\", \"atl\"),");
 						}
 						if (roleSwMan != null) {
-							tpl.add("     nlist(\"description\", \"SW manager\",");
+							tpl
+									.add("     nlist(\"description\", \"SW manager\",");
 							tpl.add("       \"fqan\", \"SoftwareManager\",");
 							tpl.add("       \"suffix\", \"s\"),");
+						}
+						if (roleGen != null) {
+							for (String role : roleGen) {
+								String[] r = p.split(role.trim());
+								if (r[2].equals(VO)) {
+									tpl.add("     nlist(\"description\", \""+r[0]+"\",");
+									tpl.add("       \"fqan\", \""+r[0]+"\",");
+									tpl.add("       \"suffix\", \""+r[1]+"\"),");
+								}
+							}
+						}
+						if (fqans != null) {
+							int countfq = 1;
+							for (String fqan : fqans) {
+								String[] f = p.split(fqan.trim());
+								if (f[1].equals(VO)) {
+									tpl.add("     nlist(\"description\", \"fqan"+Integer.toString(countfq)+"\",");
+									tpl.add("       \"fqan\", \""+f[0]+"\",");
+									tpl.add("       \"suffix\", \"fqan"+Integer.toString(countfq)+"\"),");
+									countfq++;
+								}
+							}							
 						}
 						tpl.add("     );");
 						roleProd = null;
@@ -689,6 +741,7 @@ public class VOConfigTask extends Task {
 				Matcher m4 = pswadmin.matcher(buffer.toString());
 				Matcher m5 = pswman.matcher(buffer.toString());
 				Matcher m6 = pswman2.matcher(buffer.toString());
+				Matcher mrg = prolegen.matcher(buffer.toString());
 				if ((m.find()) || (mbis.find()) || (mter.find())
 						|| (mqua.find())) {
 					roleAdmin = buffer.toString();
@@ -700,6 +753,20 @@ public class VOConfigTask extends Task {
 					roleSwAdmin = buffer.toString();
 				} else if ((m5.find()) || (m6.find())) {
 					roleSwMan = buffer.toString();
+				} else if (mrg.find()) {
+					if (!(mrg.group(1).equals("NULL"))) {
+						String ident = generIdent(mrg.group(1), buffer.toString().length(), Integer.parseInt(VOid), roleGen);
+						roleGen.add(ident);
+					} else {
+						String fqan = null;
+						fqan = buffer.toString().replace("/Role=NULL","");
+						System.out.println("fqan: "+fqan);
+						fqans.add(fqan+","+VO);
+					}
+				} else {
+					if (buffer.toString() != null){
+						fqans.add((buffer.toString())+","+VO);
+					}
 				}
 				buffer = null;
 			} else if (qualifiedName.equals("HOSTNAME")) {
@@ -753,6 +820,7 @@ public class VOConfigTask extends Task {
 
 			if (!certExists) {
 				LinkedList<String> certtpl = new LinkedList<String>();
+				certtpl.add("c");
 				certtpl.add(VO);
 				certtpl.add(fileName);
 				certtpl.add("structure template " + nameCertDirTpl + "/"
@@ -761,7 +829,7 @@ public class VOConfigTask extends Task {
 				certtpl.add("'cert' = {<<EOF};");
 				certtpl.add(certificat);
 				certtpl.add("EOF");
-				if (isOldCert){
+				if (isOldCert) {
 					certtpl.add("");
 					certtpl.add("'oldcert' = {<<EOF};");
 					certtpl.add(oldCertificat);
@@ -794,7 +862,7 @@ public class VOConfigTask extends Task {
 			String paramDirName = null;
 			paramDirName = root.concat("/" + nameParamDirTpl);
 			filename = name.trim();
-			
+
 			// name for a certificat file
 			if (iscert) {
 				String certDirName = root.concat("/" + nameCertDirTpl);
@@ -806,8 +874,8 @@ public class VOConfigTask extends Task {
 				} else {
 					// does the file exist?
 					for (File file : dir.listFiles()) {
-						if ((file.getName()).equals(filename.substring(certDirName
-								.length()+1))
+						if ((file.getName()).equals(filename
+								.substring(certDirName.length() + 1))
 								&& !file.isDirectory()) {
 							String readenCert = "";
 							String readenOldCert = "";
@@ -823,37 +891,44 @@ public class VOConfigTask extends Task {
 							try {
 								boolean inoldcert = false;
 								while ((line = br.readLine()) != null) {
-									if (!inoldcert){
+									if (!inoldcert) {
 										if ((!line.startsWith("structure"))
-												&& (!line.startsWith("\'cert\'"))
+												&& (!line
+														.startsWith("\'cert\'"))
 												&& (!line.endsWith("EOF"))) {
-											
+
 											if (!line.startsWith("\'oldcert\'")) {
-												readenCert = readenCert.concat(line.trim());
-												cert = cert.concat(line).concat("\n");
+												readenCert = readenCert
+														.concat(line.trim());
+												cert = cert.concat(line)
+														.concat("\n");
 											} else {
 												inoldcert = true;
 											}
 										}
 									} else {
 										if ((!line.endsWith("EOF"))) {
-											readenOldCert = readenOldCert.concat(line.trim());
-										}									
+											readenOldCert = readenOldCert
+													.concat(line.trim());
+										}
 									}
 								}
-								
+
 								String usedCertificat = certificat.replaceAll(
 										"\n", "");
-								
-								//the file already exists with the same key
+
+								// the file already exists with the same key
 								if (readenCert.equals(usedCertificat)) {
 									certExists = true;
 								} else if (readenOldCert.equals(usedCertificat)) {
-									//the file already exists with the old key
-									System.err.println("Certificat warning : Key is not up to date for VO " + VO);
+									// the file already exists with the old key
+									System.err
+											.println("Certificat warning : Key is not up to date for VO "
+													+ VO);
 									certExists = true;
 								} else {
-									//there's a new key and we have to create the oldcert entry
+									// there's a new key and we have to create
+									// the oldcert entry
 									isOldCert = true;
 									oldCertificat = cert;
 								}
@@ -885,14 +960,84 @@ public class VOConfigTask extends Task {
 		 *            int containing the Id of the VO
 		 * 
 		 */
-		public String createAccount(String account, int Id) {
+		public String createAccount(String account, int Id,
+				String siteAliasesFileName, boolean isfirst) {
 			if (account.startsWith("vo.")) {
 				account = account.substring(3, account.length());
 			}
 			account = account.replaceAll("[^A-Za-z0-9]", "");
 			account = account.substring(0, 3);
+			if (!isfirst) {
+				createCount = createCount + 1;
+				account = account.concat(toBase26(createCount));
+			}
 			account = account.concat(toBase26(Id));
+			if (!verifAccount(account, siteAliasesFileName)) {
+				System.out
+						.println("############################################");
+				System.out.println("account_prefix " + account
+						+ " is already used");
+				System.out.println("creation of a new account_prefix for VO "
+						+ VO);
+				System.out
+						.println("############################################");
+				account = createAccount(account, Id, siteAliasesFileName, false);
+			}
 			return account;
+		}
+
+		/**
+		 * Verify that the created account does not already exists.
+		 * 
+		 * @param account
+		 *            String containing the account
+		 * @param siteAliasesFileName
+		 *            String containing the path to the aliases file
+		 * 
+		 */
+		public boolean verifAccount(String account, String siteAliasesFileName) {
+			boolean accountok = true;
+			BufferedReader bfrd = null;
+			String ligne;
+			Pattern p = Pattern.compile(",");
+			String[] keyvalue;
+			LinkedList<String> aliases = new LinkedList<String>();
+			File file = new File(siteAliasesFileName);
+			if (!file.exists() || !file.isFile()) {
+				throw new BuildException("can't open " + file.getName()
+						+ ": No such file or directory");
+			}
+			try {
+				bfrd = new BufferedReader(new FileReader(file));
+				while ((ligne = bfrd.readLine()) != null) {
+					if ((ligne.trim()).startsWith("'")) {
+						keyvalue = p.split(ligne.trim());
+						String alias = (keyvalue[0].trim());
+						aliases.add(alias.substring(1, alias.length() - 1));
+					}
+				}
+			} catch (FileNotFoundException exc) {
+				System.out.println("File " + file.getName() + " Opening Error");
+				throw new BuildException(exc.getMessage());
+			} catch (IOException e) {
+				System.out.println("Reading " + file.getName() + " Error");
+				throw new BuildException(e.getMessage());
+			} finally {
+				try {
+					if (bfrd != null) {
+						bfrd.close();
+					}
+				} catch (IOException e) {
+					System.out.println("Closing " + file.getName() + " Error");
+					throw new BuildException(e.getMessage());
+				}
+			}
+			for (String al : aliases) {
+				if (account.equals(al)) {
+					accountok = false;
+				}
+			}
+			return accountok;
 		}
 
 		/**
@@ -987,6 +1132,28 @@ public class VOConfigTask extends Task {
 				}
 			}
 			return cert;
+		}
+
+		/**
+		 * Generates a base 26 number from an integer.
+		 * 
+		 * @param i
+		 * 
+		 */
+		public String generIdent(String st, int i, int idt, LinkedList<String> list) {
+			String idtGen = st + "," + toBase26(i) + toBase26(idt) + "," + VO;
+			Pattern p = Pattern.compile(",");
+			for (String role : list){
+				String[] id = p.split(role);
+				String[] idg = p.split(idtGen);
+				if (id[0].equals(idg[0])) {
+					idtGen = st + "," + id[1] + "," + VO;
+				} else if (id[1].equals(idg[1])){
+					i = i + 1;
+					idtGen = generIdent(st, i, idt, list);						
+				}
+			}
+			return idtGen;
 		}
 
 		/**
