@@ -760,7 +760,6 @@ public class VOConfigTask extends Task {
 					} else {
 						String fqan = null;
 						fqan = buffer.toString().replace("/Role=NULL","");
-						System.out.println("fqan: "+fqan);
 						fqans.add(fqan+","+VO);
 					}
 				} else {
