@@ -213,6 +213,7 @@ public class SvnTagTask extends Task {
 		LinkedList<String> branchesToCreate = new LinkedList<String>();
 		boolean tagDirExists = false;
 		String tagParent = tag;
+		String tagParentSaved = tagParent;
 		SVNNodeKind tagParentNodeKind = null;
 		int parentIndex = tagParent.lastIndexOf("/");
 		i = parentIndex;
@@ -255,7 +256,7 @@ public class SvnTagTask extends Task {
 				}
 				j++;
 			}
-			System.out.println("Creating tag branch " + tagParent);
+			System.out.println("Creating tag branch " + tagParentSaved);
 			try {
 				commit.doMkDir(urlsToCreate,
 						"SCDB ant tools : create new tag branch");
