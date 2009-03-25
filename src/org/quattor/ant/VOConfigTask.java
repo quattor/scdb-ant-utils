@@ -16,7 +16,9 @@ import javax.xml.parsers.SAXParserFactory;
 import javax.xml.parsers.SAXParser;
 
 import java.security.cert.CertificateException;
+import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateFactory;
+import java.security.cert.CertificateNotYetValidException;
 import java.security.cert.X509Certificate;
 
 import org.apache.tools.ant.BuildException;
@@ -467,6 +469,9 @@ public class VOConfigTask extends Task {
 		/* Determines weather or not the certificat exists */
 		private String port = null;
 
+		/* the Boolean containing the use of a role */
+		private boolean isused = false;
+
 		/* the Strings containing the roles */
 		private String roleAdmin = null;
 
@@ -479,7 +484,7 @@ public class VOConfigTask extends Task {
 		private String roleAtl = null;
 
 		private LinkedList<String> roleGen;
-		
+
 		private LinkedList<String> fqans;
 
 		/* Default values of pool size and base uid */
@@ -518,6 +523,8 @@ public class VOConfigTask extends Task {
 		private String hostname = null;
 
 		private String certificat = null;
+
+		private String dnPortal = null;
 
 		private String oldCertificat = null;
 
@@ -609,7 +616,7 @@ public class VOConfigTask extends Task {
 				String qualifiedName) throws SAXException {
 			if (qualifiedName.equals("VO")) {
 				LinkedList<String> tpl = new LinkedList<String>();
-				Pattern p =  Pattern.compile(",");
+				Pattern p = Pattern.compile(",");
 				tpl.add("t");
 				tpl.add(VO);
 				tpl.add(fileTplName);
@@ -657,44 +664,91 @@ public class VOConfigTask extends Task {
 					}
 					if ((roleAdmin != null) || (roleProd != null)
 							|| (roleAtl != null) || (roleSwAdmin != null)
-							|| (roleSwMan != null)) {
+							|| (roleSwMan != null) || (roleGen != null) || (fqans != null)) {
 						tpl.add("\"voms_roles\" ?= list(");
 						if (roleAdmin != null) {
-							tpl
-									.add("     nlist(\"description\", \"SW manager\",");
-							tpl.add("       \"fqan\", \"lcgadmin\",");
-							tpl.add("       \"suffix\", \"s\"),");
+							if (roleAdmin.startsWith("#")) {
+								tpl
+										.add("#    nlist(\"description\", \"SW manager\",");
+								tpl.add("#      \"FQAN\", \"Role=lcgadmin\",");
+								tpl.add("#      \"suffix\", \"s\"),");
+							} else {
+								tpl
+								.add("     nlist(\"description\", \"SW manager\",");
+								tpl.add("       \"FQAN\", \"Role=lcgadmin\",");
+								tpl.add("       \"suffix\", \"s\"),");								
+							}
 						}
 						if (roleSwAdmin != null) {
-							tpl
-									.add("     nlist(\"description\", \"SW manager\",");
-							tpl.add("       \"fqan\", \"swadmin\",");
-							tpl.add("       \"suffix\", \"s\"),");
+							if (roleSwAdmin.startsWith("#")) {
+								tpl
+								.add("#    nlist(\"description\", \"SW manager\",");
+								tpl.add("#      \"FQAN\", \"Role=swadmin\",");
+								tpl.add("#      \"suffix\", \"s\"),");
+							} else {
+								tpl
+										.add("     nlist(\"description\", \"SW manager\",");
+								tpl.add("       \"FQAN\", \"Role=swadmin\",");
+								tpl.add("       \"suffix\", \"s\"),");
+							}
 						}
 						if (roleProd != null) {
-							tpl
-									.add("     nlist(\"description\", \"production\",");
-							tpl.add("       \"fqan\", \"production\",");
-							tpl.add("       \"suffix\", \"p\"),");
+							if (roleProd.startsWith("#" )) {
+								tpl
+								.add("#    nlist(\"description\", \"production\",");
+								tpl.add("#      \"FQAN\", \"Role=production\",");
+								tpl.add("#      \"suffix\", \"p\"),");
+							} else {
+								tpl
+										.add("     nlist(\"description\", \"production\",");
+								tpl.add("       \"FQAN\", \"Role=production\",");
+								tpl.add("       \"suffix\", \"p\"),");
+							}
 						}
 						if (roleAtl != null) {
-							tpl.add("     nlist(\"description\", \"ATLAS\",");
-							tpl.add("       \"fqan\", \"atlas\",");
-							tpl.add("       \"suffix\", \"atl\"),");
+							if (roleAtl.startsWith("#")) {
+								tpl.add("#    nlist(\"description\", \"ATLAS\",");
+								tpl.add("#      \"FQAN\", \"Role=atlas\",");
+								tpl.add("#      \"suffix\", \"atl\"),");
+							} else {
+								tpl.add("     nlist(\"description\", \"ATLAS\",");
+								tpl.add("       \"FQAN\", \"Role=atlas\",");
+								tpl.add("       \"suffix\", \"atl\"),");
+							}
 						}
 						if (roleSwMan != null) {
-							tpl
-									.add("     nlist(\"description\", \"SW manager\",");
-							tpl.add("       \"fqan\", \"SoftwareManager\",");
-							tpl.add("       \"suffix\", \"s\"),");
+							if (roleSwMan.startsWith("#")) {
+								tpl
+								.add("#    nlist(\"description\", \"SW manager\",");
+								tpl.add("#      \"FQAN\", \"Role=SoftwareManager\",");
+								tpl.add("#      \"suffix\", \"s\"),");
+							} else {
+								tpl
+										.add("     nlist(\"description\", \"SW manager\",");
+								tpl.add("       \"FQAN\", \"Role=SoftwareManager\",");
+								tpl.add("       \"suffix\", \"s\"),");
+							}
 						}
 						if (roleGen != null) {
 							for (String role : roleGen) {
 								String[] r = p.split(role.trim());
 								if (r[2].equals(VO)) {
-									tpl.add("     nlist(\"description\", \""+r[0]+"\",");
-									tpl.add("       \"fqan\", \""+r[0]+"\",");
-									tpl.add("       \"suffix\", \""+r[1]+"\"),");
+									if (role.startsWith("#")) {
+										String rzero = r[0].substring(1);
+										tpl.add("#    nlist(\"description\", \""
+												+ r[0] + "\",");
+										tpl.add("#      \"FQAN\", \"Role=" + rzero
+												+ "\",");
+										tpl.add("#      \"suffix\", \"" + r[1]
+												+ "\"),");
+									} else {
+										tpl.add("     nlist(\"description\", \""
+												+ r[0] + "\",");
+										tpl.add("       \"FQAN\", \"Role=" + r[0]
+												+ "\",");
+										tpl.add("       \"suffix\", \"" + r[1]
+												+ "\"),");
+									}
 								}
 							}
 						}
@@ -703,12 +757,32 @@ public class VOConfigTask extends Task {
 							for (String fqan : fqans) {
 								String[] f = p.split(fqan.trim());
 								if (f[1].equals(VO)) {
-									tpl.add("     nlist(\"description\", \"fqan"+Integer.toString(countfq)+"\",");
-									tpl.add("       \"fqan\", \""+f[0]+"\",");
-									tpl.add("       \"suffix\", \"fqan"+Integer.toString(countfq)+"\"),");
-									countfq++;
+									if (fqan.startsWith("#")) {
+										String fzero = f[0].substring(1);
+										tpl
+												.add("#    nlist(\"description\", \"fqan"
+														+ Integer.toString(countfq)
+														+ "\",");
+										tpl.add("#      \"FQAN\", \"" + fzero
+												+ "\",");
+										tpl.add("#      \"suffix\", \"fqan"
+												+ Integer.toString(countfq)
+												+ "\"),");
+										countfq++;
+									} else {
+										tpl
+										.add("     nlist(\"description\", \"fqan"
+												+ Integer.toString(countfq)
+												+ "\",");
+										tpl.add("       \"FQAN\", \"" + f[0]
+												+ "\",");
+										tpl.add("       \"suffix\", \"fqan"
+												+ Integer.toString(countfq)
+												+ "\"),");
+										countfq++;
+									}
 								}
-							}							
+							}
 						}
 						tpl.add("     );");
 						roleProd = null;
@@ -730,8 +804,18 @@ public class VOConfigTask extends Task {
 				hostname = null;
 				port = null;
 				certificat = null;
+				dnPortal = null;
 				allInfos.add(tpl);
-			} else if (qualifiedName.equals("GROUP_ROLE")) {
+			} else if (qualifiedName.equals("IS_GROUP_USED")) {
+				System.out.println("IS_GROUP_USED");
+				if (buffer.toString().equals("1")){
+					isused = true;
+				} else {
+					isused = false;
+				}
+			}
+			else if (qualifiedName.equals("GROUP_ROLE")) {
+				System.out.println("GROUP_ROLE");
 				Matcher m = padmin.matcher(buffer.toString());
 				Matcher mbis = padmin2.matcher(buffer.toString());
 				Matcher mter = padmin3.matcher(buffer.toString());
@@ -744,30 +828,64 @@ public class VOConfigTask extends Task {
 				Matcher mrg = prolegen.matcher(buffer.toString());
 				if ((m.find()) || (mbis.find()) || (mter.find())
 						|| (mqua.find())) {
-					roleAdmin = buffer.toString();
+					if (isused) {
+						roleAdmin = buffer.toString();
+					} else {
+						roleAdmin = "#"+buffer.toString();
+					}
 				} else if (m2.find()) {
-					roleProd = buffer.toString();
+					if (isused) {
+						roleProd = buffer.toString();
+					} else {
+						roleProd = "#"+buffer.toString();
+					}
 				} else if (m3.find()) {
-					roleAtl = buffer.toString();
+					if (isused) {
+						roleAtl = buffer.toString();
+					} else {
+						roleAtl = "#"+buffer.toString();
+					}
 				} else if (m4.find()) {
-					roleSwAdmin = buffer.toString();
+					if (isused) {
+						roleSwAdmin = buffer.toString();
+					} else {
+						roleSwAdmin = "#"+buffer.toString();
+					}
 				} else if ((m5.find()) || (m6.find())) {
-					roleSwMan = buffer.toString();
+					if (isused) {
+						roleSwMan = buffer.toString();
+					} else {
+						roleSwMan = "#"+buffer.toString();
+					}
 				} else if (mrg.find()) {
 					if (!(mrg.group(1).equals("NULL"))) {
-						String ident = generIdent(mrg.group(1), buffer.toString().length(), Integer.parseInt(VOid), roleGen);
-						roleGen.add(ident);
+						String ident = generIdent(mrg.group(1), buffer
+								.toString().length(), Integer.parseInt(VOid),
+								roleGen);
+						if (isused) {
+							roleGen.add(ident);
+						} else {
+							roleGen.add("#"+ident);
+						}
 					} else {
 						String fqan = null;
-						fqan = buffer.toString().replace("/Role=NULL","");
+						fqan = buffer.toString().replace("/Role=NULL", "");
 						if ((!fqan.equals("/"+VO)) && (!fqan.equals("/"+VO+"/"))){
-							fqans.add(fqan+","+VO);
+							if (isused) {
+								fqans.add(fqan+","+VO);
+							} else {
+								fqans.add("#"+fqan+","+VO);
+							}
 						}
 					}
 				} else {
-					if (buffer.toString() != null){
+					if (buffer.toString() != null) {
 						if ((!buffer.toString().equals("/"+VO)) && (!buffer.toString().equals("/"+VO+"/"))){
-							fqans.add((buffer.toString())+","+VO);
+							if (isused) {
+								fqans.add((buffer.toString())+","+VO);
+							} else {
+								fqans.add(("#"+buffer.toString())+","+VO);
+							}
 						}
 					}
 				}
@@ -781,7 +899,10 @@ public class VOConfigTask extends Task {
 			} else if ((qualifiedName.equals("CertificatePublicKey"))
 					&& (!buffer.toString().equals(""))) {
 				certificat = buffer.toString().trim();
-				createCert();
+				buffer = null;
+			} else if ((qualifiedName.equals("DN"))
+					&& (!buffer.toString().equals(""))) {
+				dnPortal = buffer.toString().trim();
 				buffer = null;
 			} else if (qualifiedName.equals("VOMSServer")) {
 				if ((hostname == null) || (certificat == null)) {
@@ -793,6 +914,7 @@ public class VOConfigTask extends Task {
 							.println("Problem while creation of lsc file for VO "
 									+ VO + " with hostname " + hostname);
 				} else {
+					createCert();
 					hostList.add(hostname);
 					portList.add(port);
 				}
@@ -820,8 +942,13 @@ public class VOConfigTask extends Task {
 		 */
 		public void createCert() {
 			String fileName = getFileName(hostname, true, false);
-
-			if (!certExists) {
+			if (!checkDNCert(certificat)) {
+				System.err.println("Wrong DN of certificat for VO " + VO);
+			} else if (!checkValidityCert(certificat)) {
+				System.err.println("Certificat not valid for VO " + VO);
+			} else if (!(certificat.startsWith(beginTag))) {
+				System.err.println("Wrong form of certificat for VO " + VO);
+			} else if (!certExists) {
 				LinkedList<String> certtpl = new LinkedList<String>();
 				certtpl.add("c");
 				certtpl.add(VO);
@@ -843,6 +970,159 @@ public class VOConfigTask extends Task {
 			} else {
 				certExists = false;
 			}
+		}
+
+		/**
+		 * Creates the lsc file containing the DN of the voms server for each
+		 * VO.
+		 * 
+		 * @param hostname
+		 *            String containing the name of the hostname
+		 * @param certificat
+		 *            String containing the certificat
+		 * @param VOname
+		 *            String containing the name of the VO
+		 * 
+		 */
+		public boolean createLscFile(String hostname, String certificat,
+				String VOname) {
+			boolean result = false;
+			boolean dnexist = false;
+			X509Certificate c = null;
+			try {
+				c = extractCertificates(certificat);
+
+				if (c != null) {
+					X500Principal subject = c.getSubjectX500Principal();
+					X500Principal issuer = c.getIssuerX500Principal();
+					String dnsubiss = "       \"" + hostname + "\", nlist(\"subject\", \""
+							+ subject.toString() + "\",\n                  \"issuer\", \""
+							+ issuer.toString() + "\"),\n";
+
+					for (String dn : dnList) {
+						if (dnsubiss.equals(dn)) {
+							dnexist = true;
+						}
+					}
+					if (!dnexist) {
+						dnList.add(dnsubiss);
+					}
+					result = true;
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return result;
+		}
+
+		/**
+		 * This method will extract a list of X509 certificates from a file.
+		 * Unfortunately, the native Java routines are not tolerant of
+		 * extraneous information in the file, so we must string out that
+		 * information manually. This causes lots of gymnastics for a relatively
+		 * simple task.
+		 * 
+		 * @param file
+		 * 
+		 * @return array of X509Certificates from the file
+		 * 
+		 * @throws IOException
+		 */
+		private X509Certificate extractCertificates(String certif)
+				throws IOException {
+
+			X509Certificate cert = null;
+
+			if (!(certif.startsWith(beginTag))) {
+				System.err.println("Wrong form of certificat for VO " + VO);
+			}
+
+			else {
+				// Store the real information in memory (in a byte
+				// array).
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
+				OutputStreamWriter osw = new OutputStreamWriter(baos);
+				// Process the file line by line saving only
+				// information between certificate markers (including
+				// the markers themselves).
+				osw.write(certif);
+				osw.write("\n");
+				// Convert the buffer to a byte array and create an
+				// InputStream to read from it.
+				osw.close();
+				byte[] certInfo = baos.toByteArray();
+				ByteArrayInputStream bais = new ByteArrayInputStream(certInfo);
+				// Now actually process the embedded certificates.
+				// Lots of gymnastics for doing something simple.
+				while (bais.available() > 0) {
+					try {
+						cert = (X509Certificate) cf.generateCertificate(bais);
+					} catch (CertificateException ce) {
+						throw new BuildException(ce.getMessage());
+					}
+				}
+			}
+			return cert;
+		}
+
+		/**
+		 * Check the DN of a certificat.
+		 * 
+		 * @param certif
+		 *            String containing the certificat
+		 */
+		public boolean checkDNCert(String certif) {
+			boolean isValid = false;
+			X509Certificate cert = null;
+			try {
+				cert = extractCertificates(certificat);
+				if (cert != null) {
+					X500Principal subject = cert.getSubjectX500Principal();
+					//System.out.println("DN : "+subject.toString());
+					//System.out.println("DN CIC : "+dnPortal);
+					String[] terms = subject.toString().split(",");
+					String dninvert = "";
+					for (String term : terms) {
+						dninvert = "/"+(term.trim()).concat(dninvert);
+						
+					}
+					//System.out.println("DN inversŽ: "+dninvert);
+					if (dninvert.equals(dnPortal.trim())) {
+						isValid = true;
+					}
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			return isValid;
+		}
+
+		/**
+		 * Check the validity of a certificat.
+		 * 
+		 * @param certif
+		 *            String containing the certificat
+		 * @throws CertificateNotYetValidException 
+		 * @throws CertificateExpiredException 
+		 */
+		public boolean checkValidityCert(String certif) {
+			boolean isValid = false;
+			X509Certificate cert = null;		
+			try {
+				cert = extractCertificates(certificat);
+				cert.checkValidity();
+				isValid = true;
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (CertificateExpiredException e) {
+				System.err.println(e);
+			} catch (CertificateNotYetValidException e) {
+				System.err.println(e);
+			}
+			return isValid;
 		}
 
 		/**
@@ -916,7 +1196,6 @@ public class VOConfigTask extends Task {
 										}
 									}
 								}
-
 								String usedCertificat = certificat.replaceAll(
 										"\n", "");
 
@@ -1044,116 +1323,27 @@ public class VOConfigTask extends Task {
 		}
 
 		/**
-		 * Creates the lsc file containing the DN of the voms server for each
-		 * VO.
+		 * Generates a suffix for a given role.
 		 * 
-		 * @param hostname
-		 *            String containing the name of the hostname
-		 * @param certificat
-		 *            String containing the certificat
-		 * @param VOname
-		 *            String containing the name of the VO
-		 * 
+		 * @param st
+		 *            String containing the role
+		 * @param i,
+		 *            idt int for generate the suffix
+		 * @param list
+		 *            List containing a String [role,suffix]
 		 */
-		public boolean createLscFile(String hostname, String certificat,
-				String VOname) {
-			boolean result = false;
-			boolean dnexist = false;
-			X509Certificate c = null;
-			try {
-				c = extractCertificates(certificat);
-
-				if (c != null) {
-					X500Principal subject = c.getSubjectX500Principal();
-					X500Principal issuer = c.getIssuerX500Principal();
-					String dnsubiss = "       \"" + hostname + "\", list(\""
-							+ subject.toString() + "\",\n             \""
-							+ issuer.toString() + "\"),\n";
-
-					for (String dn : dnList) {
-						if (dnsubiss.equals(dn)) {
-							dnexist = true;
-						}
-					}
-					if (!dnexist) {
-						dnList.add(dnsubiss);
-					}
-					result = true;
-				}
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			return result;
-		}
-
-		/**
-		 * This method will extract a list of X509 certificates from a file.
-		 * Unfortunately, the native Java routines are not tolerant of
-		 * extraneous information in the file, so we must string out that
-		 * information manually. This causes lots of gymnastics for a relatively
-		 * simple task.
-		 * 
-		 * @param file
-		 * 
-		 * @return array of X509Certificates from the file
-		 * 
-		 * @throws IOException
-		 */
-		private X509Certificate extractCertificates(String certif)
-				throws IOException {
-
-			X509Certificate cert = null;
-
-			if (!(certif.startsWith(beginTag))) {
-				System.err.println("Wrong form of certificat for VO " + VO);
-			}
-
-			else {
-				// Store the real information in memory (in a byte
-				// array).
-				ByteArrayOutputStream baos = new ByteArrayOutputStream();
-				OutputStreamWriter osw = new OutputStreamWriter(baos);
-				// Process the file line by line saving only
-				// information between certificate markers (including
-				// the markers themselves).
-				osw.write(certif);
-				osw.write("\n");
-				// Convert the buffer to a byte array and create an
-				// InputStream to read from it.
-				osw.close();
-				byte[] certInfo = baos.toByteArray();
-				ByteArrayInputStream bais = new ByteArrayInputStream(certInfo);
-				// Now actually process the embedded certificates.
-				// Lots of gymnastics for doing something simple.
-				while (bais.available() > 0) {
-					try {
-						cert = (X509Certificate) cf.generateCertificate(bais);
-					} catch (CertificateException ce) {
-						throw new BuildException(ce.getMessage());
-					}
-				}
-			}
-			return cert;
-		}
-
-		/**
-		 * Generates a base 26 number from an integer.
-		 * 
-		 * @param i
-		 * 
-		 */
-		public String generIdent(String st, int i, int idt, LinkedList<String> list) {
+		public String generIdent(String st, int i, int idt,
+				LinkedList<String> list) {
 			String idtGen = st + "," + toBase26(i) + toBase26(idt) + "," + VO;
 			Pattern p = Pattern.compile(",");
-			for (String role : list){
+			for (String role : list) {
 				String[] id = p.split(role);
 				String[] idg = p.split(idtGen);
 				if (id[0].equals(idg[0])) {
 					idtGen = st + "," + id[1] + "," + VO;
-				} else if (id[1].equals(idg[1])){
+				} else if (id[1].equals(idg[1])) {
 					i = i + 1;
-					idtGen = generIdent(st, i, idt, list);						
+					idtGen = generIdent(st, i, idt, list);
 				}
 			}
 			return idtGen;
