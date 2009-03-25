@@ -73,6 +73,8 @@ public class VOConfigTask extends Task {
 	private String nshosts = "";
 
 	private String lbhosts = "";
+	
+	private String wms_hosts = "";
 
 	final public static CertificateFactory cf;
 	static {
@@ -225,11 +227,16 @@ public class VOConfigTask extends Task {
 		} else {
 			lbhosts = readFile(proxyName, "lbhosts");
 		}
+		if ((readFile(proxyName, "wms_hosts").equals("")) ||(readFile(proxyName, "wms_hosts").equals(null))){
+			wms_hosts = "undef";
+		} else {
+			wms_hosts = readFile(proxyName, "wms_hosts");
+		}
 		// On cree une instance de SAXBuilder
 		String siteParamsFileName = getNameSiteParamsDir();
 		DefaultHandler handler = new MyHandler(siteParamsFileName,
 				configRootDir, nameParamDirTpl, proxy, nshosts, lbhosts,
-				nameCertDirTpl, nameDNListDirTpl);
+				wms_hosts, nameCertDirTpl, nameDNListDirTpl);
 		SAXParserFactory factory = SAXParserFactory.newInstance();
 		try {
 			URL url = new URL(urlName);
@@ -519,6 +526,8 @@ public class VOConfigTask extends Task {
 		private String nshosts;
 
 		private String lbhosts;
+		
+		private String wms_hosts;
 
 		private String nameCertDirTpl;
 
@@ -551,13 +560,14 @@ public class VOConfigTask extends Task {
 		 * 
 		 */
 		public MyHandler(String spfn, String cfrd, String npdt, String prox,
-				String nsh, String lbh, String ncdt, String ndnldt) {
+				String nsh, String lbh, String wmsh, String ncdt, String ndnldt) {
 			siteParamsFileName = spfn;
 			root = cfrd;
 			nameParamDirTpl = npdt;
 			proxy = prox;
 			nshosts = nsh;
 			lbhosts = lbh;
+			wms_hosts = wmsh;
 			nameCertDirTpl = ncdt;
 			nameDNListDirTpl = ndnldt;
 		}
@@ -808,6 +818,22 @@ public class VOConfigTask extends Task {
 				tpl.add("\"proxy\" ?= '" + proxy + "';");
 				tpl.add("\"nshosts\" ?= '" + nshosts + "';");
 				tpl.add("\"lbhosts\" ?= '" + lbhosts + "';");
+				tpl.add("");
+				if (wms_hosts.equals("undef")){
+					tpl.add("\"wms_hosts\" ?= '" + wms_hosts + "';");
+				} else {
+					String[] wmshs = wms_hosts.split(",");
+					int wm = 0;
+					for (String wmsh : wmshs){
+						if (wm == 0){
+							tpl.add("\"wms_hosts\" ?= list('" + wmsh.trim() + "',");
+							wm++;
+						} else {
+							tpl.add("                    '" + wmsh.trim() + "',");
+						}
+					}
+					tpl.add("                   );");
+				}
 				tpl.add("");
 				tpl.add("\"pool_size\" ?= " + pool_size + ";");
 				base_uid = Id * 1000;
