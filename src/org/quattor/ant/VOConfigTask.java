@@ -73,7 +73,7 @@ public class VOConfigTask extends Task {
 	private String nshosts = "";
 
 	private String lbhosts = "";
-	
+
 	private String wms_hosts = "";
 
 	final public static CertificateFactory cf;
@@ -212,22 +212,26 @@ public class VOConfigTask extends Task {
 		// Checking we have enough parameters
 		String urlName = urlFile;
 		String proxyName = configRootDir.concat("/" + proxyHostsFile);
-		if ((readFile(proxyName, "proxy").equals("")) ||(readFile(proxyName, "proxy").equals(null))){
+		if ((readFile(proxyName, "proxy").equals(""))
+				|| (readFile(proxyName, "proxy").equals(null))) {
 			proxy = "undef";
 		} else {
 			proxy = readFile(proxyName, "proxy");
 		}
-		if ((readFile(proxyName, "nshosts").equals("")) ||(readFile(proxyName, "nshosts").equals(null))){
+		if ((readFile(proxyName, "nshosts").equals(""))
+				|| (readFile(proxyName, "nshosts").equals(null))) {
 			nshosts = "undef";
 		} else {
 			nshosts = readFile(proxyName, "nshosts");
 		}
-		if ((readFile(proxyName, "lbhosts").equals("")) ||(readFile(proxyName, "lbhosts").equals(null))){
+		if ((readFile(proxyName, "lbhosts").equals(""))
+				|| (readFile(proxyName, "lbhosts").equals(null))) {
 			lbhosts = "undef";
 		} else {
 			lbhosts = readFile(proxyName, "lbhosts");
 		}
-		if ((readFile(proxyName, "wms_hosts").equals("")) ||(readFile(proxyName, "wms_hosts").equals(null))){
+		if ((readFile(proxyName, "wms_hosts").equals(""))
+				|| (readFile(proxyName, "wms_hosts").equals(null))) {
 			wms_hosts = "undef";
 		} else {
 			wms_hosts = readFile(proxyName, "wms_hosts");
@@ -526,7 +530,7 @@ public class VOConfigTask extends Task {
 		private String nshosts;
 
 		private String lbhosts;
-		
+
 		private String wms_hosts;
 
 		private String nameCertDirTpl;
@@ -686,7 +690,8 @@ public class VOConfigTask extends Task {
 					}
 					if ((roleAdmin != null) || (roleProd != null)
 							|| (roleAtl != null) || (roleSwAdmin != null)
-							|| (roleSwMan != null) || (roleGen != null) || (fqans != null)) {
+							|| (roleSwMan != null) || (roleGen != null)
+							|| (fqans != null)) {
 						tpl.add("\"voms_roles\" ?= list(");
 						if (roleAdmin != null) {
 							if (roleAdmin.startsWith("#")) {
@@ -696,15 +701,15 @@ public class VOConfigTask extends Task {
 								tpl.add("#      \"suffix\", \"s\"),");
 							} else {
 								tpl
-								.add("     nlist(\"description\", \"SW manager\",");
+										.add("     nlist(\"description\", \"SW manager\",");
 								tpl.add("       \"FQAN\", \"Role=lcgadmin\",");
-								tpl.add("       \"suffix\", \"s\"),");								
+								tpl.add("       \"suffix\", \"s\"),");
 							}
 						}
 						if (roleSwAdmin != null) {
 							if (roleSwAdmin.startsWith("#")) {
 								tpl
-								.add("#    nlist(\"description\", \"SW manager\",");
+										.add("#    nlist(\"description\", \"SW manager\",");
 								tpl.add("#      \"FQAN\", \"Role=swadmin\",");
 								tpl.add("#      \"suffix\", \"s\"),");
 							} else {
@@ -715,25 +720,29 @@ public class VOConfigTask extends Task {
 							}
 						}
 						if (roleProd != null) {
-							if (roleProd.startsWith("#" )) {
+							if (roleProd.startsWith("#")) {
 								tpl
-								.add("#    nlist(\"description\", \"production\",");
-								tpl.add("#      \"FQAN\", \"Role=production\",");
+										.add("#    nlist(\"description\", \"production\",");
+								tpl
+										.add("#      \"FQAN\", \"Role=production\",");
 								tpl.add("#      \"suffix\", \"p\"),");
 							} else {
 								tpl
 										.add("     nlist(\"description\", \"production\",");
-								tpl.add("       \"FQAN\", \"Role=production\",");
+								tpl
+										.add("       \"FQAN\", \"Role=production\",");
 								tpl.add("       \"suffix\", \"p\"),");
 							}
 						}
 						if (roleAtl != null) {
 							if (roleAtl.startsWith("#")) {
-								tpl.add("#    nlist(\"description\", \"ATLAS\",");
+								tpl
+										.add("#    nlist(\"description\", \"ATLAS\",");
 								tpl.add("#      \"FQAN\", \"Role=atlas\",");
 								tpl.add("#      \"suffix\", \"atl\"),");
 							} else {
-								tpl.add("     nlist(\"description\", \"ATLAS\",");
+								tpl
+										.add("     nlist(\"description\", \"ATLAS\",");
 								tpl.add("       \"FQAN\", \"Role=atlas\",");
 								tpl.add("       \"suffix\", \"atl\"),");
 							}
@@ -741,13 +750,15 @@ public class VOConfigTask extends Task {
 						if (roleSwMan != null) {
 							if (roleSwMan.startsWith("#")) {
 								tpl
-								.add("#    nlist(\"description\", \"SW manager\",");
-								tpl.add("#      \"FQAN\", \"Role=SoftwareManager\",");
+										.add("#    nlist(\"description\", \"SW manager\",");
+								tpl
+										.add("#      \"FQAN\", \"Role=SoftwareManager\",");
 								tpl.add("#      \"suffix\", \"s\"),");
 							} else {
 								tpl
 										.add("     nlist(\"description\", \"SW manager\",");
-								tpl.add("       \"FQAN\", \"Role=SoftwareManager\",");
+								tpl
+										.add("       \"FQAN\", \"Role=SoftwareManager\",");
 								tpl.add("       \"suffix\", \"s\"),");
 							}
 						}
@@ -757,17 +768,19 @@ public class VOConfigTask extends Task {
 								if (r[2].equals(VO)) {
 									if (role.startsWith("#")) {
 										String rzero = r[0].substring(1);
-										tpl.add("#    nlist(\"description\", \""
-												+ r[0] + "\",");
-										tpl.add("#      \"FQAN\", \"Role=" + rzero
-												+ "\",");
+										tpl
+												.add("#    nlist(\"description\", \""
+														+ r[0] + "\",");
+										tpl.add("#      \"FQAN\", \"Role="
+												+ rzero + "\",");
 										tpl.add("#      \"suffix\", \"" + r[1]
 												+ "\"),");
 									} else {
-										tpl.add("     nlist(\"description\", \""
+										tpl
+												.add("     nlist(\"description\", \""
+														+ r[0] + "\",");
+										tpl.add("       \"FQAN\", \"Role="
 												+ r[0] + "\",");
-										tpl.add("       \"FQAN\", \"Role=" + r[0]
-												+ "\",");
 										tpl.add("       \"suffix\", \"" + r[1]
 												+ "\"),");
 									}
@@ -783,7 +796,8 @@ public class VOConfigTask extends Task {
 										String fzero = f[0].substring(1);
 										tpl
 												.add("#    nlist(\"description\", \"fqan"
-														+ Integer.toString(countfq)
+														+ Integer
+																.toString(countfq)
 														+ "\",");
 										tpl.add("#      \"FQAN\", \"" + fzero
 												+ "\",");
@@ -793,9 +807,10 @@ public class VOConfigTask extends Task {
 										countfq++;
 									} else {
 										tpl
-										.add("     nlist(\"description\", \"fqan"
-												+ Integer.toString(countfq)
-												+ "\",");
+												.add("     nlist(\"description\", \"fqan"
+														+ Integer
+																.toString(countfq)
+														+ "\",");
 										tpl.add("       \"FQAN\", \"" + f[0]
 												+ "\",");
 										tpl.add("       \"suffix\", \"fqan"
@@ -819,17 +834,19 @@ public class VOConfigTask extends Task {
 				tpl.add("\"nshosts\" ?= '" + nshosts + "';");
 				tpl.add("\"lbhosts\" ?= '" + lbhosts + "';");
 				tpl.add("");
-				if (wms_hosts.equals("undef")){
+				if (wms_hosts.equals("undef")) {
 					tpl.add("\"wms_hosts\" ?= '" + wms_hosts + "';");
 				} else {
 					String[] wmshs = wms_hosts.split(",");
 					int wm = 0;
-					for (String wmsh : wmshs){
-						if (wm == 0){
-							tpl.add("\"wms_hosts\" ?= list('" + wmsh.trim() + "',");
+					for (String wmsh : wmshs) {
+						if (wm == 0) {
+							tpl.add("\"wms_hosts\" ?= list('" + wmsh.trim()
+									+ "',");
 							wm++;
 						} else {
-							tpl.add("                    '" + wmsh.trim() + "',");
+							tpl.add("                    '" + wmsh.trim()
+									+ "',");
 						}
 					}
 					tpl.add("                   );");
@@ -845,15 +862,14 @@ public class VOConfigTask extends Task {
 				dnPortal = null;
 				allInfos.add(tpl);
 			} else if (qualifiedName.equals("IS_GROUP_USED")) {
-				//System.out.println("IS_GROUP_USED");
-				if (buffer.toString().equals("1")){
+				// System.out.println("IS_GROUP_USED");
+				if (buffer.toString().equals("1")) {
 					isused = true;
 				} else {
 					isused = false;
 				}
-			}
-			else if (qualifiedName.equals("GROUP_ROLE")) {
-				//System.out.println("GROUP_ROLE");
+			} else if (qualifiedName.equals("GROUP_ROLE")) {
+				// System.out.println("GROUP_ROLE");
 				Matcher m = padmin.matcher(buffer.toString());
 				Matcher mbis = padmin2.matcher(buffer.toString());
 				Matcher mter = padmin3.matcher(buffer.toString());
@@ -869,31 +885,31 @@ public class VOConfigTask extends Task {
 					if (isused) {
 						roleAdmin = buffer.toString();
 					} else {
-						roleAdmin = "#"+buffer.toString();
+						roleAdmin = "#" + buffer.toString();
 					}
 				} else if (m2.find()) {
 					if (isused) {
 						roleProd = buffer.toString();
 					} else {
-						roleProd = "#"+buffer.toString();
+						roleProd = "#" + buffer.toString();
 					}
 				} else if (m3.find()) {
 					if (isused) {
 						roleAtl = buffer.toString();
 					} else {
-						roleAtl = "#"+buffer.toString();
+						roleAtl = "#" + buffer.toString();
 					}
 				} else if (m4.find()) {
 					if (isused) {
 						roleSwAdmin = buffer.toString();
 					} else {
-						roleSwAdmin = "#"+buffer.toString();
+						roleSwAdmin = "#" + buffer.toString();
 					}
 				} else if ((m5.find()) || (m6.find())) {
 					if (isused) {
 						roleSwMan = buffer.toString();
 					} else {
-						roleSwMan = "#"+buffer.toString();
+						roleSwMan = "#" + buffer.toString();
 					}
 				} else if (mrg.find()) {
 					if (!(mrg.group(1).equals("NULL"))) {
@@ -903,26 +919,28 @@ public class VOConfigTask extends Task {
 						if (isused) {
 							roleGen.add(ident);
 						} else {
-							roleGen.add("#"+ident);
+							roleGen.add("#" + ident);
 						}
 					} else {
 						String fqan = null;
 						fqan = buffer.toString().replace("/Role=NULL", "");
-						if ((!fqan.equals("/"+VO)) && (!fqan.equals("/"+VO+"/"))){
+						if ((!fqan.equals("/" + VO))
+								&& (!fqan.equals("/" + VO + "/"))) {
 							if (isused) {
-								fqans.add(fqan+","+VO);
+								fqans.add(fqan + "," + VO);
 							} else {
-								fqans.add("#"+fqan+","+VO);
+								fqans.add("#" + fqan + "," + VO);
 							}
 						}
 					}
 				} else {
 					if (buffer.toString() != null) {
-						if ((!buffer.toString().equals("/"+VO)) && (!buffer.toString().equals("/"+VO+"/"))){
+						if ((!buffer.toString().equals("/" + VO))
+								&& (!buffer.toString().equals("/" + VO + "/"))) {
 							if (isused) {
-								fqans.add((buffer.toString())+","+VO);
+								fqans.add((buffer.toString()) + "," + VO);
 							} else {
-								fqans.add(("#"+buffer.toString())+","+VO);
+								fqans.add(("#" + buffer.toString()) + "," + VO);
 							}
 						}
 					}
@@ -1033,8 +1051,9 @@ public class VOConfigTask extends Task {
 				if (c != null) {
 					X500Principal subject = c.getSubjectX500Principal();
 					X500Principal issuer = c.getIssuerX500Principal();
-					String dnsubiss = "       \"" + hostname + "\", nlist(\"subject\", \""
-							+ subject.toString() + "\",\n                  \"issuer\", \""
+					String dnsubiss = "       \"" + hostname
+							+ "\", nlist(\"subject\", \"" + subject.toString()
+							+ "\",\n                  \"issuer\", \""
 							+ issuer.toString() + "\"),\n";
 
 					for (String dn : dnList) {
@@ -1117,15 +1136,15 @@ public class VOConfigTask extends Task {
 				cert = extractCertificates(certificat);
 				if (cert != null) {
 					X500Principal subject = cert.getSubjectX500Principal();
-					//System.out.println("DN : "+subject.toString());
-					//System.out.println("DN CIC : "+dnPortal);
+					// System.out.println("DN : "+subject.toString());
+					// System.out.println("DN CIC : "+dnPortal);
 					String[] terms = subject.toString().split(",");
 					String dninvert = "";
 					for (String term : terms) {
-						dninvert = "/"+(term.trim()).concat(dninvert);
-						
+						dninvert = "/" + (term.trim()).concat(dninvert);
+
 					}
-					//System.out.println("DN inversé: "+dninvert);
+					// System.out.println("DN inversé: "+dninvert);
 					if (dninvert.equals(dnPortal.trim())) {
 						isValid = true;
 					}
@@ -1142,12 +1161,12 @@ public class VOConfigTask extends Task {
 		 * 
 		 * @param certif
 		 *            String containing the certificat
-		 * @throws CertificateNotYetValidException 
-		 * @throws CertificateExpiredException 
+		 * @throws CertificateNotYetValidException
+		 * @throws CertificateExpiredException
 		 */
 		public boolean checkValidityCert(String certif) {
 			boolean isValid = false;
-			X509Certificate cert = null;		
+			X509Certificate cert = null;
 			try {
 				cert = extractCertificates(certificat);
 				cert.checkValidity();
