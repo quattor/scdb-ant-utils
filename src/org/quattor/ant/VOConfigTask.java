@@ -210,9 +210,21 @@ public class VOConfigTask extends Task {
 		// Checking we have enough parameters
 		String urlName = urlFile;
 		String proxyName = configRootDir.concat("/" + proxyHostsFile);
-		proxy = readFile(proxyName, "proxy");
-		nshosts = readFile(proxyName, "nshosts");
-		lbhosts = readFile(proxyName, "lbhosts");
+		if ((readFile(proxyName, "proxy").equals("")) ||(readFile(proxyName, "proxy").equals(null))){
+			proxy = "undef";
+		} else {
+			proxy = readFile(proxyName, "proxy");
+		}
+		if ((readFile(proxyName, "nshosts").equals("")) ||(readFile(proxyName, "nshosts").equals(null))){
+			nshosts = "undef";
+		} else {
+			nshosts = readFile(proxyName, "nshosts");
+		}
+		if ((readFile(proxyName, "lbhosts").equals("")) ||(readFile(proxyName, "lbhosts").equals(null))){
+			lbhosts = "undef";
+		} else {
+			lbhosts = readFile(proxyName, "lbhosts");
+		}
 		// On cree une instance de SAXBuilder
 		String siteParamsFileName = getNameSiteParamsDir();
 		DefaultHandler handler = new MyHandler(siteParamsFileName,
