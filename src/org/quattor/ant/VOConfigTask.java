@@ -807,7 +807,7 @@ public class VOConfigTask extends Task {
 				dnPortal = null;
 				allInfos.add(tpl);
 			} else if (qualifiedName.equals("IS_GROUP_USED")) {
-				System.out.println("IS_GROUP_USED");
+				//System.out.println("IS_GROUP_USED");
 				if (buffer.toString().equals("1")){
 					isused = true;
 				} else {
@@ -815,7 +815,7 @@ public class VOConfigTask extends Task {
 				}
 			}
 			else if (qualifiedName.equals("GROUP_ROLE")) {
-				System.out.println("GROUP_ROLE");
+				//System.out.println("GROUP_ROLE");
 				Matcher m = padmin.matcher(buffer.toString());
 				Matcher mbis = padmin2.matcher(buffer.toString());
 				Matcher mter = padmin3.matcher(buffer.toString());
