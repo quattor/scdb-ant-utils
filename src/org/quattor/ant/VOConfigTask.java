@@ -1144,7 +1144,7 @@ public class VOConfigTask extends Task {
 						dninvert = "/" + (term.trim()).concat(dninvert);
 
 					}
-					// System.out.println("DN inversé: "+dninvert);
+					// System.out.println("DN inverse: "+dninvert);
 					if (dninvert.equals(dnPortal.trim())) {
 						isValid = true;
 					}
