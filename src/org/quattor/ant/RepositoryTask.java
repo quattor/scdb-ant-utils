@@ -62,23 +62,81 @@ public class RepositoryTask extends Task {
 
 	/* Control printing of debugging messages in this task */
 	private boolean debugTask = false;
+	
+	/* Control generation of template listing repositories */
+	private boolean genList = false;
 
+	/* the name of the directory containing generated template */
+	private String nameListDir = null;
+	
 	/*
 	 * Method used by ant to execute this task.
 	 */
 	@Override
 	public void execute() throws BuildException {
-
+		// need to get path as parameter
+		String listName = 	"repository/allrepositories";
+		String listFileName = listName+".tpl";
+		if (this.genList) {
+			
+			if (this.nameListDir != null) {			
+				listFileName = this.nameListDir+"/"+listFileName;			
+			}
+			if (this.debugTask) {
+				System.out.println("Generating template with list of repositories");
+				System.out.println("Template location "+listFileName);
+			}
+		}
+		
+		try {
+			FileWriter allRepos = new FileWriter(listFileName,false);
+			allRepos.write("# list of all repository templates found\n");
+			allRepos.write("template "+listName+";\n\n");
+			allRepos.write("variable ALL_REPOSITORIES= nlist( \n");
+			allRepos.close();
+			}
+		catch (Exception e) {
+			System.err.println("Error: " + e.getMessage());
+			
+		}
+		
+        
 		// Loop over all of the given files. Write those that are repository
 		// templates with the proper embedded comments and that have changed.
 		for (File f : files) {
 			Repository r = parseTemplate(f);
+                       
 			if (r != null) {
+                if (this.genList) {            
+                	try {
+                		FileWriter allRepos = new FileWriter(listFileName,true);
+                		allRepos.write("'"+r.name+"',  create('repository/" + r.name+"'),\n");
+                		allRepos.close();
+                	}
+                	catch (Exception e) {
+                		System.err.println("Error: " + e.getMessage());
+                	}
+                }
+                                
+                            
 				if (r.write()) {
 					System.out.println("Updating: " + r);
 				}
 			}
+			
 		}
+		try {
+			FileWriter allRepos = new FileWriter(listFileName,true);
+			
+			allRepos.write("); \n");
+			allRepos.close();
+			}
+			catch (Exception e) {
+				System.err.println("Error: " + e.getMessage());
+				
+			}
+			
+		
 	}
 
 	/**
@@ -92,7 +150,27 @@ public class RepositoryTask extends Task {
 	public void setDebugTask(boolean debugTask) {
 		this.debugTask = debugTask;
 	}
-
+	/**
+	 * Setting this flag will generate a template with a list of all repositories.
+	 *  
+	 * @param genList
+	 *            flag to create template listing all repositories
+	 */
+	public void setGenList(boolean genList) {
+		this.genList = genList;
+	}
+	
+	/**
+	 * Set the directory for the generated repository list template.
+	 * 
+	 * @param nameParamDirTpl
+	 *            String containing full path of the directory
+	 * 
+	 */
+	public void setNameListDir(String nameListDir) {
+		this.nameListDir = nameListDir;
+	}
+	
 	/*
 	 * Support nested fileset elements. This is called by ant only after all of
 	 * the children of the fileset have been processed. Collect all of the
