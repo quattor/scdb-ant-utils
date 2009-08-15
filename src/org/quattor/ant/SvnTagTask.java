@@ -6,6 +6,7 @@ import java.util.LinkedList;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Task;
+import org.tmatesoft.svn.core.SVNCommitInfo;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNURL;
@@ -272,12 +273,16 @@ public class SvnTagTask extends Task {
 		}
 
 		// Actually make the tag.
+                SVNCommitInfo commitInfo = null;
 		System.out.println("Making tag: " + tag);
 		try {
-			copy.doCopy(srcUrl, SVNRevision.HEAD, tagUrl, false, "ant tag");
+			commitInfo = copy.doCopy(srcUrl, SVNRevision.HEAD, tagUrl, false, "ant tag");
 		} catch (SVNException e) {
 			throw new BuildException("tag failed: " + e.getMessage());
 		}
+                if ( commitInfo.getErrorMessage() != null ) {
+			throw new BuildException("tag failed: " + commitInfo.getErrorMessage());
+                }
 
 	}
 
