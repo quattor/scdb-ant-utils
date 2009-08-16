@@ -56,10 +56,10 @@ public class SvnTagTask extends Task {
 	private File workspacePath = null;
 	
 	/* Branch used to create deployment tags in the repository */
-	private String tagsBranch = '/tags';
+	private String tagsBranch = "/tags";
 
 	/* Branch in the repository allowed to deploy */
-	private String trunkBranch = '/trunk';
+	private String trunkBranch = "/trunk";
 
 	/* Control printing of debugging messages in this task */
 	private boolean debugTask = false;
