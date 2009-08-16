@@ -54,6 +54,12 @@ public class SvnTagTask extends Task {
 
 	/* The full path to the local subversion workspace. */
 	private File workspacePath = null;
+	
+	/* Branch used to create deployment tags in the repository */
+	private String tagsBranch = '/tags';
+
+	/* Branch in the repository allowed to deploy */
+	private String trunkBranch = '/trunk';
 
 	/* Control printing of debugging messages in this task */
 	private boolean debugTask = false;
@@ -77,6 +83,31 @@ public class SvnTagTask extends Task {
 	 */
 	public void setTag(String tag) {
 		this.tag = tag;
+	}
+
+	/*
+	 * Set the branch in the repository to use for deployment tags.
+	 * 
+	 * @param tag String containing the name of the branch (relative to the repository root)
+	 */
+	public void setTagBranch(String branch) {
+		if ( !branch.startsWith("/") ) {
+			throw new BuildException("Invalid configuration: tagsBranch must start with a /");
+		}
+		this.tagsBranch = branch;
+	}
+
+	/*
+	 * Set the branch that must be the source for any deployment.
+	 * 
+	 * @param tag String containing the name of the branch (relative to the repository root).
+	 *            If an empty string, do not check for the source branch.
+	 */
+	public void setTrunkBranch(String branch) {
+		if ( (branch.length() > 0) &&!branch.startsWith("/") ) {
+			throw new BuildException("Invalid configuration: trunkBranch must start with a /");
+		}
+		this.trunkBranch = branch;
 	}
 
 	/*
@@ -109,7 +140,7 @@ public class SvnTagTask extends Task {
 
 	/**
 	 * Make the SVN copy for the tag. This creates the destination URL from the
-	 * repository URL, checks that the local workspace corresponds to trunk,
+	 * repository URL, checks that the local workspace corresponds to trunk branch,
 	 * checks for local modifications, checks for remote modifications, and then
 	 * makes the tag.
 	 */
@@ -134,22 +165,24 @@ public class SvnTagTask extends Task {
 		}
 
 		SVNURL srcUrl = info.getURL();
-		String tagsBranch = srcUrl.toString();
+		String srcBranch = srcUrl.toString();
 
-		// Verify that the working copy is actually from the trunk.
-		if (!tagsBranch.endsWith("trunk")) {
+		// Verify that the working copy is actually from the trunk branch, except if
+		// trunkBranch is an empty string (check disabled). Note that standard deployment
+		// script do the same check so this is not really necessary...
+		if ( (trunkBranch.length() > 0 ) && !srcBranch.endsWith(trunkBranch)) {
 			throw new BuildException(
-					"working copy must be from repository trunk: " + tagsBranch);
+					"working copy is from "+srcBranch+" instead SCDB trunk ("+trunkBranch+")");
 		}
 
 		// Parse the source URL to determine the URL for the tag.
 		String tagPath = null;
-		int i = tagsBranch.lastIndexOf("/");
+		int i = srcBranch.lastIndexOf("/");
 		if (i >= 0) {
-			tagsBranch = tagsBranch.substring(0, i) + "/tags/";
-			tagPath = tagsBranch + tag;
+			srcBranch = srcBranch.substring(0, i) + tagsBranch + "/";
+			tagPath = srcBranch + tag;
 		} else {
-			throw new BuildException("found invalid SVN URL: " + tagsBranch);
+			throw new BuildException("found invalid SVN URL: " + srcBranch);
 		}
 		SVNURL tagUrl = null;
 		try {
@@ -164,11 +197,11 @@ public class SvnTagTask extends Task {
 		SVNRepository repositoryTags = null;
 		try {
 			repositoryTags = SVNRepositoryFactory.create(SVNURL
-					.parseURIEncoded(tagsBranch));
+					.parseURIEncoded(srcBranch));
 		} catch (SVNException e) {
 			throw new BuildException(
 					"Error creating SVNRepository instance for location "
-							+ tagsBranch + ": " + e.getMessage());
+							+ srcBranch + ": " + e.getMessage());
 		}
 		ISVNAuthenticationManager authManager = SVNWCUtil
 				.createDefaultAuthenticationManager();
@@ -176,12 +209,12 @@ public class SvnTagTask extends Task {
 		try {
 			SVNNodeKind tagNodeKind = repositoryTags.checkPath("", -1);
 			if (tagNodeKind != SVNNodeKind.DIR) {
-				throw new BuildException("Error : SVN branch " + tagsBranch
+				throw new BuildException("Error : SVN branch " + srcBranch
 						+ " must exist and be a directory");
 			}
 		} catch (SVNException e) {
 			throw new BuildException(
-					"Error getting information about SVN branch " + tagsBranch
+					"Error getting information about SVN branch " + srcBranch
 							+ ": " + e.getMessage());
 		}
 
@@ -231,7 +264,7 @@ public class SvnTagTask extends Task {
 								+ ": " + e.getMessage());
 			}
 			if (tagParentNodeKind == SVNNodeKind.NONE) {
-				branchesToCreate.addFirst(tagsBranch + tagParent);
+				branchesToCreate.addFirst(srcBranch + tagParent);
 				i = tagParent.lastIndexOf("/");
 			} else if (tagParentNodeKind != SVNNodeKind.DIR) {
 				throw new BuildException("Error: " + tagParent
@@ -262,7 +295,7 @@ public class SvnTagTask extends Task {
 				commit.doMkDir(urlsToCreate,
 						"SCDB ant tools : create new tag branch");
 			} catch (SVNException e) {
-				String tagRoot = tagsBranch;
+				String tagRoot = srcBranch;
 				if (parentIndex > 0) {
 					tagRoot += tag.substring(0, parentIndex);
 
@@ -273,16 +306,21 @@ public class SvnTagTask extends Task {
 		}
 
 		// Actually make the tag.
-                SVNCommitInfo commitInfo = null;
+		SVNCommitInfo commitInfo = null;
 		System.out.println("Making tag: " + tag);
 		try {
+			// svnkit 1.2+. In fact use createParents=true and remove previous code...
+			// copySrc = new SVNCopySource(SVNRevision.HEAD,SVNRevision.HEAD,srcUrl);
+			// commitInfo = copy.doCopy(copySrc, tagUrl, false, false, false, "ant tag");
+			// } catch (JavaClassNotFound e) {
+			//     throw new BuildException("doCopy() method not found. Check you are using svnkit 1.2+");
 			commitInfo = copy.doCopy(srcUrl, SVNRevision.HEAD, tagUrl, false, "ant tag");
 		} catch (SVNException e) {
-			throw new BuildException("tag failed: " + e.getMessage());
+			throw new BuildException("\ntag failed: " + e.getMessage());
 		}
-                if ( commitInfo.getErrorMessage() != null ) {
-			throw new BuildException("tag failed: " + commitInfo.getErrorMessage());
-                }
+		if ( commitInfo.getErrorMessage() != null ) {
+			throw new BuildException("\ntag failed: " + commitInfo.getErrorMessage());
+		}
 
 	}
 
