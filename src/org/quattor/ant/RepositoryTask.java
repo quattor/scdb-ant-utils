@@ -114,7 +114,7 @@ public class RepositoryTask extends Task {
 				allRepos.write("template "+listName+";\n\n");
 				allRepos.write("variable ALL_REPOSITORIES= nlist( \n");
 				for (Repository r:repositoryList) {
-//					allRepos.write("'"+r.name+"',  create('repository/" + r.name+"'),\n");					
+					allRepos.write("'"+r.name+"',  create('repository/" + r.name+"'),\n");					
 				}
 				allRepos.write("); \n");
 				allRepos.close();
