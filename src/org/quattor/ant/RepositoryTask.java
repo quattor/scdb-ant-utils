@@ -86,13 +86,12 @@ public class RepositoryTask extends Task {
 		// templates with the proper embedded comments and that have changed.
 		for (File f : files) {
 			Repository r = parseTemplate(f);
-			repositoryList.add(r);
 			if (r != null) {
 				if (r.write()) {
 					System.out.println("Updating: " + r);
 				}
+				repositoryList.add(r);
 			}
-			
 		}
 
 		// Create a template defining a variable with all existing repositories
@@ -109,12 +108,13 @@ public class RepositoryTask extends Task {
 			}
 		
 			try {
+                                System.out.println("Updating "+listFileName);
 				FileWriter allRepos = new FileWriter(listFileName,false);
 				allRepos.write("# List of all existing repository templates\n");
 				allRepos.write("template "+listName+";\n\n");
 				allRepos.write("variable ALL_REPOSITORIES= nlist( \n");
 				for (Repository r:repositoryList) {
-					allRepos.write("'"+r.name+"',  create('repository/" + r.name+"'),\n");					
+//					allRepos.write("'"+r.name+"',  create('repository/" + r.name+"'),\n");					
 				}
 				allRepos.write("); \n");
 				allRepos.close();
