@@ -120,8 +120,7 @@ public class RepositoryTask extends Task {
 				allRepos.close();
 				}
 			catch (Exception e) {
-				System.err.println("Error: " + e.getMessage());
-				
+				throw new BuildException("Error creating list of all configured repositories: " + e.getMessage());
 			}		
 		}
 			
@@ -167,7 +166,7 @@ public class RepositoryTask extends Task {
 	 *            String containing namespace
 	 * 
 	 */
-	public void setNameListDir(String listNamespace) {
+	public void setListName(String listNamespace) {
 		this.listName = listNamespace;
 	}
 	
