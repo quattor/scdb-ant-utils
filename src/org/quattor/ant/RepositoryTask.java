@@ -68,6 +68,10 @@ public class RepositoryTask extends Task {
 
 	/* the name of the directory containing generated template */
 	private String nameListDir = null;
+
+	/* Namespace of the template defining the list of all repositories configured */
+	private String listName = "repository/allrepositories";
+
 	
 	/*
 	 * Method used by ant to execute this task.
@@ -75,9 +79,8 @@ public class RepositoryTask extends Task {
 	@Override
 	public void execute() throws BuildException {
 		// need to get path as parameter
-		String listName = 	"repository/allrepositories";
 		String listFileName = listName+".tpl";
-		private LinkedList<Repository> repositoryList = new LinkedList<Repository>();
+		LinkedList<Repository> repositoryList = new LinkedList<Repository>();
 		
 		// Loop over all of the given files. Write those that are repository
 		// templates with the proper embedded comments and that have changed.
@@ -95,7 +98,9 @@ public class RepositoryTask extends Task {
 		// Create a template defining a variable with all existing repositories
 		// if genList is true
 		if (this.genList) {			
-			if (this.nameListDir != null) {			
+			if (this.nameListDir == null) {
+				throw new BuildException("Cannot build template with list of repositories: option 'nameListdir' undefined.");
+			} else {
 				listFileName = this.nameListDir+"/"+listFileName;			
 			}
 			if (this.debugTask) {
@@ -153,6 +158,17 @@ public class RepositoryTask extends Task {
 	 */
 	public void setNameListDir(String nameListDir) {
 		this.nameListDir = nameListDir;
+	}
+	
+	/**
+	 * Set the namespace for the generated repository list template.
+	 * 
+	 * @param listNamespace
+	 *            String containing namespace
+	 * 
+	 */
+	public void setNameListDir(String listNamespace) {
+		this.listName = listNamespace;
 	}
 	
 	/*
