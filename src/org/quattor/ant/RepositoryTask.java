@@ -77,8 +77,24 @@ public class RepositoryTask extends Task {
 		// need to get path as parameter
 		String listName = 	"repository/allrepositories";
 		String listFileName = listName+".tpl";
-		if (this.genList) {
+		private LinkedList<Repository> repositoryList = new LinkedList<Repository>();
+		
+		// Loop over all of the given files. Write those that are repository
+		// templates with the proper embedded comments and that have changed.
+		for (File f : files) {
+			Repository r = parseTemplate(f);
+			repositoryList.add(r);
+			if (r != null) {
+				if (r.write()) {
+					System.out.println("Updating: " + r);
+				}
+			}
 			
+		}
+
+		// Create a template defining a variable with all existing repositories
+		// if genList is true
+		if (this.genList) {			
 			if (this.nameListDir != null) {			
 				listFileName = this.nameListDir+"/"+listFileName;			
 			}
@@ -86,55 +102,23 @@ public class RepositoryTask extends Task {
 				System.out.println("Generating template with list of repositories");
 				System.out.println("Template location "+listFileName);
 			}
-		}
 		
-		try {
-			FileWriter allRepos = new FileWriter(listFileName,false);
-			allRepos.write("# list of all repository templates found\n");
-			allRepos.write("template "+listName+";\n\n");
-			allRepos.write("variable ALL_REPOSITORIES= nlist( \n");
-			allRepos.close();
-			}
-		catch (Exception e) {
-			System.err.println("Error: " + e.getMessage());
-			
-		}
-		
-        
-		// Loop over all of the given files. Write those that are repository
-		// templates with the proper embedded comments and that have changed.
-		for (File f : files) {
-			Repository r = parseTemplate(f);
-                       
-			if (r != null) {
-                if (this.genList) {            
-                	try {
-                		FileWriter allRepos = new FileWriter(listFileName,true);
-                		allRepos.write("'"+r.name+"',  create('repository/" + r.name+"'),\n");
-                		allRepos.close();
-                	}
-                	catch (Exception e) {
-                		System.err.println("Error: " + e.getMessage());
-                	}
-                }
-                                
-                            
-				if (r.write()) {
-					System.out.println("Updating: " + r);
+			try {
+				FileWriter allRepos = new FileWriter(listFileName,false);
+				allRepos.write("# List of all existing repository templates\n");
+				allRepos.write("template "+listName+";\n\n");
+				allRepos.write("variable ALL_REPOSITORIES= nlist( \n");
+				for (Repository r:repositoryList) {
+					allRepos.write("'"+r.name+"',  create('repository/" + r.name+"'),\n");					
 				}
-			}
-			
-		}
-		try {
-			FileWriter allRepos = new FileWriter(listFileName,true);
-			
-			allRepos.write("); \n");
-			allRepos.close();
-			}
+				allRepos.write("); \n");
+				allRepos.close();
+				}
 			catch (Exception e) {
 				System.err.println("Error: " + e.getMessage());
 				
-			}
+			}		
+		}
 			
 		
 	}
@@ -391,6 +375,8 @@ public class RepositoryTask extends Task {
 
 		/**
 		 * Write the template to the given file.
+		 * 
+		 * Returns true if the template was rebuilt, false otherwise.
 		 */
 		public boolean write() {
 
@@ -407,7 +393,8 @@ public class RepositoryTask extends Task {
 			// same.
 			// - If 'name' property is missing or its value differs from 'name'
 			// tag in comments,
-			// the template is considered malformed and rebuilt.
+			// In this case, the template is considered malformed and must be rebuilt.
+			
 			Set<String> newPkgs = pkgs.keySet();
 			boolean write = !(newPkgs.equals(existingPkgs))
 					|| (templateName == null) || !(name.equals(nameProperty));
