@@ -14,6 +14,12 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 	/* The output directory for compiled profiles. */
 	private File outputdir = null;
 
+	/* Name of XML file containing the list of profiles. Default should be appropriate. */
+	private String profilesInfoName = "profiles-info.xml";
+	
+	/* Control printing of debugging messages in this task */
+	private boolean debugTask = false;
+	
 	/*
 	 * Method used by ant to execute this task.
 	 */
@@ -24,6 +30,12 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 		if (outputdir == null) {
 			throw new BuildException("outputdir not specified");
 		}
+		if (outputdir == "") {
+			if ( debugTask ) {
+				System.out.println("outputdir parameters is an empty string: do nothing.");
+			}
+			return;
+		}
 		if (!outputdir.exists()) {
 			throw new BuildException("outputdir (" + outputdir
 					+ ") does not exist");
@@ -32,6 +44,8 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 			throw new BuildException("outputdir (" + outputdir
 					+ ") is not a directory");
 		}
+		
+		System.out.println("Updating "+profilesInfoName+" in "+outputdir);
 
 		// Get all of the profiles in the given directory.
 		StringBuffer contents = new StringBuffer(
@@ -49,7 +63,7 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 		contents.append("</profiles>\n");
 
 		// Create the output file.
-		File info = new File(outputdir, "profiles-info.xml");
+		File info = new File(outputdir, profilesInfoName);
 		try {
 
 			// Open the output file.
@@ -81,9 +95,21 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 	 */
 	public boolean accept(File file) {
 		String name = file.getName();
-		boolean ok = (!"profiles-info.xml".equals(name)) && !file.isHidden()
+		boolean ok = (!profilesInfoName.equals(name)) && !file.isHidden()
 				&& (name.length() > 4 && name.endsWith(".xml"));
 		return ok;
+	}
+
+	/**
+	 * Setting this flag will print debugging information from the task itself.
+	 * This is primarily useful if one wants to debug a build using the command
+	 * line interface.
+	 * 
+	 * @param debugTask
+	 *            flag to print task debugging information
+	 */
+	public void setDebugTask(boolean debugTask) {
+		this.debugTask = debugTask;
 	}
 
 }
