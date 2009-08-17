@@ -12,36 +12,18 @@ import org.apache.tools.ant.Task;
 public class ProfileInfoTask extends Task implements java.io.FileFilter {
 
 	/* The output directory for compiled profiles. */
-	private String profilesDirName = null;
+	private File outputdir = null;
 
-	/* Name of XML file containing the list of profiles. Default should be appropriate. */
-	private String profilesInfoName = "profiles-info.xml";
-	
-	/* Control printing of debugging messages in this task */
-	private boolean debugTask = false;
-	
-	/* Control printing of informational messages in this task */
-	private boolean verbose = true;
-	
 	/*
 	 * Method used by ant to execute this task.
 	 */
 	@Override
 	public void execute() throws BuildException {
+
 		// Sanity checks on the output directory.
-		if (profilesDirName == null) {
-			throw new BuildException("profilesDirName not specified");
+		if (outputdir == null) {
+			throw new BuildException("outputdir not specified");
 		}
-		if (profilesDirName.length() == 0) {
-			if ( debugTask ) {
-				System.out.println("profilesDirName parameters is an empty string: do nothing.");
-			}
-			return;
-		}
-                if ( debugTask ) {
-			System.out.println("Checking if profilesDirName ("+profilesDirName+") is a valid directory");
-		}
-                File outputdir = new File(profilesDirName);
 		if (!outputdir.exists()) {
 			throw new BuildException("outputdir (" + outputdir
 					+ ") does not exist");
@@ -49,10 +31,6 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 		if (!outputdir.isDirectory()) {
 			throw new BuildException("outputdir (" + outputdir
 					+ ") is not a directory");
-		}
-		
-		if ( verbose || debugTask ) {
-			System.out.println("Updating "+profilesInfoName+" in "+outputdir);			
 		}
 
 		// Get all of the profiles in the given directory.
@@ -71,7 +49,7 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 		contents.append("</profiles>\n");
 
 		// Create the output file.
-		File info = new File(outputdir, profilesInfoName);
+		File info = new File(outputdir, "profiles-info.xml");
 		try {
 
 			// Open the output file.
@@ -88,11 +66,11 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 
 	/*
 	 * Set the directory for the compiled profiles.
-	 *
-	 * @param profilesDirName  String output directory path
+	 * 
+	 * @param outputdir File containing output directory
 	 */
-	public void setProfilesDirName(String profilesDirName) {
-		this.profilesDirName = profilesDirName;
+	public void setOutputdir(File outputdir) {
+		this.outputdir = outputdir;
 	}
 
 	/**
@@ -103,31 +81,9 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 	 */
 	public boolean accept(File file) {
 		String name = file.getName();
-		boolean ok = (!profilesInfoName.equals(name)) && !file.isHidden()
+		boolean ok = (!"profiles-info.xml".equals(name)) && !file.isHidden()
 				&& (name.length() > 4 && name.endsWith(".xml"));
 		return ok;
-	}
-
-	/**
-	 * Setting this flag will print debugging information from the task itself.
-	 * This is primarily useful if one wants to debug a build using the command
-	 * line interface.
-	 * 
-	 * @param debugTask
-	 *            flag to print task debugging information
-	 */
-	public void setDebugTask(boolean debugTask) {
-		this.debugTask = debugTask;
-	}
-
-	/**
-	 * Controls printing of informational messages.
-	 * 
-	 * @param verbose
-	 *            flag to print task debugging information
-	 */
-	public void setVerbose(boolean verbose) {
-		this.verbose = verbose;
 	}
 
 }

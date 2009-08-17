@@ -138,7 +138,6 @@ public class RepositoryTask extends Task {
 	public void setDebugTask(boolean debugTask) {
 		this.debugTask = debugTask;
 	}
-
 	/**
 	 * Setting this flag will generate a template with a list of all repositories.
 	 *  
