@@ -12,7 +12,7 @@ import org.apache.tools.ant.Task;
 public class ProfileInfoTask extends Task implements java.io.FileFilter {
 
 	/* The output directory for compiled profiles. */
-	private File outputdir = null;
+	private String profilesDirName = null;
 
 	/* Name of XML file containing the list of profiles. Default should be appropriate. */
 	private String profilesInfoName = "profiles-info.xml";
@@ -28,17 +28,20 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 	 */
 	@Override
 	public void execute() throws BuildException {
-
 		// Sanity checks on the output directory.
-		if (outputdir == null) {
-			throw new BuildException("outputdir not specified");
+		if (profilesDirName == null) {
+			throw new BuildException("profilesDirName not specified");
 		}
-		if (outputdir == "") {
+		if (profilesDirName.length() == 0) {
 			if ( debugTask ) {
-				System.out.println("outputdir parameters is an empty string: do nothing.");
+				System.out.println("profilesDirName parameters is an empty string: do nothing.");
 			}
 			return;
 		}
+                if ( debugTask ) {
+			System.out.println("Checking if profilesDirName ("+profilesDirName+") is a valid directory");
+		}
+                File outputdir = new File(profilesDirName);
 		if (!outputdir.exists()) {
 			throw new BuildException("outputdir (" + outputdir
 					+ ") does not exist");
@@ -48,7 +51,7 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 					+ ") is not a directory");
 		}
 		
-		if ( verbose ) {
+		if ( verbose || debugTask ) {
 			System.out.println("Updating "+profilesInfoName+" in "+outputdir);			
 		}
 
@@ -85,11 +88,11 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 
 	/*
 	 * Set the directory for the compiled profiles.
-	 * 
-	 * @param outputdir File containing output directory
+	 *
+	 * @param profilesDirName  String output directory path
 	 */
-	public void setOutputdir(File outputdir) {
-		this.outputdir = outputdir;
+	public void setProfilesDirName(String profilesDirName) {
+		this.profilesDirName = profilesDirName;
 	}
 
 	/**
