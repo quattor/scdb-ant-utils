@@ -20,6 +20,9 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 	/* Control printing of debugging messages in this task */
 	private boolean debugTask = false;
 	
+	/* Control printing of informational messages in this task */
+	private boolean verbose = true;
+	
 	/*
 	 * Method used by ant to execute this task.
 	 */
@@ -45,7 +48,9 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 					+ ") is not a directory");
 		}
 		
-		System.out.println("Updating "+profilesInfoName+" in "+outputdir);
+		if ( verbose ) {
+			System.out.println("Updating "+profilesInfoName+" in "+outputdir);			
+		}
 
 		// Get all of the profiles in the given directory.
 		StringBuffer contents = new StringBuffer(
@@ -110,6 +115,16 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 	 */
 	public void setDebugTask(boolean debugTask) {
 		this.debugTask = debugTask;
+	}
+
+	/**
+	 * Controls printing of informational messages.
+	 * 
+	 * @param verbose
+	 *            flag to print task debugging information
+	 */
+	public void setVerbose(boolean verbose) {
+		this.verbose = verbose;
 	}
 
 }
