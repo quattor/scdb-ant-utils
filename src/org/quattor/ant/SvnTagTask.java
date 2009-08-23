@@ -247,10 +247,9 @@ public class SvnTagTask extends Task {
 		SVNCommitInfo commitInfo = null;
 		System.out.println("Making tag: " + tag);
 		try {
-			SVNCopySource copySrc = new SVNCopySource(SVNRevision.HEAD,SVNRevision.HEAD,srcUrl);
-			commitInfo = copy.doCopy(copySrc, tagUrl, false, true, false, "ant tag");
-		} catch (ClassNotFoundException e) {
-			throw new BuildException("doCopy() method not found. Check you are using svnkit 1.2+");
+			SVNCopySource[] copySrc = new SVNCopySource[1];
+			copySrc[0] = new SVNCopySource(SVNRevision.HEAD,SVNRevision.HEAD,srcUrl);
+			commitInfo = copy.doCopy(copySrc, tagUrl, false, true, false, "ant tag", null);
 		} catch (SVNException e) {
 			throw new BuildException("\ntag failed: " + e.getMessage());
 		}
