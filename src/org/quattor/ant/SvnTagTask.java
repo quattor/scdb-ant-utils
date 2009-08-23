@@ -19,6 +19,7 @@ import org.tmatesoft.svn.core.wc.ISVNStatusHandler;
 import org.tmatesoft.svn.core.wc.SVNClientManager;
 import org.tmatesoft.svn.core.wc.SVNCommitClient;
 import org.tmatesoft.svn.core.wc.SVNCopyClient;
+import org.tmatesoft.svn.core.wc.SVNCopySource;
 import org.tmatesoft.svn.core.wc.SVNInfo;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNStatus;
@@ -241,80 +242,15 @@ public class SvnTagTask extends Task {
 					"workspace has local and/or remote modifications; deploy aborted");
 		}
 
-		// Check the tag branch exists and create it if necessary.
-		// The check needs to be done recursively as doMkDir() doesn't allow
-		// to create intermediate branch levels implicitly.
-		LinkedList<String> branchesToCreate = new LinkedList<String>();
-		boolean tagDirExists = false;
-		String tagParent = tag;
-		String tagParentSaved = tagParent;
-		SVNNodeKind tagParentNodeKind = null;
-		int parentIndex = tagParent.lastIndexOf("/");
-		i = parentIndex;
-		while (!tagDirExists && (i > 0)) {
-			tagParent = tagParent.substring(0, i);
-			if (debugTask)
-				System.out.println("Checking existence of tag parent "
-						+ tagParent);
-			try {
-				tagParentNodeKind = repositoryTags.checkPath(tagParent, -1);
-			} catch (SVNException e) {
-				throw new BuildException(
-						"Error checking existence of SVN branch " + tagParent
-								+ ": " + e.getMessage());
-			}
-			if (tagParentNodeKind == SVNNodeKind.NONE) {
-				branchesToCreate.addFirst(srcBranch + tagParent);
-				i = tagParent.lastIndexOf("/");
-			} else if (tagParentNodeKind != SVNNodeKind.DIR) {
-				throw new BuildException("Error: " + tagParent
-						+ " exists in repository but is not a directory");
-			} else {
-				tagDirExists = true;
-			}
-		}
-		if (!branchesToCreate.isEmpty()) {
-			SVNURL[] urlsToCreate = new SVNURL[branchesToCreate.size()];
-			int j = 0;
-			for (Iterator<String> it = branchesToCreate.iterator(); it
-					.hasNext();) {
-				String branchPath = it.next();
-				if (debugTask)
-					System.out.println("Adding " + branchPath
-							+ " to branch list to create");
-				try {
-					urlsToCreate[j] = SVNURL.parseURIEncoded(branchPath);
-				} catch (SVNException e) {
-					throw new BuildException("Error converting " + branchPath
-							+ " to URL:" + e.getMessage());
-				}
-				j++;
-			}
-			System.out.println("Creating tag branch " + tagParentSaved);
-			try {
-				commit.doMkDir(urlsToCreate,
-						"SCDB ant tools : create new tag branch");
-			} catch (SVNException e) {
-				String tagRoot = srcBranch;
-				if (parentIndex > 0) {
-					tagRoot += tag.substring(0, parentIndex);
-
-				}
-				throw new BuildException("Error creating tag branch " + tagRoot
-						+ ": " + e.getMessage());
-			}
-		}
-
 		// Actually make the tag.
+		// If the tag branch or the tag parents don't exist, they will be created.
 		SVNCommitInfo commitInfo = null;
 		System.out.println("Making tag: " + tag);
 		try {
-			// svnkit 1.2+. In fact use createParents=true and remove previous code...
-			// copySrc = new SVNCopySource(SVNRevision.HEAD,SVNRevision.HEAD,srcUrl);
-			// commitInfo = copy.doCopy(copySrc, tagUrl, false, false, false, "ant tag");
-			// } catch (JavaClassNotFound e) {
-			//     throw new BuildException("doCopy() method not found. Check you are using svnkit 1.2+");
-			commitInfo = copy.doCopy(srcUrl, SVNRevision.HEAD, tagUrl, false, "ant tag");
+			SVNCopySource copySrc = new SVNCopySource(SVNRevision.HEAD,SVNRevision.HEAD,srcUrl);
+			commitInfo = copy.doCopy(copySrc, tagUrl, false, true, false, "ant tag");
+		} catch (ClassNotFoundException e) {
+			throw new BuildException("doCopy() method not found. Check you are using svnkit 1.2+");
 		} catch (SVNException e) {
 			throw new BuildException("\ntag failed: " + e.getMessage());
 		}
