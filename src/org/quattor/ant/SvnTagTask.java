@@ -1,12 +1,11 @@
 package org.quattor.ant;
 
 import java.io.File;
-import java.util.Iterator;
-import java.util.LinkedList;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Task;
 import org.tmatesoft.svn.core.SVNCommitInfo;
+import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNNodeKind;
 import org.tmatesoft.svn.core.SVNURL;
@@ -17,7 +16,6 @@ import org.tmatesoft.svn.core.io.SVNRepository;
 import org.tmatesoft.svn.core.io.SVNRepositoryFactory;
 import org.tmatesoft.svn.core.wc.ISVNStatusHandler;
 import org.tmatesoft.svn.core.wc.SVNClientManager;
-import org.tmatesoft.svn.core.wc.SVNCommitClient;
 import org.tmatesoft.svn.core.wc.SVNCopyClient;
 import org.tmatesoft.svn.core.wc.SVNCopySource;
 import org.tmatesoft.svn.core.wc.SVNInfo;
@@ -152,7 +150,6 @@ public class SvnTagTask extends Task {
 		SVNStatusClient status = manager.getStatusClient();
 		SVNCopyClient copy = manager.getCopyClient();
 		SVNWCClient wc = manager.getWCClient();
-		SVNCommitClient commit = manager.getCommitClient();
 
 		// Create a handler to collect the information.
 		StatusHandler handler = new StatusHandler(debugTask);
@@ -225,7 +222,7 @@ public class SvnTagTask extends Task {
 		System.out.println("Checking for local and remote modifications...");
 		handler.reset();
 		try {
-			status.doStatus(workspacePath, true, true, false, false, handler);
+			status.doStatus(workspacePath, SVNRevision.HEAD, SVNDepth.INFINITY, true, false, false, false, handler,null);
 		} catch (SVNException e) {
 			throw new BuildException("Check failed (" + e.toString() + ")");
 		}
@@ -250,6 +247,8 @@ public class SvnTagTask extends Task {
 			SVNCopySource[] copySrc = new SVNCopySource[1];
 			copySrc[0] = new SVNCopySource(SVNRevision.HEAD,SVNRevision.HEAD,srcUrl);
 			commitInfo = copy.doCopy(copySrc, tagUrl, false, true, false, "ant tag", null);
+		//} catch (MethodNotFoundException e) {
+		//	throw new BuildException("\ntag failed: your svnkit version is not compatible with SCDB Ant Tools (probably too old)");
 		} catch (SVNException e) {
 			throw new BuildException("\ntag failed: " + e.getMessage());
 		}
