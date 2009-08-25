@@ -247,8 +247,6 @@ public class SvnTagTask extends Task {
 			SVNCopySource[] copySrc = new SVNCopySource[1];
 			copySrc[0] = new SVNCopySource(SVNRevision.HEAD,SVNRevision.HEAD,srcUrl);
 			commitInfo = copy.doCopy(copySrc, tagUrl, false, true, false, "ant tag", null);
-		//} catch (MethodNotFoundException e) {
-		//	throw new BuildException("\ntag failed: your svnkit version is not compatible with SCDB Ant Tools (probably too old)");
 		} catch (SVNException e) {
 			throw new BuildException("\ntag failed: " + e.getMessage());
 		}
