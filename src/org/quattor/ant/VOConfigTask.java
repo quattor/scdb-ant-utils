@@ -697,12 +697,12 @@ public class VOConfigTask extends Task {
 							if (roleAdmin.startsWith("#")) {
 								tpl
 										.add("#    nlist(\"description\", \"SW manager\",");
-								tpl.add("#      \"FQAN\", \"/Role=lcgadmin\",");
+								tpl.add("#      \"fqan\", \"/Role=lcgadmin\",");
 								tpl.add("#      \"suffix\", \"s\"),");
 							} else {
 								tpl
 										.add("     nlist(\"description\", \"SW manager\",");
-								tpl.add("       \"FQAN\", \"/Role=lcgadmin\",");
+								tpl.add("       \"fqan\", \"/Role=lcgadmin\",");
 								tpl.add("       \"suffix\", \"s\"),");
 							}
 						}
@@ -710,12 +710,12 @@ public class VOConfigTask extends Task {
 							if (roleSwAdmin.startsWith("#")) {
 								tpl
 										.add("#    nlist(\"description\", \"SW manager\",");
-								tpl.add("#      \"FQAN\", \"/Role=swadmin\",");
+								tpl.add("#      \"fqan\", \"/Role=swadmin\",");
 								tpl.add("#      \"suffix\", \"s\"),");
 							} else {
 								tpl
 										.add("     nlist(\"description\", \"SW manager\",");
-								tpl.add("       \"FQAN\", \"/Role=swadmin\",");
+								tpl.add("       \"fqan\", \"/Role=swadmin\",");
 								tpl.add("       \"suffix\", \"s\"),");
 							}
 						}
@@ -724,13 +724,13 @@ public class VOConfigTask extends Task {
 								tpl
 										.add("#    nlist(\"description\", \"production\",");
 								tpl
-										.add("#      \"FQAN\", \"/Role=production\",");
+										.add("#      \"fqan\", \"/Role=production\",");
 								tpl.add("#      \"suffix\", \"p\"),");
 							} else {
 								tpl
 										.add("     nlist(\"description\", \"production\",");
 								tpl
-										.add("       \"FQAN\", \"/Role=production\",");
+										.add("       \"fqan\", \"/Role=production\",");
 								tpl.add("       \"suffix\", \"p\"),");
 							}
 						}
@@ -738,12 +738,12 @@ public class VOConfigTask extends Task {
 							if (roleAtl.startsWith("#")) {
 								tpl
 										.add("#    nlist(\"description\", \"ATLAS\",");
-								tpl.add("#      \"FQAN\", \"/Role=atlas\",");
+								tpl.add("#      \"fqan\", \"/Role=atlas\",");
 								tpl.add("#      \"suffix\", \"atl\"),");
 							} else {
 								tpl
 										.add("     nlist(\"description\", \"ATLAS\",");
-								tpl.add("       \"FQAN\", \"/Role=atlas\",");
+								tpl.add("       \"fqan\", \"/Role=atlas\",");
 								tpl.add("       \"suffix\", \"atl\"),");
 							}
 						}
@@ -752,13 +752,13 @@ public class VOConfigTask extends Task {
 								tpl
 										.add("#    nlist(\"description\", \"SW manager\",");
 								tpl
-										.add("#      \"FQAN\", \"/Role=SoftwareManager\",");
+										.add("#      \"fqan\", \"/Role=SoftwareManager\",");
 								tpl.add("#      \"suffix\", \"s\"),");
 							} else {
 								tpl
 										.add("     nlist(\"description\", \"SW manager\",");
 								tpl
-										.add("       \"FQAN\", \"/Role=SoftwareManager\",");
+										.add("       \"fqan\", \"/Role=SoftwareManager\",");
 								tpl.add("       \"suffix\", \"s\"),");
 							}
 						}
@@ -771,7 +771,7 @@ public class VOConfigTask extends Task {
 										tpl
 												.add("#    nlist(\"description\", \""
 														+ r[0] + "\",");
-										tpl.add("#      \"FQAN\", \"/Role="
+										tpl.add("#      \"fqan\", \"/Role="
 												+ rzero + "\",");
 										tpl.add("#      \"suffix\", \"" + r[1]
 												+ "\"),");
@@ -779,7 +779,7 @@ public class VOConfigTask extends Task {
 										tpl
 												.add("     nlist(\"description\", \""
 														+ r[0] + "\",");
-										tpl.add("       \"FQAN\", \"/Role="
+										tpl.add("       \"fqan\", \"/Role="
 												+ r[0] + "\",");
 										tpl.add("       \"suffix\", \"" + r[1]
 												+ "\"),");
@@ -799,7 +799,7 @@ public class VOConfigTask extends Task {
 														+ Integer
 																.toString(countfq)
 														+ "\",");
-										tpl.add("#      \"FQAN\", \"" + fzero
+										tpl.add("#      \"fqan\", \"" + fzero
 												+ "\",");
 										tpl.add("#      \"suffix\", \"fqan"
 												+ Integer.toString(countfq)
@@ -811,7 +811,7 @@ public class VOConfigTask extends Task {
 														+ Integer
 																.toString(countfq)
 														+ "\",");
-										tpl.add("       \"FQAN\", \"" + f[0]
+										tpl.add("       \"fqan\", \"" + f[0]
 												+ "\",");
 										tpl.add("       \"suffix\", \"fqan"
 												+ Integer.toString(countfq)
