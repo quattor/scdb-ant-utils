@@ -593,11 +593,11 @@ public class VOConfigTask extends Task {
 		@Override
 		public void startDocument() throws SAXException {
 			String dnlistfilename = root.concat("/" + nameDNListDirTpl
-					+ "/vos_dn_list.tpl");
+					+ "/voms_dn_list.tpl");
 			dnList.add("d");
 			dnList.add("0");
 			dnList.add(dnlistfilename);
-			dnList.add("unique template " + nameDNListDirTpl + "/vos_dn_list;");
+			dnList.add("unique template " + nameDNListDirTpl + "/voms_dn_list;");
 			dnList.add("");
 			dnList.add("variable VOS_DN_LIST = nlist(");
 			roleGen = new LinkedList<String>();
@@ -697,12 +697,12 @@ public class VOConfigTask extends Task {
 							if (roleAdmin.startsWith("#")) {
 								tpl
 										.add("#    nlist(\"description\", \"SW manager\",");
-								tpl.add("#      \"fqan\", \"/Role=lcgadmin\",");
+								tpl.add("#      \"fqan\", \""+VO+"/Role=lcgadmin\",");
 								tpl.add("#      \"suffix\", \"s\"),");
 							} else {
 								tpl
 										.add("     nlist(\"description\", \"SW manager\",");
-								tpl.add("       \"fqan\", \"/Role=lcgadmin\",");
+								tpl.add("       \"fqan\", \""+VO+"/Role=lcgadmin\",");
 								tpl.add("       \"suffix\", \"s\"),");
 							}
 						}
@@ -710,12 +710,12 @@ public class VOConfigTask extends Task {
 							if (roleSwAdmin.startsWith("#")) {
 								tpl
 										.add("#    nlist(\"description\", \"SW manager\",");
-								tpl.add("#      \"fqan\", \"/Role=swadmin\",");
+								tpl.add("#      \"fqan\", \""+VO+"/Role=swadmin\",");
 								tpl.add("#      \"suffix\", \"s\"),");
 							} else {
 								tpl
 										.add("     nlist(\"description\", \"SW manager\",");
-								tpl.add("       \"fqan\", \"/Role=swadmin\",");
+								tpl.add("       \"fqan\", \""+VO+"/Role=swadmin\",");
 								tpl.add("       \"suffix\", \"s\"),");
 							}
 						}
@@ -724,13 +724,13 @@ public class VOConfigTask extends Task {
 								tpl
 										.add("#    nlist(\"description\", \"production\",");
 								tpl
-										.add("#      \"fqan\", \"/Role=production\",");
+										.add("#      \"fqan\", \""+VO+"/Role=production\",");
 								tpl.add("#      \"suffix\", \"p\"),");
 							} else {
 								tpl
 										.add("     nlist(\"description\", \"production\",");
 								tpl
-										.add("       \"fqan\", \"/Role=production\",");
+										.add("       \"fqan\", \""+VO+"/Role=production\",");
 								tpl.add("       \"suffix\", \"p\"),");
 							}
 						}
@@ -738,12 +738,12 @@ public class VOConfigTask extends Task {
 							if (roleAtl.startsWith("#")) {
 								tpl
 										.add("#    nlist(\"description\", \"ATLAS\",");
-								tpl.add("#      \"fqan\", \"/Role=atlas\",");
+								tpl.add("#      \"fqan\", \""+VO+"/Role=atlas\",");
 								tpl.add("#      \"suffix\", \"atl\"),");
 							} else {
 								tpl
 										.add("     nlist(\"description\", \"ATLAS\",");
-								tpl.add("       \"fqan\", \"/Role=atlas\",");
+								tpl.add("       \"fqan\", \""+VO+"/Role=atlas\",");
 								tpl.add("       \"suffix\", \"atl\"),");
 							}
 						}
@@ -752,13 +752,13 @@ public class VOConfigTask extends Task {
 								tpl
 										.add("#    nlist(\"description\", \"SW manager\",");
 								tpl
-										.add("#      \"fqan\", \"/Role=SoftwareManager\",");
+										.add("#      \"fqan\", \""+VO+"/Role=SoftwareManager\",");
 								tpl.add("#      \"suffix\", \"s\"),");
 							} else {
 								tpl
 										.add("     nlist(\"description\", \"SW manager\",");
 								tpl
-										.add("       \"fqan\", \"/Role=SoftwareManager\",");
+										.add("       \"fqan\", \""+VO+"/Role=SoftwareManager\",");
 								tpl.add("       \"suffix\", \"s\"),");
 							}
 						}
@@ -771,7 +771,7 @@ public class VOConfigTask extends Task {
 										tpl
 												.add("#    nlist(\"description\", \""
 														+ r[0] + "\",");
-										tpl.add("#      \"fqan\", \"/Role="
+										tpl.add("#      \"fqan\", \""+VO+"/Role="
 												+ rzero + "\",");
 										tpl.add("#      \"suffix\", \"" + r[1]
 												+ "\"),");
@@ -779,7 +779,7 @@ public class VOConfigTask extends Task {
 										tpl
 												.add("     nlist(\"description\", \""
 														+ r[0] + "\",");
-										tpl.add("       \"fqan\", \"/Role="
+										tpl.add("       \"fqan\", \""+VO+"/Role="
 												+ r[0] + "\",");
 										tpl.add("       \"suffix\", \"" + r[1]
 												+ "\"),");
@@ -923,7 +923,7 @@ public class VOConfigTask extends Task {
 						}
 					} else {
 						String fqan = null;
-						fqan = buffer.toString().replace("/Role=NULL", "");
+						fqan = buffer.toString().replace(""+VO+"/Role=NULL", "");
 						if ((!fqan.equals("/" + VO))
 								&& (!fqan.equals("/" + VO + "/"))) {
 							if (isused) {
