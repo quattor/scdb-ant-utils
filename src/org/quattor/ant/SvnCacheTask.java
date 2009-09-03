@@ -6,6 +6,7 @@ import java.net.URL;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Task;
+import org.tmatesoft.svn.core.SVNDepth;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
@@ -248,12 +249,13 @@ public class SvnCacheTask extends Task {
 			if (switchOk) {
 				System.out.println("Switching: \n    " + wcPath + "\n    "
 						+ tagUrl.toString());
-				updater.doSwitch(wcPath, tagUrl, SVNRevision.HEAD, true);
+				updater.doSwitch(wcPath, tagUrl, SVNRevision.HEAD,
+						SVNRevision.HEAD, SVNDepth.INFINITY, false, false);
 			} else {
 				System.out.println("Checking out: \n    " + wcPath + "\n    "
 						+ tagUrl.toString());
 				updater.doCheckout(tagUrl, wcPath, SVNRevision.HEAD,
-						SVNRevision.HEAD, true);
+						SVNRevision.HEAD, SVNDepth.INFINITY, false);
 			}
 		} catch (SVNException se) {
 			if (!recover(updater, tagUrl)) {
@@ -287,7 +289,7 @@ public class SvnCacheTask extends Task {
 				while (count < recoveryLimit) {
 					try {
 						System.err.println("recovery attempt: " + count);
-						updater.doUpdate(wcPath, SVNRevision.HEAD, true);
+						updater.doUpdate(wcPath, SVNRevision.HEAD, SVNDepth.INFINITY, false, false);
 						System.err.println("recovery successful");
 						return true;
 					} catch (SVNException consumed) {
