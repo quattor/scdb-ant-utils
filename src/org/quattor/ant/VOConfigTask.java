@@ -453,38 +453,10 @@ public class VOConfigTask extends Task {
 	 */
 	public static class MyHandler extends DefaultHandler {
 
+		private String VO = null;
+
 		/* the buffer containing data given in the XML document */
 		private StringBuffer buffer;
-
-		/* the patterns used to collect the roles */
-		private final Pattern padmin = Pattern.compile("Role=lcgadmin",
-				Pattern.CASE_INSENSITIVE);
-
-		private final Pattern padmin2 = Pattern.compile("/admin",
-				Pattern.CASE_INSENSITIVE);
-
-		private final Pattern padmin3 = Pattern.compile("Role=VO-Admin",
-				Pattern.CASE_INSENSITIVE);
-
-		private final Pattern padmin4 = Pattern.compile("Role=VOAdmin",
-				Pattern.CASE_INSENSITIVE);
-
-		private final Pattern pswman = Pattern.compile("Role=SoftwareManager",
-				Pattern.CASE_INSENSITIVE);
-
-		private final Pattern pswman2 = Pattern.compile(
-				"Role=Software-Manager", Pattern.CASE_INSENSITIVE);
-
-		private final Pattern pswadmin = Pattern.compile("Role=swadmin",
-				Pattern.CASE_INSENSITIVE);
-
-		private final Pattern pprod = Pattern.compile("Role=production",
-				Pattern.CASE_INSENSITIVE);
-
-		private final Pattern patlas = Pattern.compile("Role=atlas",
-				Pattern.CASE_INSENSITIVE);
-
-		private final Pattern prolegen = Pattern.compile("Role=(.*)");
 
 		/* the id of the VO */
 		private String VOid = null;
@@ -509,6 +481,10 @@ public class VOConfigTask extends Task {
 		private LinkedList<String> roleGen;
 
 		private LinkedList<String> fqans;
+		
+		private LinkedList<String> roleUGen;
+		
+		private LinkedList<String> fqanSufGen;
 
 		/* Default values of pool size and base uid */
 		private String pool_size = "200";
@@ -536,8 +512,6 @@ public class VOConfigTask extends Task {
 		private String nameCertDirTpl;
 
 		private String nameDNListDirTpl;
-
-		private String VO = null;
 
 		private String fileTplName = null;
 
@@ -601,6 +575,8 @@ public class VOConfigTask extends Task {
 			dnList.add("");
 			dnList.add("variable VOS_DN_LIST = nlist(");
 			roleGen = new LinkedList<String>();
+			roleUGen = new LinkedList<String>();
+			fqanSufGen = new LinkedList<String>();
 		}
 
 		/*
@@ -690,7 +666,7 @@ public class VOConfigTask extends Task {
 					}
 					if ((roleAdmin != null) || (roleProd != null)
 							|| (roleAtl != null) || (roleSwAdmin != null)
-							|| (roleSwMan != null) || (roleGen != null)
+							|| (roleSwMan != null) || (roleGen != null) || (roleUGen != null)
 							|| (fqans != null)) {
 						tpl.add("\"voms_roles\" ?= list(");
 						if (roleAdmin != null) {
@@ -787,6 +763,29 @@ public class VOConfigTask extends Task {
 								}
 							}
 						}
+						if (roleUGen != null) {
+							for (String role : roleUGen) {
+								String[] r = p.split(role.trim());
+								if (r[2].equals(VO)) {
+									if (role.startsWith("#")) {
+										String rzero = r[0].substring(1);
+										tpl
+												.add("#    nlist(\"description\", \""
+														+ r[0] + "\",");
+										tpl.add("#      \"fqan\", " + rzero + "\",");
+										tpl.add("#      \"suffix\", \"" + r[1]
+												+ "\"),");
+									} else {
+										tpl
+												.add("     nlist(\"description\", \""
+														+ r[0] + "\",");
+										tpl.add("       \"fqan\", " + r[0] + "\",");
+										tpl.add("       \"suffix\", \"" + r[1]
+												+ "\"),");
+									}
+								}
+							}
+						}
 						if (fqans != null) {
 							int countfq = 1;
 							for (String fqan : fqans) {
@@ -795,26 +794,27 @@ public class VOConfigTask extends Task {
 									if (fqan.startsWith("#")) {
 										String fzero = f[0].substring(1);
 										tpl
-												.add("#    nlist(\"description\", \""+fzero+""
-														+ Integer
-																.toString(countfq)
-														+ "\",");
+												.add("#    nlist(\"description\", \""+fzero+ "\",");
 										tpl.add("#      \"fqan\", \"" + fzero
 												+ "\",");
-										tpl.add("#      \"suffix\", \"fqan"
-												+ Integer.toString(countfq)
+										String sufgen = generIdent(fzero, fzero.length(), Integer.parseInt(VOid),
+												fqanSufGen);
+										fqanSufGen.add(sufgen +"," + VO);
+										tpl.add("#      \"suffix\", \""
+												+ sufgen
 												+ "\"),");
 										countfq++;
 									} else {
 										tpl
-												.add("     nlist(\"description\", \""+f[0]+""
-														+ Integer
-																.toString(countfq)
-														+ "\",");
+												.add("     nlist(\"description\", \""+f[0]+ "\",");
 										tpl.add("       \"fqan\", \"" + f[0]
 												+ "\",");
-										tpl.add("       \"suffix\", \"fqan"
-												+ Integer.toString(countfq)
+										String sufgen = generIdent(f[0], f[0].length(), Integer.parseInt(VOid),
+												fqanSufGen);
+										fqanSufGen.add(sufgen +"," + VO);
+										
+										tpl.add("       \"suffix\", \""
+												+ sufgen
 												+ "\"),");
 										countfq++;
 									}
@@ -835,7 +835,7 @@ public class VOConfigTask extends Task {
 				tpl.add("\"lbhosts\" ?= '" + lbhosts + "';");
 				tpl.add("");
 				if (wms_hosts.equals("undef")) {
-					tpl.add("\"wms_hosts\" ?= '" + wms_hosts + "';");
+					tpl.add("\"wms_hosts\" ?= " + wms_hosts + ";");
 				} else {
 					String[] wmshs = wms_hosts.split(",");
 					int wm = 0;
@@ -862,14 +862,44 @@ public class VOConfigTask extends Task {
 				dnPortal = null;
 				allInfos.add(tpl);
 			} else if (qualifiedName.equals("IS_GROUP_USED")) {
-				// System.out.println("IS_GROUP_USED");
 				if (buffer.toString().equals("1")) {
 					isused = true;
 				} else {
 					isused = false;
 				}
 			} else if (qualifiedName.equals("GROUP_ROLE")) {
-				// System.out.println("GROUP_ROLE");
+				/* the patterns used to collect the roles */
+				Pattern padmin = Pattern.compile("/"+VO+"/Role=lcgadmin",
+						Pattern.CASE_INSENSITIVE);
+
+				Pattern padmin2 = Pattern.compile("/"+VO+"/admin",
+						Pattern.CASE_INSENSITIVE);
+
+				Pattern padmin3 = Pattern.compile("/"+VO+"/Role=VO-Admin",
+						Pattern.CASE_INSENSITIVE);
+
+				Pattern padmin4 = Pattern.compile("/"+VO+"/Role=VOAdmin",
+						Pattern.CASE_INSENSITIVE);
+
+				Pattern pswman = Pattern.compile("/"+VO+"/Role=SoftwareManager",
+						Pattern.CASE_INSENSITIVE);
+
+				Pattern pswman2 = Pattern.compile(
+						"/"+VO+"Role=Software-Manager", Pattern.CASE_INSENSITIVE);
+
+				Pattern pswadmin = Pattern.compile("/"+VO+"/Role=swadmin",
+						Pattern.CASE_INSENSITIVE);
+
+				Pattern pprod = Pattern.compile("/"+VO+"/Role=production",
+						Pattern.CASE_INSENSITIVE);
+
+				Pattern patlas = Pattern.compile("/"+VO+"/Role=atlas",
+						Pattern.CASE_INSENSITIVE);
+
+				Pattern prolegen = Pattern.compile("/"+VO+"/Role=(.*)");
+				
+				Pattern purolegen = Pattern.compile("/"+VO+"/(.*)");
+
 				Matcher m = padmin.matcher(buffer.toString());
 				Matcher mbis = padmin2.matcher(buffer.toString());
 				Matcher mter = padmin3.matcher(buffer.toString());
@@ -880,6 +910,8 @@ public class VOConfigTask extends Task {
 				Matcher m5 = pswman.matcher(buffer.toString());
 				Matcher m6 = pswman2.matcher(buffer.toString());
 				Matcher mrg = prolegen.matcher(buffer.toString());
+				Matcher umrg = purolegen.matcher(buffer.toString());
+				
 				if ((m.find()) || (mbis.find()) || (mter.find())
 						|| (mqua.find())) {
 					if (isused) {
@@ -912,7 +944,7 @@ public class VOConfigTask extends Task {
 						roleSwMan = "#" + buffer.toString();
 					}
 				} else if (mrg.find()) {
-					if (!(mrg.group(1).equals("NULL"))) {
+					/*if (!(mrg.group(1).equals("NULL"))) {*/
 						String ident = generIdent(mrg.group(1), buffer
 								.toString().length(), Integer.parseInt(VOid),
 								roleGen);
@@ -921,9 +953,9 @@ public class VOConfigTask extends Task {
 						} else {
 							roleGen.add("#" + ident);
 						}
-					} else {
+					/*} else {
 						String fqan = null;
-						fqan = buffer.toString().replace(""+VO+"/Role=NULL", "");
+						fqan = buffer.toString().replace(""+VO+"/Role=NULL", "lala");
 						if ((!fqan.equals("/" + VO))
 								&& (!fqan.equals("/" + VO + "/"))) {
 							if (isused) {
@@ -932,7 +964,16 @@ public class VOConfigTask extends Task {
 								fqans.add("#" + fqan + "," + VO);
 							}
 						}
-					}
+					}*/
+				} else if (umrg.find()) {
+					String ident = generIdent(buffer.toString(), buffer
+								.toString().length(), Integer.parseInt(VOid),
+								roleUGen);
+						if (isused) {
+							roleUGen.add(ident);
+						} else {
+							roleUGen.add("#" + ident);
+						}
 				} else {
 					if (buffer.toString() != null) {
 						if ((!buffer.toString().equals("/" + VO))
@@ -1393,14 +1434,16 @@ public class VOConfigTask extends Task {
 				LinkedList<String> list) {
 			String idtGen = st + "," + toBase26(i) + toBase26(idt) + "," + VO;
 			Pattern p = Pattern.compile(",");
-			for (String role : list) {
-				String[] id = p.split(role);
-				String[] idg = p.split(idtGen);
-				if (id[0].equals(idg[0])) {
-					idtGen = st + "," + id[1] + "," + VO;
-				} else if (id[1].equals(idg[1])) {
-					i = i + 1;
-					idtGen = generIdent(st, i, idt, list);
+			if (list != null){
+				for (String role : list) {
+					String[] id = p.split(role);
+					String[] idg = p.split(idtGen);
+					if (id[0].equals(idg[0])) {
+						idtGen = st + "," + id[1] + "," + VO;
+					} else if (id[1].equals(idg[1])) {
+						i = i + 1;
+						idtGen = generIdent(st, i, idt, list);
+					}
 				}
 			}
 			return idtGen;
@@ -1459,3 +1502,10 @@ public class VOConfigTask extends Task {
 		}
 	}
 }
+/*
+ *1 - Champ fqan entier et générer un suffixe
+ *2 - prendre tout le fqan à chq fois
+ *3 - attention à la regle de génération, id pour l'existant, fqan complet pour le reste 
+ *4 - champ description = mettre mm chose que dans fqan sauf swmgr, prod
+ *5 - 
+ */
