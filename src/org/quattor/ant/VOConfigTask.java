@@ -89,7 +89,7 @@ public class VOConfigTask extends Task {
 
 	final public static String endTag = "-----END CERTIFICATE-----";
 
-	// DECLARATION DE METHODES
+	// Methods Declaration
 
 	/**
 	 * Support nested dirset elements. This is called by ant only after all of
@@ -236,7 +236,7 @@ public class VOConfigTask extends Task {
 		} else {
 			wms_hosts = readFile(proxyName, "wms_hosts");
 		}
-		// On cree une instance de SAXBuilder
+		// Creation of an instance of SAXBuilder
 		String siteParamsFileName = getNameSiteParamsDir();
 		DefaultHandler handler = new MyHandler(siteParamsFileName,
 				configRootDir, nameParamDirTpl, proxy, nshosts, lbhosts,
@@ -772,14 +772,14 @@ public class VOConfigTask extends Task {
 										tpl
 												.add("#    nlist(\"description\", \""
 														+ r[0] + "\",");
-										tpl.add("#      \"fqan\", " + rzero + "\",");
+										tpl.add("#      \"fqan\", \"" + rzero + "\",");
 										tpl.add("#      \"suffix\", \"" + r[1]
 												+ "\"),");
 									} else {
 										tpl
 												.add("     nlist(\"description\", \""
 														+ r[0] + "\",");
-										tpl.add("       \"fqan\", " + r[0] + "\",");
+										tpl.add("       \"fqan\", \"" + r[0] + "\",");
 										tpl.add("       \"suffix\", \"" + r[1]
 												+ "\"),");
 									}
@@ -801,7 +801,7 @@ public class VOConfigTask extends Task {
 												fqanSufGen);
 										fqanSufGen.add(sufgen +"," + VO);
 										tpl.add("#      \"suffix\", \""
-												+ sufgen
+												+ p.split(sufgen.trim())[1]
 												+ "\"),");
 										countfq++;
 									} else {
@@ -814,7 +814,7 @@ public class VOConfigTask extends Task {
 										fqanSufGen.add(sufgen +"," + VO);
 										
 										tpl.add("       \"suffix\", \""
-												+ sufgen
+												+ p.split(sufgen.trim())[1]
 												+ "\"),");
 										countfq++;
 									}
@@ -944,7 +944,7 @@ public class VOConfigTask extends Task {
 						roleSwMan = "#" + buffer.toString();
 					}
 				} else if (mrg.find()) {
-					/*if (!(mrg.group(1).equals("NULL"))) {*/
+					if (!(mrg.group(1).equals("NULL"))) {
 						String ident = generIdent(mrg.group(1), buffer
 								.toString().length(), Integer.parseInt(VOid),
 								roleGen);
@@ -953,9 +953,9 @@ public class VOConfigTask extends Task {
 						} else {
 							roleGen.add("#" + ident);
 						}
-					/*} else {
+					} /*else {
 						String fqan = null;
-						fqan = buffer.toString().replace(""+VO+"/Role=NULL", "lala");
+						fqan = buffer.toString().replace("/"+VO+"/Role=NULL", "");
 						if ((!fqan.equals("/" + VO))
 								&& (!fqan.equals("/" + VO + "/"))) {
 							if (isused) {
@@ -966,14 +966,28 @@ public class VOConfigTask extends Task {
 						}
 					}*/
 				} else if (umrg.find()) {
-					String ident = generIdent(buffer.toString(), buffer
-								.toString().length(), Integer.parseInt(VOid),
-								roleUGen);
-						if (isused) {
-							roleUGen.add(ident);
-						} else {
-							roleUGen.add("#" + ident);
+					if (!(buffer.toString().trim().endsWith("NULL"))) {
+						String ident = generIdent(buffer.toString(), buffer
+									.toString().length(), Integer.parseInt(VOid),
+									roleUGen);
+							if (isused) {
+								roleUGen.add(ident);
+							} else {
+								roleUGen.add("#" + ident);
+							}
+					} /*else {
+						System.out.println("BUFFER : "+buffer.toString().trim());
+						String fqan = null;
+						fqan = buffer.toString();
+						if ((!fqan.startsWith("/" + VO))
+								&& (!fqan.startsWith("/" + VO + "/"))) {
+							if (isused) {
+								fqans.add(fqan + "," + VO);
+							} else {
+								fqans.add("#" + fqan + "," + VO);
+							}
 						}
+					}*/
 				} else {
 					if (buffer.toString() != null) {
 						if ((!buffer.toString().equals("/" + VO))
@@ -1502,10 +1516,3 @@ public class VOConfigTask extends Task {
 		}
 	}
 }
-/*
- *1 - Champ fqan entier et générer un suffixe
- *2 - prendre tout le fqan à chq fois
- *3 - attention à la regle de génération, id pour l'existant, fqan complet pour le reste 
- *4 - champ description = mettre mm chose que dans fqan sauf swmgr, prod
- *5 - 
- */
