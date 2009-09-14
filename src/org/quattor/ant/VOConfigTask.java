@@ -673,12 +673,12 @@ public class VOConfigTask extends Task {
 							if (roleAdmin.startsWith("#")) {
 								tpl
 										.add("#    nlist(\"description\", \"SW manager\",");
-								tpl.add("#      \"fqan\", \""+VO+"/Role=lcgadmin\",");
+								tpl.add("#      \"fqan\", \"/"+VO+"/Role=lcgadmin\",");
 								tpl.add("#      \"suffix\", \"s\"),");
 							} else {
 								tpl
 										.add("     nlist(\"description\", \"SW manager\",");
-								tpl.add("       \"fqan\", \""+VO+"/Role=lcgadmin\",");
+								tpl.add("       \"fqan\", \"/"+VO+"/Role=lcgadmin\",");
 								tpl.add("       \"suffix\", \"s\"),");
 							}
 						}
@@ -686,12 +686,12 @@ public class VOConfigTask extends Task {
 							if (roleSwAdmin.startsWith("#")) {
 								tpl
 										.add("#    nlist(\"description\", \"SW manager\",");
-								tpl.add("#      \"fqan\", \""+VO+"/Role=swadmin\",");
+								tpl.add("#      \"fqan\", \"/"+VO+"/Role=swadmin\",");
 								tpl.add("#      \"suffix\", \"s\"),");
 							} else {
 								tpl
 										.add("     nlist(\"description\", \"SW manager\",");
-								tpl.add("       \"fqan\", \""+VO+"/Role=swadmin\",");
+								tpl.add("       \"fqan\", \"/"+VO+"/Role=swadmin\",");
 								tpl.add("       \"suffix\", \"s\"),");
 							}
 						}
@@ -700,13 +700,13 @@ public class VOConfigTask extends Task {
 								tpl
 										.add("#    nlist(\"description\", \"production\",");
 								tpl
-										.add("#      \"fqan\", \""+VO+"/Role=production\",");
+										.add("#      \"fqan\", \"/"+VO+"/Role=production\",");
 								tpl.add("#      \"suffix\", \"p\"),");
 							} else {
 								tpl
 										.add("     nlist(\"description\", \"production\",");
 								tpl
-										.add("       \"fqan\", \""+VO+"/Role=production\",");
+										.add("       \"fqan\", \"/"+VO+"/Role=production\",");
 								tpl.add("       \"suffix\", \"p\"),");
 							}
 						}
@@ -714,12 +714,12 @@ public class VOConfigTask extends Task {
 							if (roleAtl.startsWith("#")) {
 								tpl
 										.add("#    nlist(\"description\", \"ATLAS\",");
-								tpl.add("#      \"fqan\", \""+VO+"/Role=atlas\",");
+								tpl.add("#      \"fqan\", \"/"+VO+"/Role=atlas\",");
 								tpl.add("#      \"suffix\", \"atl\"),");
 							} else {
 								tpl
 										.add("     nlist(\"description\", \"ATLAS\",");
-								tpl.add("       \"fqan\", \""+VO+"/Role=atlas\",");
+								tpl.add("       \"fqan\", \"/"+VO+"/Role=atlas\",");
 								tpl.add("       \"suffix\", \"atl\"),");
 							}
 						}
@@ -728,13 +728,13 @@ public class VOConfigTask extends Task {
 								tpl
 										.add("#    nlist(\"description\", \"SW manager\",");
 								tpl
-										.add("#      \"fqan\", \""+VO+"/Role=SoftwareManager\",");
+										.add("#      \"fqan\", \"/"+VO+"/Role=SoftwareManager\",");
 								tpl.add("#      \"suffix\", \"s\"),");
 							} else {
 								tpl
 										.add("     nlist(\"description\", \"SW manager\",");
 								tpl
-										.add("       \"fqan\", \""+VO+"/Role=SoftwareManager\",");
+										.add("       \"fqan\", \"/"+VO+"/Role=SoftwareManager\",");
 								tpl.add("       \"suffix\", \"s\"),");
 							}
 						}
@@ -747,7 +747,7 @@ public class VOConfigTask extends Task {
 										tpl
 												.add("#    nlist(\"description\", \""
 														+ r[0] + "\",");
-										tpl.add("#      \"fqan\", \""+VO+"/Role="
+										tpl.add("#      \"fqan\", \"/"+VO+"/Role="
 												+ rzero + "\",");
 										tpl.add("#      \"suffix\", \"" + r[1]
 												+ "\"),");
@@ -755,7 +755,7 @@ public class VOConfigTask extends Task {
 										tpl
 												.add("     nlist(\"description\", \""
 														+ r[0] + "\",");
-										tpl.add("       \"fqan\", \""+VO+"/Role="
+										tpl.add("       \"fqan\", \"/"+VO+"/Role="
 												+ r[0] + "\",");
 										tpl.add("       \"suffix\", \"" + r[1]
 												+ "\"),");
@@ -772,14 +772,14 @@ public class VOConfigTask extends Task {
 										tpl
 												.add("#    nlist(\"description\", \""
 														+ r[0] + "\",");
-										tpl.add("#      \"fqan\", \"" + rzero + "\",");
+										tpl.add("#      \"fqan\", \"/" + rzero + "\",");
 										tpl.add("#      \"suffix\", \"" + r[1]
 												+ "\"),");
 									} else {
 										tpl
 												.add("     nlist(\"description\", \""
 														+ r[0] + "\",");
-										tpl.add("       \"fqan\", \"" + r[0] + "\",");
+										tpl.add("       \"fqan\", \"/" + r[0] + "\",");
 										tpl.add("       \"suffix\", \"" + r[1]
 												+ "\"),");
 									}
@@ -795,7 +795,7 @@ public class VOConfigTask extends Task {
 										String fzero = f[0].substring(1);
 										tpl
 												.add("#    nlist(\"description\", \""+fzero+ "\",");
-										tpl.add("#      \"fqan\", \"" + fzero
+										tpl.add("#      \"fqan\", \"/" + fzero
 												+ "\",");
 										String sufgen = generIdent(fzero, fzero.length(), Integer.parseInt(VOid),
 												fqanSufGen);
@@ -807,7 +807,7 @@ public class VOConfigTask extends Task {
 									} else {
 										tpl
 												.add("     nlist(\"description\", \""+f[0]+ "\",");
-										tpl.add("       \"fqan\", \"" + f[0]
+										tpl.add("       \"fqan\", \"/" + f[0]
 												+ "\",");
 										String sufgen = generIdent(f[0], f[0].length(), Integer.parseInt(VOid),
 												fqanSufGen);
