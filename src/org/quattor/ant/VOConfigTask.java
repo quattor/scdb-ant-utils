@@ -772,14 +772,14 @@ public class VOConfigTask extends Task {
 										tpl
 												.add("#    nlist(\"description\", \""
 														+ r[0] + "\",");
-										tpl.add("#      \"fqan\", \"/" + rzero + "\",");
+										tpl.add("#      \"fqan\", \"" + rzero + "\",");
 										tpl.add("#      \"suffix\", \"" + r[1]
 												+ "\"),");
 									} else {
 										tpl
 												.add("     nlist(\"description\", \""
 														+ r[0] + "\",");
-										tpl.add("       \"fqan\", \"/" + r[0] + "\",");
+										tpl.add("       \"fqan\", \"" + r[0] + "\",");
 										tpl.add("       \"suffix\", \"" + r[1]
 												+ "\"),");
 									}
@@ -795,7 +795,7 @@ public class VOConfigTask extends Task {
 										String fzero = f[0].substring(1);
 										tpl
 												.add("#    nlist(\"description\", \""+fzero+ "\",");
-										tpl.add("#      \"fqan\", \"/" + fzero
+										tpl.add("#      \"fqan\", \"" + fzero
 												+ "\",");
 										String sufgen = generIdent(fzero, fzero.length(), Integer.parseInt(VOid),
 												fqanSufGen);
@@ -807,7 +807,7 @@ public class VOConfigTask extends Task {
 									} else {
 										tpl
 												.add("     nlist(\"description\", \""+f[0]+ "\",");
-										tpl.add("       \"fqan\", \"/" + f[0]
+										tpl.add("       \"fqan\", \"" + f[0]
 												+ "\",");
 										String sufgen = generIdent(f[0], f[0].length(), Integer.parseInt(VOid),
 												fqanSufGen);
