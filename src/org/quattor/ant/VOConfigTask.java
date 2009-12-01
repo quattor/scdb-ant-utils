@@ -967,7 +967,6 @@ public class VOConfigTask extends Task {
 					}*/
 				} else if (umrg.find()) {
 					if (!(buffer.toString().trim().endsWith("NULL"))) {
-						//System.out.println("BUFFER : "+buffer.toString().trim());
 						String ident = generIdent(buffer.toString(), buffer
 									.toString().length(), Integer.parseInt(VOid),
 									roleUGen);
@@ -979,10 +978,8 @@ public class VOConfigTask extends Task {
 					} else {
 						String fqan = null;
 						fqan = buffer.toString().trim();
-						System.out.println("fqan : "+fqan);
 						if (fqan.endsWith("/Role=NULL"))
 						{
-							System.out.println("BUFFER : "+buffer.toString().trim());
 							fqan = fqan.replaceAll("/Role=NULL", "/");
 							if (isused) {
 								fqans.add(fqan + "," + VO);
