@@ -4,7 +4,6 @@ import java.io.*;
 import java.net.URL;
 
 import java.util.LinkedList;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.tools.ant.types.DirSet;
 
@@ -467,22 +466,8 @@ public class VOConfigTask extends Task {
 		/* the Boolean containing the use of a role */
 		private boolean isused = false;
 
-		/* the Strings containing the roles */
-		private String roleAdmin = null;
-
-		private String roleSwAdmin = null;
-
-		private String roleSwMan = null;
-
-		private String roleProd = null;
-
-		private String roleAtl = null;
-
-		private LinkedList<String> roleGen;
-
+		/* the Lists containing the roles informations */
 		private LinkedList<String> fqans;
-		
-		private LinkedList<String> roleUGen;
 		
 		private LinkedList<String> fqanSufGen;
 
@@ -529,9 +514,17 @@ public class VOConfigTask extends Task {
 
 		private int createCount;
 
-		LinkedList<LinkedList<String>> allInfos = new LinkedList<LinkedList<String>>();
+		private LinkedList<LinkedList<String>> allInfos = new LinkedList<LinkedList<String>>();
 
-		LinkedList<String> dnList = new LinkedList<String>();
+		private LinkedList<String> dnList = new LinkedList<String>();
+		
+		/* 
+		 * List containing informations for admin, 
+		 * production and atlas roles
+		 * role:description:suffix
+		 */
+		LinkedList<String> roleDescrSuf = new LinkedList<String>();
+
 
 		/*
 		 * Constructor.
@@ -574,9 +567,17 @@ public class VOConfigTask extends Task {
 			dnList.add("unique template " + nameDNListDirTpl + "/voms_dn_list;");
 			dnList.add("");
 			dnList.add("variable VOS_DN_LIST = nlist(");
-			roleGen = new LinkedList<String>();
-			roleUGen = new LinkedList<String>();
+			
 			fqanSufGen = new LinkedList<String>();
+			
+			roleDescrSuf.add("/Role=lcgadmin,SW manager,s");
+			roleDescrSuf.add("/admin,SW manager,s");
+			roleDescrSuf.add("/Role=VO-Admin,SW manager,s");
+			roleDescrSuf.add("/Role=VOAdmin,SW manager,s");
+			roleDescrSuf.add("/Role=swadmin,SW manager,s");
+			roleDescrSuf.add("/Role=production,production,p");
+			roleDescrSuf.add("/Role=atlas,ATLAS,atl");
+
 		}
 
 		/*
@@ -664,170 +665,43 @@ public class VOConfigTask extends Task {
 						tpl.add("      );");
 						tpl.add("");
 					}
-					if ((roleAdmin != null) || (roleProd != null)
-							|| (roleAtl != null) || (roleSwAdmin != null)
-							|| (roleSwMan != null) || (roleGen != null) || (roleUGen != null)
-							|| (fqans != null)) {
+					if (fqans != null) {
 						tpl.add("\"voms_roles\" ?= list(");
-						if (roleAdmin != null) {
-							if (roleAdmin.startsWith("#")) {
-								tpl
-										.add("#    nlist(\"description\", \"SW manager\",");
-								tpl.add("#      \"fqan\", \"/"+VO+"/Role=lcgadmin\",");
-								tpl.add("#      \"suffix\", \"s\"),");
-							} else {
-								tpl
-										.add("     nlist(\"description\", \"SW manager\",");
-								tpl.add("       \"fqan\", \"/"+VO+"/Role=lcgadmin\",");
-								tpl.add("       \"suffix\", \"s\"),");
-							}
-						}
-						if (roleSwAdmin != null) {
-							if (roleSwAdmin.startsWith("#")) {
-								tpl
-										.add("#    nlist(\"description\", \"SW manager\",");
-								tpl.add("#      \"fqan\", \"/"+VO+"/Role=swadmin\",");
-								tpl.add("#      \"suffix\", \"s\"),");
-							} else {
-								tpl
-										.add("     nlist(\"description\", \"SW manager\",");
-								tpl.add("       \"fqan\", \"/"+VO+"/Role=swadmin\",");
-								tpl.add("       \"suffix\", \"s\"),");
-							}
-						}
-						if (roleProd != null) {
-							if (roleProd.startsWith("#")) {
-								tpl
-										.add("#    nlist(\"description\", \"production\",");
-								tpl
-										.add("#      \"fqan\", \"/"+VO+"/Role=production\",");
-								tpl.add("#      \"suffix\", \"p\"),");
-							} else {
-								tpl
-										.add("     nlist(\"description\", \"production\",");
-								tpl
-										.add("       \"fqan\", \"/"+VO+"/Role=production\",");
-								tpl.add("       \"suffix\", \"p\"),");
-							}
-						}
-						if (roleAtl != null) {
-							if (roleAtl.startsWith("#")) {
-								tpl
-										.add("#    nlist(\"description\", \"ATLAS\",");
-								tpl.add("#      \"fqan\", \"/"+VO+"/Role=atlas\",");
-								tpl.add("#      \"suffix\", \"atl\"),");
-							} else {
-								tpl
-										.add("     nlist(\"description\", \"ATLAS\",");
-								tpl.add("       \"fqan\", \"/"+VO+"/Role=atlas\",");
-								tpl.add("       \"suffix\", \"atl\"),");
-							}
-						}
-						if (roleSwMan != null) {
-							if (roleSwMan.startsWith("#")) {
-								tpl
-										.add("#    nlist(\"description\", \"SW manager\",");
-								tpl
-										.add("#      \"fqan\", \"/"+VO+"/Role=SoftwareManager\",");
-								tpl.add("#      \"suffix\", \"s\"),");
-							} else {
-								tpl
-										.add("     nlist(\"description\", \"SW manager\",");
-								tpl
-										.add("       \"fqan\", \"/"+VO+"/Role=SoftwareManager\",");
-								tpl.add("       \"suffix\", \"s\"),");
-							}
-						}
-						if (roleGen != null) {
-							for (String role : roleGen) {
-								String[] r = p.split(role.trim());
-								if (r[2].equals(VO)) {
-									if (role.startsWith("#")) {
-										String rzero = r[0].substring(1);
-										tpl
-												.add("#    nlist(\"description\", \""
-														+ r[0] + "\",");
-										tpl.add("#      \"fqan\", \"/"+VO+"/Role="
-												+ rzero + "\",");
-										tpl.add("#      \"suffix\", \"" + r[1]
-												+ "\"),");
-									} else {
-										tpl
-												.add("     nlist(\"description\", \""
-														+ r[0] + "\",");
-										tpl.add("       \"fqan\", \"/"+VO+"/Role="
-												+ r[0] + "\",");
-										tpl.add("       \"suffix\", \"" + r[1]
-												+ "\"),");
+						for (String fqan : fqans) {
+							String[] f = p.split(fqan.trim());
+							if (f[1].equals(VO)) {
+								String fzero = f[0];
+								if (fqan.startsWith("#")) {
+									fzero = f[0].substring(1).trim();
+								}
+								String descr = fzero;
+								String fq = fzero;
+								String suf = "empty";
+								for (String rodesu : roleDescrSuf) {
+									String[] rds =  p.split(rodesu.trim());
+									if (fzero.equals("/"+VO+rds[0])) {
+										descr = rds[1];
+										suf = rds[2];
 									}
+								}
+								if (suf.equals("empty")) {
+									String sufgen = generIdent(fzero, fzero.length(), Integer.parseInt(VOid), fqanSufGen);
+									fqanSufGen.add(sufgen +"," + VO);
+									suf = p.split(sufgen.trim())[1];
+								}
+								if (fqan.startsWith("#")) {
+									tpl.add("#    nlist(\"description\", \""+ descr + "\",");
+									tpl.add("#      \"fqan\", \"" + fq + "\",");
+									tpl.add("#      \"suffix\", \"" + suf + "\"),");
+								} else {
+									tpl.add("     nlist(\"description\", \""+ descr + "\",");
+									tpl.add("       \"fqan\", \"" + fq + "\",");
+									tpl.add("       \"suffix\", \"" + suf + "\"),");
 								}
 							}
 						}
-						if (roleUGen != null) {
-							for (String role : roleUGen) {
-								String[] r = p.split(role.trim());
-								if (r[2].equals(VO)) {
-									if (role.startsWith("#")) {
-										String rzero = r[0].substring(1);
-										tpl
-												.add("#    nlist(\"description\", \""
-														+ r[0] + "\",");
-										tpl.add("#      \"fqan\", \"" + rzero + "\",");
-										tpl.add("#      \"suffix\", \"" + r[1]
-												+ "\"),");
-									} else {
-										tpl
-												.add("     nlist(\"description\", \""
-														+ r[0] + "\",");
-										tpl.add("       \"fqan\", \"" + r[0] + "\",");
-										tpl.add("       \"suffix\", \"" + r[1]
-												+ "\"),");
-									}
-								}
-							}
-						}
-						if (fqans != null) {
-							int countfq = 1;
-							for (String fqan : fqans) {
-								String[] f = p.split(fqan.trim());
-								if (f[1].equals(VO)) {
-									if (fqan.startsWith("#")) {
-										String fzero = f[0].substring(1);
-										tpl
-												.add("#    nlist(\"description\", \""+fzero+ "\",");
-										tpl.add("#      \"fqan\", \"" + fzero
-												+ "\",");
-										String sufgen = generIdent(fzero, fzero.length(), Integer.parseInt(VOid),
-												fqanSufGen);
-										fqanSufGen.add(sufgen +"," + VO);
-										tpl.add("#      \"suffix\", \""
-												+ p.split(sufgen.trim())[1]
-												+ "\"),");
-										countfq++;
-									} else {
-										tpl
-												.add("     nlist(\"description\", \""+f[0]+ "\",");
-										tpl.add("       \"fqan\", \"" + f[0]
-												+ "\",");
-										String sufgen = generIdent(f[0], f[0].length(), Integer.parseInt(VOid),
-												fqanSufGen);
-										fqanSufGen.add(sufgen +"," + VO);
-										
-										tpl.add("       \"suffix\", \""
-												+ p.split(sufgen.trim())[1]
-												+ "\"),");
-										countfq++;
-									}
-								}
-							}
-						}
-						tpl.add("     );");
-						roleProd = null;
-						roleAdmin = null;
-						roleAtl = null;
-						roleSwAdmin = null;
-						roleSwMan = null;
 					}
+					tpl.add("     );");
 					tpl.add("");
 				}
 				tpl.add("\"proxy\" ?= '" + proxy + "';");
@@ -868,136 +742,15 @@ public class VOConfigTask extends Task {
 					isused = false;
 				}
 			} else if (qualifiedName.equals("GROUP_ROLE")) {
-				/* the patterns used to collect the roles */
-				Pattern padmin = Pattern.compile("/"+VO+"/Role=lcgadmin",
-						Pattern.CASE_INSENSITIVE);
-
-				Pattern padmin2 = Pattern.compile("/"+VO+"/admin",
-						Pattern.CASE_INSENSITIVE);
-
-				Pattern padmin3 = Pattern.compile("/"+VO+"/Role=VO-Admin",
-						Pattern.CASE_INSENSITIVE);
-
-				Pattern padmin4 = Pattern.compile("/"+VO+"/Role=VOAdmin",
-						Pattern.CASE_INSENSITIVE);
-
-				Pattern pswman = Pattern.compile("/"+VO+"/Role=SoftwareManager",
-						Pattern.CASE_INSENSITIVE);
-
-				Pattern pswman2 = Pattern.compile(
-						"/"+VO+"Role=Software-Manager", Pattern.CASE_INSENSITIVE);
-
-				Pattern pswadmin = Pattern.compile("/"+VO+"/Role=swadmin",
-						Pattern.CASE_INSENSITIVE);
-
-				Pattern pprod = Pattern.compile("/"+VO+"/Role=production",
-						Pattern.CASE_INSENSITIVE);
-
-				Pattern patlas = Pattern.compile("/"+VO+"/Role=atlas",
-						Pattern.CASE_INSENSITIVE);
-
-				Pattern prolegen = Pattern.compile("/"+VO+"/Role=(.*)");
-				
-				Pattern purolegen = Pattern.compile("/"+VO+"/(.*)");
-
-				Matcher m = padmin.matcher(buffer.toString());
-				Matcher mbis = padmin2.matcher(buffer.toString());
-				Matcher mter = padmin3.matcher(buffer.toString());
-				Matcher mqua = padmin4.matcher(buffer.toString());
-				Matcher m2 = pprod.matcher(buffer.toString());
-				Matcher m3 = patlas.matcher(buffer.toString());
-				Matcher m4 = pswadmin.matcher(buffer.toString());
-				Matcher m5 = pswman.matcher(buffer.toString());
-				Matcher m6 = pswman2.matcher(buffer.toString());
-				Matcher mrg = prolegen.matcher(buffer.toString());
-				Matcher umrg = purolegen.matcher(buffer.toString());
-				
-				if ((m.find()) || (mbis.find()) || (mter.find())
-						|| (mqua.find())) {
+				String fqan = buffer.toString().trim();
+				if (!(fqan.equals("/"+VO+"/Role=NULL")) && (!(fqan.equals(null)))){
+					if ((fqan.endsWith("/Role=NULL"))) {
+						fqan = fqan.replaceAll("/Role=NULL", "/");
+					}
 					if (isused) {
-						roleAdmin = buffer.toString();
+						fqans.add(fqan + "," + VO);
 					} else {
-						roleAdmin = "#" + buffer.toString();
-					}
-				} else if (m2.find()) {
-					if (isused) {
-						roleProd = buffer.toString();
-					} else {
-						roleProd = "#" + buffer.toString();
-					}
-				} else if (m3.find()) {
-					if (isused) {
-						roleAtl = buffer.toString();
-					} else {
-						roleAtl = "#" + buffer.toString();
-					}
-				} else if (m4.find()) {
-					if (isused) {
-						roleSwAdmin = buffer.toString();
-					} else {
-						roleSwAdmin = "#" + buffer.toString();
-					}
-				} else if ((m5.find()) || (m6.find())) {
-					if (isused) {
-						roleSwMan = buffer.toString();
-					} else {
-						roleSwMan = "#" + buffer.toString();
-					}
-				} else if (mrg.find()) {
-					if (!(mrg.group(1).equals("NULL"))) {
-						String ident = generIdent(mrg.group(1), buffer
-								.toString().length(), Integer.parseInt(VOid),
-								roleGen);
-						if (isused) {
-							roleGen.add(ident);
-						} else {
-							roleGen.add("#" + ident);
-						}
-					} /*else {
-						String fqan = null;
-						fqan = buffer.toString().replace("/"+VO+"/Role=NULL", "");
-						if ((!fqan.equals("/" + VO))
-								&& (!fqan.equals("/" + VO + "/"))) {
-							if (isused) {
-								fqans.add(fqan + "," + VO);
-							} else {
-								fqans.add("#" + fqan + "," + VO);
-							}
-						}
-					}*/
-				} else if (umrg.find()) {
-					if (!(buffer.toString().trim().endsWith("NULL"))) {
-						String ident = generIdent(buffer.toString(), buffer
-									.toString().length(), Integer.parseInt(VOid),
-									roleUGen);
-							if (isused) {
-								roleUGen.add(ident);
-							} else {
-								roleUGen.add("#" + ident);
-							}
-					} else {
-						String fqan = null;
-						fqan = buffer.toString().trim();
-						if (fqan.endsWith("/Role=NULL"))
-						{
-							fqan = fqan.replaceAll("/Role=NULL", "/");
-							if (isused) {
-								fqans.add(fqan + "," + VO);
-							} else {
-								fqans.add("#" + fqan + "," + VO);
-							}
-						}
-					}
-				} else {
-					if (buffer.toString() != null) {
-						if ((!buffer.toString().equals("/" + VO))
-								&& (!buffer.toString().equals("/" + VO + "/"))) {
-							if (isused) {
-								fqans.add((buffer.toString()) + "," + VO);
-							} else {
-								fqans.add(("#" + buffer.toString()) + "," + VO);
-							}
-						}
+						fqans.add("#" + fqan + "," + VO);
 					}
 				}
 				buffer = null;
@@ -1446,21 +1199,23 @@ public class VOConfigTask extends Task {
 		 */
 		public String generIdent(String st, int i, int idt,
 				LinkedList<String> list) {
-			String idtGen = st + "," + toBase26(i) + toBase26(idt) + "," + VO;
+			String id = toBase26(i) + toBase26(idt);
+			String idtGen = st + "," + id + "," + VO;
 			Pattern p = Pattern.compile(",");
+			boolean exist = false;
 			if (list != null){
-				for (String role : list) {
-					String[] id = p.split(role);
-					String[] idg = p.split(idtGen);
-					if (id[0].equals(idg[0])) {
-						idtGen = st + "," + id[1] + "," + VO;
-					} else if (id[1].equals(idg[1])) {
-						i = i + 1;
-						idtGen = generIdent(st, i, idt, list);
+				for (String roleinfo : list) {
+					String[] role = p.split(roleinfo.trim());
+					if (role[1].equals(id) && (!(role[0].equals(st)))) {
+						exist = true;
 					}
 				}
 			}
-			return idtGen;
+			if (exist) {
+				idtGen = generIdent(st, i+100, idt, list);
+			}
+				
+		return idtGen;
 		}
 
 		/**
