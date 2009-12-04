@@ -572,10 +572,16 @@ public class VOConfigTask extends Task {
 			
 			roleDescrSuf.add("/Role=lcgadmin,SW manager,s");
 			roleDescrSuf.add("/admin,SW manager,s");
-			roleDescrSuf.add("/Role=VO-Admin,SW manager,s");
+			//roleDescrSuf.add("/Role=VO-Admin,SW manager,s");
 			roleDescrSuf.add("/Role=VOAdmin,SW manager,s");
 			roleDescrSuf.add("/Role=swadmin,SW manager,s");
+			roleDescrSuf.add("/Role=sgmadmin,SW manager,s");
+			roleDescrSuf.add("/Role=sgm,SW manager,s");
+			roleDescrSuf.add("/Role=SoftwareManager,SW manager,s");
+			roleDescrSuf.add("/Role=VO-Software-Manager,SW manager,s");
+			roleDescrSuf.add("/Role=SW-Admin,SW manager,s");
 			roleDescrSuf.add("/Role=production,production,p");
+			roleDescrSuf.add("/Role=prod,production,p");
 			roleDescrSuf.add("/Role=atlas,ATLAS,atl");
 
 		}
@@ -666,6 +672,8 @@ public class VOConfigTask extends Task {
 						tpl.add("");
 					}
 					if (fqans != null) {
+						LinkedList<String> vomsroles = new LinkedList<String>();
+						boolean swmexists = false;
 						tpl.add("\"voms_roles\" ?= list(");
 						for (String fqan : fqans) {
 							String[] f = p.split(fqan.trim());
@@ -689,15 +697,41 @@ public class VOConfigTask extends Task {
 									fqanSufGen.add(sufgen +"," + VO);
 									suf = p.split(sufgen.trim())[1];
 								}
-								if (fqan.startsWith("#")) {
-									tpl.add("#    nlist(\"description\", \""+ descr + "\",");
-									tpl.add("#      \"fqan\", \"" + fq + "\",");
-									tpl.add("#      \"suffix\", \"" + suf + "\"),");
-								} else {
-									tpl.add("     nlist(\"description\", \""+ descr + "\",");
-									tpl.add("       \"fqan\", \"" + fq + "\",");
-									tpl.add("       \"suffix\", \"" + suf + "\"),");
+								
+								/*traitement de VO-Admin*/
+								if (suf.equals("s")){
+									swmexists = true;
 								}
+								if (fqan.startsWith("#")) {
+									vomsroles.add(descr+","+fq+","+suf+",#");
+									/*tpl.add("#    nlist(\"description\", \""+ descr + "\",");
+									tpl.add("#      \"fqan\", \"" + fq + "\",");
+									tpl.add("#      \"suffix\", \"" + suf + "\"),");*/
+								} else {
+									vomsroles.add(descr+","+fq+","+suf+", ");
+									/*tpl.add("     nlist(\"description\", \""+ descr + "\",");
+									tpl.add("       \"fqan\", \"" + fq + "\",");
+									tpl.add("       \"suffix\", \"" + suf + "\"),");*/
+								}
+							}
+						}
+						for (String vomsrole : vomsroles){
+							String[] vr = p.split(vomsrole);
+							String desc = vr[0];
+							String fqa = vr[1];
+							String su = vr[2];
+							if ((vr[0].equals("/"+VO+"/Role=VO-Admin")) && (!swmexists)) {
+								desc = "SW manager";
+								su = "s";
+							}
+							if (vomsrole.endsWith("#")) {
+								tpl.add("#    nlist(\"description\", \""+ desc + "\",");
+								tpl.add("#      \"fqan\", \"" + fqa + "\",");
+								tpl.add("#      \"suffix\", \"" + su + "\"),");
+							} else {
+								tpl.add("     nlist(\"description\", \""+ desc + "\",");
+								tpl.add("       \"fqan\", \"" + fqa + "\",");
+								tpl.add("       \"suffix\", \"" + su + "\"),");									
 							}
 						}
 					}
@@ -743,7 +777,7 @@ public class VOConfigTask extends Task {
 				}
 			} else if (qualifiedName.equals("GROUP_ROLE")) {
 				String fqan = buffer.toString().trim();
-				if (!(fqan.equals("/"+VO+"/Role=NULL")) && (!(fqan.equals(null)))){
+				if (!(fqan.equals("/"+VO+"/Role=NULL")) && (!(fqan.equals(null))) && (!(fqan.equals("/"+VO)))){
 					if ((fqan.endsWith("/Role=NULL"))) {
 						fqan = fqan.replaceAll("/Role=NULL", "/");
 					}
