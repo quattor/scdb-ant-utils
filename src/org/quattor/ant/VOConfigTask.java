@@ -703,17 +703,7 @@ public class VOConfigTask extends Task {
 									swmexists = true;
 								}
 								if (fqan.startsWith("#")) {
-									if (suf.equals("s")){
-										vomsroles.addFirst(descr+","+fq+","+suf+",#");
-									} else if (suf.equals("p")){
-										if (!swmexists){
-											vomsroles.addFirst(descr+","+fq+","+suf+",#");
-										} else {
-											vomsroles.add(1, descr+","+fq+","+suf+",#");
-										}
-									} else {
-										vomsroles.add(descr+","+fq+","+suf+",#");
-									}
+									vomsroles.add(descr+","+fq+","+suf+",#");
 									/*tpl.add("#    nlist(\"description\", \""+ descr + "\",");
 									tpl.add("#      \"fqan\", \"" + fq + "\",");
 									tpl.add("#      \"suffix\", \"" + suf + "\"),");*/
