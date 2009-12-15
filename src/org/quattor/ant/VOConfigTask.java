@@ -573,7 +573,7 @@ public class VOConfigTask extends Task {
 			roleDescrSuf.add("/Role=lcgadmin,SW manager,s");
 			roleDescrSuf.add("/admin,SW manager,s");
 			//roleDescrSuf.add("/Role=VO-Admin,SW manager,s");
-			roleDescrSuf.add("/Role=VOAdmin,SW manager,s");
+			//roleDescrSuf.add("/Role=VOAdmin,SW manager,s");
 			roleDescrSuf.add("/Role=swadmin,SW manager,s");
 			roleDescrSuf.add("/Role=sgmadmin,SW manager,s");
 			roleDescrSuf.add("/Role=sgm,SW manager,s");
@@ -698,7 +698,7 @@ public class VOConfigTask extends Task {
 									suf = p.split(sufgen.trim())[1];
 								}
 								
-								/*traitement de VO-Admin*/
+								/*traitement de VO-Admin et VOadmin*/
 								if (suf.equals("s")){
 									swmexists = true;
 								}
@@ -730,7 +730,7 @@ public class VOConfigTask extends Task {
 							String desc = vr[0];
 							String fqa = vr[1];
 							String su = vr[2];
-							if ((vr[0].equals("/"+VO+"/Role=VO-Admin")) && (!swmexists)) {
+							if (((vr[0].equals("/"+VO+"/Role=VO-Admin"))|| (vr[0].equals("/"+VO+"/Role=VOAdmin"))) && (!swmexists)) {
 								desc = "SW manager";
 								su = "s";
 							}
