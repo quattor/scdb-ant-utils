@@ -582,6 +582,7 @@ public class VOConfigTask extends Task {
 			roleDescrSuf.add("/Role=SW-Admin,SW manager,s");
 			roleDescrSuf.add("/Role=production,production,p");
 			roleDescrSuf.add("/Role=prod,production,p");
+			roleDescrSuf.add("/Role=ProductionManager,production,p");
 			roleDescrSuf.add("/Role=atlas,ATLAS,atl");
 
 		}
@@ -687,7 +688,7 @@ public class VOConfigTask extends Task {
 								String suf = "empty";
 								for (String rodesu : roleDescrSuf) {
 									String[] rds =  p.split(rodesu.trim());
-									if (fzero.equals("/"+VO+rds[0])) {
+									if (fzero.equalsIgnoreCase("/"+VO+rds[0])) {
 										descr = rds[1];
 										suf = rds[2];
 									}
