@@ -583,7 +583,10 @@ public class VOConfigTask extends Task {
 			roleDescrSuf.add("/Role=production,production,p");
 			roleDescrSuf.add("/Role=prod,production,p");
 			roleDescrSuf.add("/Role=ProductionManager,production,p");
+			roleDescrSuf.add("/Role=pilot,pilot,pilot");
 			roleDescrSuf.add("/Role=atlas,ATLAS,atl");
+			
+			
 
 		}
 
@@ -675,6 +678,7 @@ public class VOConfigTask extends Task {
 					if (fqans != null) {
 						LinkedList<String> vomsroles = new LinkedList<String>();
 						boolean swmexists = false;
+						boolean prodexists = false;
 						tpl.add("\"voms_roles\" ?= list(");
 						for (String fqan : fqans) {
 							String[] f = p.split(fqan.trim());
@@ -703,6 +707,9 @@ public class VOConfigTask extends Task {
 								if (suf.equals("s")){
 									swmexists = true;
 								}
+								if (suf.equals("p")){
+									prodexists = true;
+								}
 								if (fqan.startsWith("#")) {
 									vomsroles.add(descr+","+fq+","+suf+",#");
 									/*tpl.add("#    nlist(\"description\", \""+ descr + "\",");
@@ -717,6 +724,21 @@ public class VOConfigTask extends Task {
 										} else {
 											vomsroles.add(1, descr+","+fq+","+suf+", ");
 										}
+									} else if (suf.equals("pilot")){
+										if (!swmexists){
+											if (!prodexists){
+												vomsroles.addFirst(descr+","+fq+","+suf+", ");
+											} else {
+												vomsroles.add(1, descr+","+fq+","+suf+", ");
+											}
+										} else {
+											if (!prodexists){
+												vomsroles.add(1,descr+","+fq+","+suf+", ");
+											} else {
+												vomsroles.add(2, descr+","+fq+","+suf+", ");
+											}
+										}
+										
 									} else {
 										vomsroles.add(descr+","+fq+","+suf+", ");
 									}
