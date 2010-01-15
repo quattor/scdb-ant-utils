@@ -812,7 +812,7 @@ public class VOConfigTask extends Task {
 				String fqan = buffer.toString().trim();
 				if (!(fqan.equals("/"+VO+"/Role=NULL")) && (!(fqan.equals(null))) && (!(fqan.equals("/"+VO)))){
 					if ((fqan.endsWith("/Role=NULL"))) {
-						fqan = fqan.replaceAll("/Role=NULL", "/");
+						fqan = fqan.replaceAll("/Role=NULL", "");
 					}
 					if (isused) {
 						fqans.add(fqan + "," + VO);
