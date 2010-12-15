@@ -202,7 +202,11 @@ public class VOConfigTask extends Task {
 					if ( debugTask ) {
 						System.out.println("Finished processing VO "+voName);						
 					}
-					voMap.put(voName, voConfig);
+					try {
+						voMap.put(voName, voConfig);
+					} catch (NullPointerException e) {
+						throw new SAXException("Internal error: voConfig undefined at the end of VO "+voName+" configuration");
+					}
 				} else {
 					throw new SAXException("Parsing error: end of VO configuration found before start");
 				}
