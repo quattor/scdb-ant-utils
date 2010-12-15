@@ -166,8 +166,19 @@ public class VOConfigTask extends Task {
 	public class VOCardHandler extends DefaultHandler {
 		
 		/* VO currently being processed */
-		String voName = null;
-		VOConfig voConfig = null;
+		private String voName = null;
+		private VOConfig voConfig = null;
+
+		
+		/*
+		 * Start of document
+		 */
+		
+		@Override
+		public void startDocument () throws SAXException {
+			voMap = new Hashtable<String,VOConfig>();
+		}
+		
 		
 		/**
 		 * Start of new element
@@ -199,13 +210,13 @@ public class VOConfigTask extends Task {
 		public void endElement(String uri, String localName, String qName) throws SAXException {
 			if ( qName.equals("VO") ) {
 				if ( voName != null ) {
-					if ( debugTask ) {
-						System.out.println("Finished processing VO "+voName);						
-					}
 					try {
 						voMap.put(voName, voConfig);
 					} catch (NullPointerException e) {
 						throw new SAXException("Internal error: voConfig undefined at the end of VO "+voName+" configuration");
+					}
+					if ( debugTask ) {
+						System.out.println("Finished processing VO "+voName);						
 					}
 				} else {
 					throw new SAXException("Parsing error: end of VO configuration found before start");
