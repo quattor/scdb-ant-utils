@@ -3,6 +3,10 @@ package org.quattor.ant;
 import java.io.*;
 import java.net.URL;
 import java.net.MalformedURLException;
+import java.util.Hashtable;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.DirectoryScanner;
@@ -41,8 +45,27 @@ public class VOConfigTask extends Task {
 	/* URI for VO ID card source */
 	private String voIdCardsUri = null;
 
+	/* Control printing of debugging messages in this task */
+	private boolean debugTask = false;
 
+	/* Configuration of VOs retrieved from VO ID cards.
+	 * This is a hash with one entry per VO : the key is the VO name.
+	 */
+	private Hashtable<String,VOConfig> voMap = null;
+	
 	// Methods
+
+	/**
+	 * Setting this flag will print debugging information from the task itself.
+	 * This is primarily useful if one wants to debug this task. Output can be
+	 * very verbose...
+	 * 
+	 * @param debugTask
+	 *            flag to print task debugging information
+	 */
+	public void setDebugTask(boolean debugTask) {
+		this.debugTask = debugTask;
+	}
 
 	/**
 	 * Support nested dirset elements. This is called by ant only after all of
@@ -110,6 +133,7 @@ public class VOConfigTask extends Task {
 	@Override
 	public void execute() throws BuildException {
 		
+		// Parse VO ID cards
 		SAXParserFactory factory = SAXParserFactory.newInstance();
 		try {
 			URL voIdCardsUrl = new URL(voIdCardsUri);
@@ -117,16 +141,23 @@ public class VOConfigTask extends Task {
 			SAXParser parser = factory.newSAXParser();
 			parser.parse(urlstream, new VOCardHandler());		
 		} catch (MalformedURLException e) { 
-			System.err.println("Invalid format used for specifying the source of VO ID cards (voIdCardsUri): "+voIdCardsUri+"\n");
+			System.err.println("Invalid format used for specifying the source of VO ID cards (voIdCardsUri): "+voIdCardsUri);
 			throw new BuildException("BUILD FAILED : " + e.getMessage());
 		} catch (IOException e) {
-			System.err.println("Failed to open VO ID card source ("+voIdCardsUri+")\n");
+			System.err.println("Failed to open VO ID card source ("+voIdCardsUri+")");
 			throw new BuildException("BUILD FAILED : " + e.getMessage());			
 		} catch (Exception e) {
-			System.err.println("Error parsing VO ID cars ("+voIdCardsUri+")\n");
+			System.err.println("Error parsing VO ID cars ("+voIdCardsUri+")");
 			throw new BuildException("BUILD FAILED : " + e.getMessage());						
 		}
 
+		// Write VO configurations to templates
+		Set<Entry<String,VOConfig>> voMapEntries = voMap.entrySet();
+		for (Entry<String,VOConfig> vo : voMapEntries) {
+			String voName = vo.getKey();
+			VOConfig voConfig = vo.getValue();
+			System.out.println("Writing templates for VO "+voName+" (ID="+voConfig.getId()+")");
+		}
 	}
 
 
@@ -134,7 +165,9 @@ public class VOConfigTask extends Task {
 	
 	public class VOCardHandler extends DefaultHandler {
 		
+		/* VO currently being processed */
 		String voName = null;
+		VOConfig voConfig = null;
 		
 		/**
 		 * Start of new element
@@ -144,7 +177,17 @@ public class VOConfigTask extends Task {
 		public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
 			if ( qName.equals("VO") ) {
 				voName = attributes.getValue("Name");
+				if ( voName == null ) {
+					throw new SAXException("Invalid configuration: VO has no name");
+				}
+				voName = voName.toLowerCase();
 				System.out.println("Processing VO "+voName);
+				voConfig = new VOConfig();
+				String voId = attributes.getValue("ID");
+				if ( voId == null ) {
+					throw new SAXException("Invalid configuration: VO has no Id");
+				}
+				voConfig.setId(Integer.parseInt(voId));
 			}
 		}
 		
@@ -156,11 +199,34 @@ public class VOConfigTask extends Task {
 		public void endElement(String uri, String localName, String qName) throws SAXException {
 			if ( qName.equals("VO") ) {
 				if ( voName != null ) {
-					System.out.println("Finished processing VO "+voName+"\n");
+					if ( debugTask ) {
+						System.out.println("Finished processing VO "+voName);						
+					}
+					voMap.put(voName, voConfig);
 				} else {
 					throw new SAXException("Parsing error: end of VO configuration found before start");
 				}
 			}			
 		}
+	}
+
+	
+	// Class representing a VO
+	
+	private class VOConfig {
+		/* VO ID number */
+		int id = 0;
+		
+		
+		// Methods
+
+		private int getId() {
+			return (this.id);
+		}
+		
+		private void setId(int id) {
+			this.id = id;
+		}
+		
 	}
 }
