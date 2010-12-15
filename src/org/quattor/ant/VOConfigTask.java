@@ -9,6 +9,8 @@ import org.apache.tools.ant.DirectoryScanner;
 import org.apache.tools.ant.Task;
 import org.apache.tools.ant.types.DirSet;
 
+import org.xml.sax.Attributes;
+import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -105,6 +107,7 @@ public class VOConfigTask extends Task {
 	 * Method used by ant to execute this task.
 	 */
 
+	@Override
 	public void execute() throws BuildException {
 		
 		SAXParserFactory factory = SAXParserFactory.newInstance();
@@ -113,7 +116,7 @@ public class VOConfigTask extends Task {
 			InputStream urlstream = voIdCardsUrl.openStream();
 			SAXParser parser = factory.newSAXParser();
 			parser.parse(urlstream, new VOCardHandler());		
-		} catch (MalformedURLException e) {
+		} catch (MalformedURLException e) { 
 			System.err.println("Invalid format used for specifying the source of VO ID cards (voIdCardsUri): "+voIdCardsUri+"\n");
 			throw new BuildException("BUILD FAILED : " + e.getMessage());
 		} catch (IOException e) {
@@ -129,7 +132,35 @@ public class VOConfigTask extends Task {
 
 	// SAX content handler for VO cards
 	
-	private class VOCardHandler extends DefaultHandler {
+	public class VOCardHandler extends DefaultHandler {
 		
+		String voName = null;
+		
+		/**
+		 * Start of new element
+		 */
+		
+		@Override
+		public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+			if ( qName.equals("VO") ) {
+				voName = attributes.getValue("Name");
+				System.out.println("Processing VO "+voName);
+			}
+		}
+		
+		/**
+		 * End of an element
+		 */
+		
+		@Override
+		public void endElement(String uri, String localName, String qName) throws SAXException {
+			if ( qName.equals("VO") ) {
+				if ( voName != null ) {
+					System.out.println("Finished processing VO "+voName+"\n");
+				} else {
+					throw new SAXException("Parsing error: end of VO configuration found before start");
+				}
+			}			
+		}
 	}
 }
