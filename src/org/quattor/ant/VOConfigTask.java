@@ -169,19 +169,6 @@ public class VOConfigTask extends Task {
 	}
 
 
-	private enum DataContexts {
-		DATA_IGNORED,
-		DATA_VOMS_HOST,
-		DATA_VOMS_HOST_PORT,
-		DATA_VOMS_VOMS_PORT,
-		DATA_VOMS_ENDPOINT,
-		DATA_VOMS_CERT,
-		DATA_VOMS_CERT_EXPIRY,
-		DATA_VOMS_DN,
-		DATA_VOMS_VOMSADMIN,
-	}
-
-
 	// SAX content handler for VO cards
 
 	public class VOCardHandler extends DefaultHandler {
@@ -199,8 +186,7 @@ public class VOConfigTask extends Task {
 		private boolean sectionVOMSServers = false;
 		private VOMSServer vomsServer = null;
 		private VOMSServerEndpoint vomsServerEndpoint = null;
-		private DataContexts dataContext = DataContexts.DATA_IGNORED;
-
+		String data = null;
 
 		/*
 		 * Start of document
@@ -210,7 +196,6 @@ public class VOConfigTask extends Task {
 		public void startDocument () throws SAXException {
 			voMap = new Hashtable<String,VOConfig>();
 			vomsServers = new Hashtable<String,VOMSServer>();
-			dataContext = DataContexts.DATA_IGNORED;
 		}
 
 
@@ -242,22 +227,9 @@ public class VOConfigTask extends Task {
 				if ( qName.equals("VOMSServer") ) {
 					vomsServer = new VOMSServer();		
 					vomsServerEndpoint = new VOMSServerEndpoint();
-				} else if ( qName.equals("HOSTNAME") ) {
-					dataContext = DataContexts.DATA_VOMS_HOST;
-				} else if ( qName.equals("HTTPS_PORT") ) {
-					dataContext = DataContexts.DATA_VOMS_HOST_PORT;
-				} else if ( qName.equals("VOMS_PORT") ) {
-					dataContext = DataContexts.DATA_VOMS_VOMS_PORT;
-				} else if ( qName.equals("ServerEndpoint") ) {
-					dataContext = DataContexts.DATA_VOMS_ENDPOINT;
-				} else if ( qName.equals("CertificatePublicKey") ) {
-					dataContext = DataContexts.DATA_VOMS_CERT;
-				} else if ( qName.equals("CERTIFICATE_EXPIRATION_DATE") ) {
-					dataContext = DataContexts.DATA_VOMS_CERT_EXPIRY;
-				} else if ( qName.equals("IS_VOMSADMIN_SERVER") ) {
-					dataContext = DataContexts.DATA_VOMS_VOMSADMIN;
-				} else if ( qName.equals("DN") ) {
-					dataContext = DataContexts.DATA_VOMS_DN;
+				} else {
+					// This will enable collection/concatenation of data in characters()
+					data = "";
 				}
 			}
 		}
@@ -309,54 +281,41 @@ public class VOConfigTask extends Task {
 					vomsServerEndpoint.setServer(vomsServers.get(VOMSServerKey));
 					voConfig.vomsServerList.add(vomsServerEndpoint);					
 				} else {
-					dataContext = DataContexts.DATA_IGNORED;
+					if ( qName.equals("HOSTNAME") ) {
+						vomsServer.setHost(data);
+					} else if ( qName.equals("HTTPS_PORT") ) {
+						vomsServer.setPort(Integer.parseInt(data));
+					} else if ( qName.equals("VOMS_PORT") ) {
+						vomsServerEndpoint.setPort(Integer.parseInt(data));
+					} else if ( qName.equals("ServerEndpoint") ) {
+						vomsServerEndpoint.setEndpoint(data);
+					} else if ( qName.equals("CertificatePublicKey") ) {
+						vomsServer.setCert(data);
+					} else if ( qName.equals("CERTIFICATE_EXPIRATION_DATE") ) {
+						vomsServer.setCertExpiry(data);
+					} else if ( qName.equals("IS_VOMSADMIN_SERVER") ) {
+						vomsServerEndpoint.setVomsAdminEnabled(Boolean.parseBoolean(data));
+					} else if ( qName.equals("DN") ) {
+						vomsServer.setDN(data);
+					}
+					// Disable collection of data
+					if ( data != null ) {
+						data = null;
+					}
 				}
+
 			}			
 		}
 
 		/*
-		 * Retrieve element data
+		 * Retrieve element data: data can be splitted into several chunks that must be concatenated to get the actual data
 		 */
 		
 		@Override
 		public void characters (char[] chars, int start, int length) throws SAXException {
-			if ( dataContext != DataContexts.DATA_IGNORED) {
-				String data = new String(chars,start,length);
-				
-				switch (dataContext) {
-				case DATA_VOMS_HOST:
-					vomsServer.setHost(data);
-					break;
-					
-				case DATA_VOMS_HOST_PORT:
-					vomsServer.setPort(Integer.parseInt(data));
-					break;
-					
-				case DATA_VOMS_VOMS_PORT:
-					vomsServerEndpoint.setPort(Integer.parseInt(data));
-					break;
-
-				case DATA_VOMS_ENDPOINT:
-					vomsServerEndpoint.setEndpoint(data);
-					break;
-
-				case DATA_VOMS_CERT:
-					vomsServer.setCert(data);
-					break;
-
-				case DATA_VOMS_CERT_EXPIRY:
-					vomsServer.setCertExpiry(data);
-					break;
-
-				case DATA_VOMS_DN:
-					vomsServer.setDN(data);
-					break;
-
-				case DATA_VOMS_VOMSADMIN:
-					vomsServerEndpoint.setVomsAdminEnabled(Boolean.parseBoolean(data));
-					break;
-				}
-
+			if ( data != null ) {
+				String chunk = new String(chars,start,length);
+				data += chunk;
 			}
 		}
 
@@ -473,12 +432,12 @@ public class VOConfigTask extends Task {
 			this.cert = cert;
 		}
 
-		public void setCertExpiry(String expiry) {
+		public void setCertExpiry(String expiry) throws SAXException {
 			SimpleDateFormat expiryFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 			try {
 				this.certExpiry = expiryFormat.parse(expiry);
 			} catch (ParseException e) {
-				new BuildException("Failed to parse VOMS server "+getHost()+" certificate expiry date ("+expiry+")");
+				new SAXException("Failed to parse VOMS server "+getHost()+" certificate expiry date ("+expiry+")");
 			}
 		}
 
