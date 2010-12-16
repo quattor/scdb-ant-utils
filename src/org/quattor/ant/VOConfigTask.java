@@ -331,6 +331,7 @@ public class VOConfigTask extends Task {
 				case DATA_VOMS_VOMSADMIN:
 					vomsServerEndpoint.setVomsAdminEnabled(Boolean.parseBoolean(data));
 					break;
+				}
 
 			}
 		}
