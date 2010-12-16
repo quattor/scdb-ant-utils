@@ -268,7 +268,7 @@ public class VOConfigTask extends Task {
 							if ( vomsServer.getCertExpiry().after(vomsServers.get(VOMSServerKey).getCertExpiry())) {
 								System.err.println("    WARNING: VOMS server '"+VOMSServerKey+"' already defined with an older certificate, updating it.");
 								vomsServers.get(VOMSServerKey).setCertExpiry(vomsServer.getCertExpiry());
-							} else {
+							} else if ( vomsServer.getCertExpiry().before(vomsServers.get(VOMSServerKey).getCertExpiry())) {
 								System.err.println("    WARNING: VOMS server '"+VOMSServerKey+"' already defined with a newer certificate, keeping previous one.");								
 							}
 						}
@@ -437,7 +437,7 @@ public class VOConfigTask extends Task {
 			try {
 				this.certExpiry = expiryFormat.parse(expiry);
 			} catch (ParseException e) {
-				new SAXException("Failed to parse VOMS server "+getHost()+" certificate expiry date ("+expiry+")");
+				throw new SAXException("Failed to parse VOMS server "+getHost()+" certificate expiry date ("+expiry+")");
 			}
 		}
 
