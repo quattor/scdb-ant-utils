@@ -261,7 +261,7 @@ public class VOConfigTask extends Task {
 			} else if ( sectionVOMSServers ) {
 				// Check the VOMS server has not been defined yet by another VO or that attributes are consistent
 				if ( qName.equals("VOMSServer") ) {
-					if ( vomsServers.contains(vomsServer.getHost()) ) {
+					if ( vomsServers.containsKey(vomsServer.getHost()) ) {
 						if ( debugTask ) {
 							System.err.println("VOMS server '"+vomsServer.getHost()+"' already defined: checking attribute consistency.");
 						}
