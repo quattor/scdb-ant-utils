@@ -167,9 +167,12 @@ public class VOConfigTask extends Task {
 		DATA_VOMS_HOST,
 		DATA_VOMS_HOST_PORT,
 		DATA_VOMS_VOMS_PORT,
+		DATA_VOMS_ENDPOINT,
 		DATA_VOMS_CERT,
-		DATA_VOMS_DN
+		DATA_VOMS_DN,
+		DATA_VOMS_VOMSADMIN,
 	}
+
 
 	// SAX content handler for VO cards
 
@@ -233,6 +236,18 @@ public class VOConfigTask extends Task {
 					vomsServerEndpoint = new VOMSServerEndpoint();
 				} else if ( qName.equals("HOSTNAME") ) {
 					dataContext = DataContexts.DATA_VOMS_HOST;
+				} else if ( qName.equals("HTTPS_PORT") ) {
+					dataContext = DataContexts.DATA_VOMS_HOST_PORT;
+				} else if ( qName.equals("VOMS_PORT") ) {
+					dataContext = DataContexts.DATA_VOMS_VOMS_PORT;
+				} else if ( qName.equals("ServerEndpoint") ) {
+					dataContext = DataContexts.DATA_VOMS_ENDPOINT;
+				} else if ( qName.equals("CertificatePublicKey") ) {
+					dataContext = DataContexts.DATA_VOMS_CERT;
+				} else if ( qName.equals("IS_VOMSADMIN_SERVER") ) {
+					dataContext = DataContexts.DATA_VOMS_VOMSADMIN;
+				} else if ( qName.equals("DN") ) {
+					dataContext = DataContexts.DATA_VOMS_DN;
 				}
 			}
 		}
@@ -273,7 +288,7 @@ public class VOConfigTask extends Task {
 					}
 					vomsServerEndpoint.setServer(vomsServer);
 					voConfig.vomsServerList.add(vomsServerEndpoint);					
-				} else if ( qName.equals("HOSTNAME") ) {
+				} else {
 					dataContext = DataContexts.DATA_IGNORED;
 				}
 			}			
@@ -287,11 +302,36 @@ public class VOConfigTask extends Task {
 		public void characters (char[] chars, int start, int length) throws SAXException {
 			if ( dataContext != DataContexts.DATA_IGNORED) {
 				String data = new String(chars,start,length);
+				
 				switch (dataContext) {
 				case DATA_VOMS_HOST:
 					vomsServer.setHost(data);
 					break;
-				}
+					
+				case DATA_VOMS_HOST_PORT:
+					vomsServer.setPort(Integer.parseInt(data));
+					break;
+					
+				case DATA_VOMS_VOMS_PORT:
+					vomsServerEndpoint.setPort(Integer.parseInt(data));
+					break;
+
+				case DATA_VOMS_ENDPOINT:
+					vomsServerEndpoint.setEndpoint(data);
+					break;
+
+				case DATA_VOMS_CERT:
+					vomsServer.setCert(data);
+					break;
+
+				case DATA_VOMS_DN:
+					vomsServer.setDN(data);
+					break;
+
+				case DATA_VOMS_VOMSADMIN:
+					vomsServerEndpoint.setVomsAdminEnabled(Boolean.parseBoolean(data));
+					break;
+
 			}
 		}
 
@@ -327,6 +367,7 @@ public class VOConfigTask extends Task {
 		private VOMSServer server = null;
 		private int port;
 		private String endpoint = null;
+		private boolean vomsAdminEnabled = true;
 		
 		// Methods
 		
@@ -342,6 +383,10 @@ public class VOConfigTask extends Task {
 			return (this.endpoint);
 		}
 		
+		public boolean getVomsAdminEnabled() {
+			return (this.vomsAdminEnabled);
+		}
+
 		public void setServer(VOMSServer server) {
 			this.server = server;
 		}
@@ -353,6 +398,10 @@ public class VOConfigTask extends Task {
 		public void setEndpoint (String endpoint) {
 			this.endpoint = endpoint;
 		}
+
+		public void setVomsAdminEnabled(boolean vomsAdminEnabled) {
+			this.vomsAdminEnabled = vomsAdminEnabled;
+		}
 	}
 	
 	
@@ -362,12 +411,16 @@ public class VOConfigTask extends Task {
 		private String host = null;
 		private int port = 8443;
 		private String cert = null;
-		private boolean vomsAdminEnabled = true;
+		private String dn = null;
 
 		// Methods
 
 		public String getCert() {
 			return (this.cert);
+		}
+
+		public String getDN() {
+			return (this.dn);
 		}
 
 		public String getHost() {
@@ -378,12 +431,12 @@ public class VOConfigTask extends Task {
 			return (this.port);
 		}
 
-		public boolean getVomsAdminEnabled() {
-			return (this.vomsAdminEnabled);
-		}
-
 		public void setCert(String cert) {
 			this.cert = cert;
+		}
+
+		public void setDN(String dn) {
+			this.dn = dn;
 		}
 
 		public void setHost(String host) {
@@ -394,8 +447,5 @@ public class VOConfigTask extends Task {
 			this.port = port;
 		}
 
-		public void setVomsAdminEnabled(boolean vomsAdminEnabled) {
-			this.vomsAdminEnabled = vomsAdminEnabled;
-		}
 	}
 }
