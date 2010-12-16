@@ -341,7 +341,7 @@ public class VOConfigTask extends Task {
 		public String toStr() {
 			String configStr = "";
 			for (VOMSServerEndpoint endpoint : vomsServerList) {
-				configStr = "VOMS Server: "+endpoint.getEndpoint()+" (VOMS port="+endpoint.getPort()+")";
+				configStr += "    VOMS Server: "+endpoint.getEndpoint()+" (VOMS port="+endpoint.getPort()+")\n";
 			}
 			return (configStr);
 		}
