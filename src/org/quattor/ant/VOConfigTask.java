@@ -261,17 +261,17 @@ public class VOConfigTask extends Task {
 			} else if ( sectionVOMSServers ) {
 				// Check the VOMS server has not been defined yet by another VO or that attributes are consistent
 				if ( qName.equals("VOMSServer") ) {
-					if ( vomsServers.contains(vomsServer.host) ) {
+					if ( vomsServers.contains(vomsServer.getHost()) ) {
 						if ( debugTask ) {
-							System.err.println("VOMS server '"+vomsServer.host+"' already defined: checking attribute consistency.");
+							System.err.println("VOMS server '"+vomsServer.getHost()+"' already defined: checking attribute consistency.");
 						}
 					} else {
 						if ( debugTask ) {
-							System.err.println("Adding VOMS server '"+vomsServer.host+"' to global VOMS server list.");
+							System.err.println("Adding VOMS server '"+vomsServer.getHost()+"' to global VOMS server list.");
 						}
-						vomsServers.put(vomsServer.host,vomsServer);
+						vomsServers.put(vomsServer.getHost(),vomsServer);
 					}
-					vomsServerEndpoint.server = vomsServer;
+					vomsServerEndpoint.setServer(vomsServer);
 					voConfig.vomsServerList.add(vomsServerEndpoint);					
 				}
 			}			
@@ -287,7 +287,7 @@ public class VOConfigTask extends Task {
 				String data = new String(chars,start,length);
 				switch (dataContext) {
 				case DATA_IGNORED:
-					vomsServer.host = data;
+					vomsServer.setHost(data);
 					break;
 				}
 			}
@@ -308,11 +308,11 @@ public class VOConfigTask extends Task {
 
 		// Methods
 
-		private int getId() {
+		public int getId() {
 			return (this.id);
 		}
 
-		private void setId(int id) {
+		public void setId(int id) {
 			this.id = id;
 		}
 
@@ -325,6 +325,32 @@ public class VOConfigTask extends Task {
 		private VOMSServer server = null;
 		private int port;
 		private String endpoint = null;
+		
+		// Methods
+		
+		public VOMSServer getServer() {
+			return (this.server);
+		}
+		
+		public int getPort() {
+			return (this.port);
+		}
+		
+		public String getEndpoint() {
+			return (this.endpoint);
+		}
+		
+		public void setServer(VOMSServer server) {
+			this.server = server;
+		}
+		
+		public void setPort (int port) {
+			this.port = port;
+		}
+		
+		public void setEndpoint (String endpoint) {
+			this.endpoint = endpoint;
+		}
 	}
 	
 	
@@ -338,35 +364,35 @@ public class VOConfigTask extends Task {
 
 		// Methods
 
-		private String getCert() {
+		public String getCert() {
 			return (this.cert);
 		}
 
-		private String getHost() {
+		public String getHost() {
 			return (this.host);
 		}
 
-		private int getPort() {
+		public int getPort() {
 			return (this.port);
 		}
 
-		private boolean getVomsAdminEnabled() {
+		public boolean getVomsAdminEnabled() {
 			return (this.vomsAdminEnabled);
 		}
 
-		private void setCert(String cert) {
+		public void setCert(String cert) {
 			this.cert = cert;
 		}
 
-		private void setHost(String host) {
+		public void setHost(String host) {
 			this.host = host;
 		}
 
-		private void setPort(int port) {
+		public void setPort(int port) {
 			this.port = port;
 		}
 
-		private void setVomsAdminEnabled(boolean vomsAdminEnabled) {
+		public void setVomsAdminEnabled(boolean vomsAdminEnabled) {
 			this.vomsAdminEnabled = vomsAdminEnabled;
 		}
 	}
