@@ -273,6 +273,8 @@ public class VOConfigTask extends Task {
 					}
 					vomsServerEndpoint.setServer(vomsServer);
 					voConfig.vomsServerList.add(vomsServerEndpoint);					
+				} else if ( qName.equals("HOSTNAME") ) {
+					dataContext = DataContexts.DATA_IGNORED;
 				}
 			}			
 		}
@@ -286,7 +288,7 @@ public class VOConfigTask extends Task {
 			if ( dataContext != DataContexts.DATA_IGNORED) {
 				String data = new String(chars,start,length);
 				switch (dataContext) {
-				case DATA_IGNORED:
+				case DATA_VOMS_HOST:
 					vomsServer.setHost(data);
 					break;
 				}
