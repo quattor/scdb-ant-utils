@@ -3,6 +3,10 @@ package org.quattor.ant;
 import java.io.*;
 import java.net.URL;
 import java.net.MalformedURLException;
+import java.text.ParseException;
+import java.text.ParsePosition;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.Map;
@@ -157,6 +161,9 @@ public class VOConfigTask extends Task {
 		for (Entry<String,VOConfig> vo : voMapEntries) {
 			String voName = vo.getKey();
 			VOConfig voConfig = vo.getValue();
+			if ( debugTask ) {
+				System.out.println("VO configuration for VO "+voName+" (ID="+voConfig.getId()+"):\n"+voConfig.toStr());
+			}
 			System.out.println("Writing templates for VO "+voName+" (ID="+voConfig.getId()+")");
 		}
 	}
@@ -169,6 +176,7 @@ public class VOConfigTask extends Task {
 		DATA_VOMS_VOMS_PORT,
 		DATA_VOMS_ENDPOINT,
 		DATA_VOMS_CERT,
+		DATA_VOMS_CERT_EXPIRY,
 		DATA_VOMS_DN,
 		DATA_VOMS_VOMSADMIN,
 	}
@@ -244,6 +252,8 @@ public class VOConfigTask extends Task {
 					dataContext = DataContexts.DATA_VOMS_ENDPOINT;
 				} else if ( qName.equals("CertificatePublicKey") ) {
 					dataContext = DataContexts.DATA_VOMS_CERT;
+				} else if ( qName.equals("CERTIFICATE_EXPIRATION_DATE") ) {
+					dataContext = DataContexts.DATA_VOMS_CERT_EXPIRY;
 				} else if ( qName.equals("IS_VOMSADMIN_SERVER") ) {
 					dataContext = DataContexts.DATA_VOMS_VOMSADMIN;
 				} else if ( qName.equals("DN") ) {
@@ -275,18 +285,28 @@ public class VOConfigTask extends Task {
 				sectionVOMSServers = false;
 			} else if ( sectionVOMSServers ) {
 				// Check the VOMS server has not been defined yet by another VO or that attributes are consistent
+				// A unique VOMS server is identified by host+port combination
+				String VOMSServerKey = vomsServer.getHost() + ":" + Integer.toString(vomsServer.getPort());
 				if ( qName.equals("VOMSServer") ) {
-					if ( vomsServers.containsKey(vomsServer.getHost()) ) {
+					if ( vomsServers.containsKey(VOMSServerKey) ) {
 						if ( debugTask ) {
-							System.err.println("VOMS server '"+vomsServer.getHost()+"' already defined: checking attribute consistency.");
+							System.err.println("VOMS server '"+VOMSServerKey+"' already defined: checking attribute consistency.");
+						}
+						if ( vomsServer.getCert() != vomsServers.get(VOMSServerKey).getCert() ) {
+							if ( vomsServer.getCertExpiry().after(vomsServers.get(VOMSServerKey).getCertExpiry())) {
+								System.err.println("    WARNING: VOMS server '"+VOMSServerKey+"' already defined with an older certificate, updating it.");
+								vomsServers.get(VOMSServerKey).setCertExpiry(vomsServer.getCertExpiry());
+							} else {
+								System.err.println("    WARNING: VOMS server '"+VOMSServerKey+"' already defined with a newer certificate, keeping previous one.");								
+							}
 						}
 					} else {
 						if ( debugTask ) {
-							System.err.println("Adding VOMS server '"+vomsServer.getHost()+"' to global VOMS server list.");
+							System.err.println("Adding VOMS server '"+VOMSServerKey+"' to global VOMS server list.");
 						}
-						vomsServers.put(vomsServer.getHost(),vomsServer);
+						vomsServers.put(VOMSServerKey,vomsServer);
 					}
-					vomsServerEndpoint.setServer(vomsServer);
+					vomsServerEndpoint.setServer(vomsServers.get(VOMSServerKey));
 					voConfig.vomsServerList.add(vomsServerEndpoint);					
 				} else {
 					dataContext = DataContexts.DATA_IGNORED;
@@ -324,6 +344,10 @@ public class VOConfigTask extends Task {
 					vomsServer.setCert(data);
 					break;
 
+				case DATA_VOMS_CERT_EXPIRY:
+					vomsServer.setCertExpiry(data);
+					break;
+
 				case DATA_VOMS_DN:
 					vomsServer.setDN(data);
 					break;
@@ -355,6 +379,14 @@ public class VOConfigTask extends Task {
 			return (this.id);
 		}
 
+		public String toStr() {
+			String configStr = "";
+			for (VOMSServerEndpoint endpoint : vomsServerList) {
+				configStr = "VOMS Server: "+endpoint.getEndpoint()+" (VOMS port="+endpoint.getPort()+")";
+			}
+			return (configStr);
+		}
+		
 		public void setId(int id) {
 			this.id = id;
 		}
@@ -412,12 +444,17 @@ public class VOConfigTask extends Task {
 		private String host = null;
 		private int port = 8443;
 		private String cert = null;
+		private Date certExpiry = null;
 		private String dn = null;
 
 		// Methods
 
 		public String getCert() {
 			return (this.cert);
+		}
+		
+		public Date getCertExpiry () {
+			return (this.certExpiry);
 		}
 
 		public String getDN() {
@@ -434,6 +471,19 @@ public class VOConfigTask extends Task {
 
 		public void setCert(String cert) {
 			this.cert = cert;
+		}
+
+		public void setCertExpiry(String expiry) {
+			SimpleDateFormat expiryFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+			try {
+				this.certExpiry = expiryFormat.parse(expiry);
+			} catch (ParseException e) {
+				new BuildException("Failed to parse VOMS server "+getHost()+" certificate expiry date ("+expiry+")");
+			}
+		}
+
+		public void setCertExpiry(Date expiry) {
+			this.certExpiry = expiry;
 		}
 
 		public void setDN(String dn) {
