@@ -7,6 +7,7 @@ import java.text.ParseException;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.Map;
@@ -56,12 +57,12 @@ public class VOConfigTask extends Task {
 	/* Configuration of VOs retrieved from VO ID cards.
 	 * This is a hash with one entry per VO : the key is the VO name.
 	 */
-	private Hashtable<String,VOConfig> voMap = null;
+	private Hashtable<String,VOConfig> voMap = new Hashtable<String,VOConfig>();;
 
 	/* Hash table of all defined VOMS servers.
 	 * Used to check consistency of VOMS server attributes across VOs.
 	 */
-	private Hashtable<String,VOMSServer>vomsServers = null;
+	private Hashtable<String,VOMSServer>vomsServers = new Hashtable<String,VOMSServer>();;
 	
 
 	// Methods
@@ -190,20 +191,11 @@ public class VOConfigTask extends Task {
 
 		/* Context variables */
 		private boolean sectionVOMSServers = false;
+		private boolean sectionGroupsRoles = false;
 		private VOMSServer vomsServer = null;
 		private VOMSEndpoint vomsEndpoint = null;
+		private VOMSFqan fqan = null;
 		String data = null;
-
-		/*
-		 * Start of document
-		 */
-
-		@Override
-		public void startDocument () throws SAXException {
-			voMap = new Hashtable<String,VOConfig>();
-			vomsServers = new Hashtable<String,VOMSServer>();
-		}
-
 
 		/**
 		 * Start of new element
@@ -228,7 +220,10 @@ public class VOConfigTask extends Task {
 
 			} else if ( qName.equals("VOMSServers") ) {
 				sectionVOMSServers = true;
-
+				
+			} else if ( qName.equals("GroupsAndRoles") ) {
+				sectionGroupsRoles = true;
+				
 			} else if ( sectionVOMSServers ) {
 				if ( qName.equals("VOMSServer") ) {
 					vomsServer = new VOMSServer();		
@@ -237,6 +232,15 @@ public class VOConfigTask extends Task {
 					// This will enable collection/concatenation of data in characters()
 					data = "";
 				}
+				
+			} else if ( sectionGroupsRoles ) {
+				if ( qName.equals("GroupAndRole") ) {
+					fqan = new VOMSFqan();
+				} else {
+					// This will enable collection/concatenation of data in characters()
+					data = "";
+				}
+				
 			}
 		}
 
@@ -259,8 +263,13 @@ public class VOConfigTask extends Task {
 				} else {
 					throw new SAXException("Parsing error: end of VO configuration found before start");
 				}
+
 			} else if ( qName.equals("VOMSServers") ) {
 				sectionVOMSServers = false;
+
+			} else if ( qName.equals("GroupsAndRoles") ) {
+				sectionGroupsRoles = false;
+				
 			} else if ( sectionVOMSServers ) {
 				// Check the VOMS server has not been defined yet by another VO or that attributes are consistent
 				// A unique VOMS server is identified by host+port combination
@@ -305,11 +314,25 @@ public class VOConfigTask extends Task {
 						vomsServer.setDN(data);
 					}
 					// Disable collection of data
-					if ( data != null ) {
-						data = null;
-					}
+					data = null;
 				}
 
+			} else if ( sectionGroupsRoles ) {
+				if ( qName.equals("GroupAndRole") ) {
+					voConfig.fqanList.add(fqan);
+				} else {
+					if ( qName.equals("GROUP_ROLE") ) {
+						fqan.setFqan(data);
+						fqan.setIsSWManager(data);
+					} else if ( qName.equals("DESCRIPTION") ) {
+						fqan.setDescription(data);
+					} else if ( qName.equals("IS_GROUP_USED") ) {
+						fqan.setMappingRequested(data);
+					}
+					// Disable collection of data
+					data = null;
+				}
+				
 			}			
 		}
 
@@ -328,6 +351,20 @@ public class VOConfigTask extends Task {
 	}
 		
 
+	// Possible FQAN for a Software Manager
+	static private HashSet<String> fqanSWManager;
+	static {
+		fqanSWManager = new HashSet<String>();
+		fqanSWManager.add("/Role=lcgadmin");
+		fqanSWManager.add("/admin");
+		fqanSWManager.add("/Role=swadmin");
+		fqanSWManager.add("/Role=sgmadmin");
+		fqanSWManager.add("/Role=sgm");
+		fqanSWManager.add("/Role=SoftwareManager");
+		fqanSWManager.add("/Role=VO-Software-Manager");
+		fqanSWManager.add("/Role=SW-Admin");
+	}
+	
 	// Class representing a VO
 
 	private class VOConfig {
@@ -342,6 +379,9 @@ public class VOConfigTask extends Task {
 
 		/* List of VOMS servers */
 		private LinkedList<VOMSEndpoint> vomsEndpointList = new LinkedList<VOMSEndpoint>();
+
+		/* List of defined FQANs */
+		private LinkedList<VOMSFqan> fqanList = new LinkedList<VOMSFqan>();
 
 
 		// Methods
@@ -358,7 +398,7 @@ public class VOConfigTask extends Task {
 			return (this.name);
 		}
 		
-		public LinkedList<VOMSEndpoint> getVomsServerList() {
+		public LinkedList<VOMSEndpoint> getVomsEndpointList() {
 			return (this.vomsEndpointList);
 		}
 
@@ -393,17 +433,19 @@ public class VOConfigTask extends Task {
 				template.write("'name' ?= '"+getName()+"';\n");
 				template.write("\n");
 				template.write("'voms_servers' ?= list(\n");
-				if ( getVomsServerList().isEmpty() ) {
+				if ( getVomsEndpointList().isEmpty() ) {
 					System.err.println("    WARNING: VO "+getName()+" has no VOMS endpoint defined");
 				}
-				for (VOMSEndpoint vomsServer : getVomsServerList()) {
-					template.write("                       nlist('name', '"+vomsServer.server.host+"',\n");
-					template.write("                             'host', '"+vomsServer.server.host+"',\n");
-					template.write("                             'port', '"+vomsServer.port+"',\n");
-					if ( !vomsServer.getVomsAdminEnabled() ) {
-						template.write("                             'type', 'voms-only',\n");
-					}
-					template.write("                            ),\n");
+				for (VOMSEndpoint vomsEndpoint : getVomsEndpointList()) {
+					vomsEndpoint.writeTemplate(template);
+				}
+				template.write(");\n");
+				template.write("'voms_mappings' ?= list(\n");
+				if ( debugTask && fqanList.isEmpty() ) {
+					System.err.println("    INFO: VO "+getName()+" has no specific FQAN defined");
+				}
+				for (VOMSFqan fqan : fqanList) {
+					fqan.writeTemplate(template);
 				}
 				template.write(");\n");
 				template.close();
@@ -459,6 +501,16 @@ public class VOConfigTask extends Task {
 				vomsAdminEnabled = "true";
 			}
 			this.vomsAdminEnabled = Boolean.parseBoolean(vomsAdminEnabled);
+		}
+
+		public void writeTemplate(FileWriter template) throws IOException {
+			template.write("    nlist('name', '"+getServer().host+"',\n");
+			template.write("          'host', '"+getServer().host+"',\n");
+			template.write("          'port', '"+getServer().port+"',\n");
+			if ( !getVomsAdminEnabled() ) {
+				template.write("          'type', 'voms-only',\n");
+			}
+			template.write("         ),\n");
 		}
 }
 	
@@ -538,6 +590,62 @@ public class VOConfigTask extends Task {
 			} catch (IOException e){
 				throw new BuildException("Error writing template for VO "+getHost()+" ("+certParamsTpl+")\n"+e.getMessage());
 			}			
+		}
+	}
+	
+	// VOMS FQAN
+	
+	private class VOMSFqan {
+		private boolean mappingRequested = false;
+		private String fqan = null;
+		private String description = null;
+		private boolean isSWManager = false;
+		
+		// Methods
+		
+		public String getDescription() {
+			return (this.description);
+		}
+		
+		public String getFqan() {
+			return (this.fqan);
+		}
+		
+		public boolean getMappingRequested() {
+			return (this.mappingRequested);
+		}
+		
+		public boolean getIsSWManager() {
+			return (this.isSWManager);
+		}
+		
+		public void setDescription(String description) {
+			this.description = description;
+		}
+		
+		public void setFqan(String fqan) {
+			this.fqan = fqan;
+		}
+		
+		public void setMappingRequested(String mappingRequested) {
+			if ( (mappingRequested != null) && !mappingRequested.contentEquals("0") ) {
+				mappingRequested = "true";
+			}
+			this.mappingRequested = Boolean.parseBoolean(mappingRequested);
+		}
+		
+		public void setIsSWManager(String fqan) {
+			if ( fqanSWManager.contains(fqan) ) {
+				this.isSWManager = true;
+			} else {
+				this.isSWManager = false;				
+			}
+		}
+		
+		public void writeTemplate(FileWriter template) throws IOException {
+			template.write("    nlist('description', '"+getDescription()+"',\n");
+			template.write("          'fqan', '"+getFqan()+"',\n");
+			template.write("         ),\n");
 		}
 	}
 }
