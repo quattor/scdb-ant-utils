@@ -389,7 +389,7 @@ public class VOConfigTask extends Task {
 
 			try {
 				FileWriter template = new FileWriter(voParamsTpl);
-				template.write("unique template "+voParamsNS+";\n\n");
+				template.write("structure template "+voParamsNS+";\n\n");
 				template.write("'name' ?= '"+getName()+"'\n");
 				template.write("\n");
 				template.write("'voms_servers' ?= list(\n");
@@ -530,7 +530,7 @@ public class VOConfigTask extends Task {
 
 			try {
 				FileWriter template = new FileWriter(certParamsTpl);
-				template.write("unique template "+certParamsNS+";\n\n");
+				template.write("structure template "+certParamsNS+";\n\n");
 				template.write("'cert' ?= <<EOF;\n");
 				template.write(getCert());
 				template.write("EOF\n");
