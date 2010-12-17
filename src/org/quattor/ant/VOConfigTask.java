@@ -164,46 +164,12 @@ public class VOConfigTask extends Task {
 		Set<Entry<String,VOConfig>> voMapEntries = voMap.entrySet();
 		for (String branch : ds.getIncludedDirectories()) {
 			for (Entry<String,VOConfig> vo : voMapEntries) {
-				VOConfig voConfig = vo.getValue();
-				writeVOParams(templateBasedir+"/"+branch,voConfig);
+				vo.getValue().writeVOParams(templateBasedir+"/"+branch);
 			}
 		}
 		
 	}
 
-	private boolean writeVOParams(String templateBranch, VOConfig voConfig) throws BuildException {
-		boolean status = true;     // Assume success
-		String voName = voConfig.name;
-		
-		if ( debugTask ) {
-			System.out.println("VO configuration for VO "+voName+" (ID="+voConfig.getId()+"):\n"+voConfig.toStr());
-		}
-		
-		String voParamsNS = paramsTplNS + "/" + voName;
-		String voParamsTpl = templateBranch + "/" + voParamsNS + ".tpl";
-		System.out.println("Writing templates for VO "+voName+" ("+voParamsTpl+")");
-
-		try {
-			FileWriter template = new FileWriter(voParamsTpl);
-			template.write("unique template "+voParamsNS+";\n\n");
-			template.write("'name' ?= "+voName+"\n");
-			template.write("'voms_servers' ?= list(\n");
-			for (VOMSServerEndpoint vomsServer : voConfig.vomsServerList) {
-				template.write("                       nlist('name', "+vomsServer.server.host+",\n");
-				template.write("                             'host', "+vomsServer.server.host+",\n");
-				template.write("                             'port', "+vomsServer.port+",\n");
-				template.write("                            )\n");
-			}
-			template.write(")\n");
-			template.close();
-		} catch (IOException e){
-			throw new BuildException("Error writing template for VO "+voName+" ("+voParamsTpl+")\n"+e.getMessage());
-		}
-		
-		return (status);
-	}
-
-	
 	// SAX content handler for VO cards
 
 	public class VOCardHandler extends DefaultHandler {
@@ -219,7 +185,7 @@ public class VOConfigTask extends Task {
 		/* Context variables */
 		private boolean sectionVOMSServers = false;
 		private VOMSServer vomsServer = null;
-		private VOMSServerEndpoint vomsServerEndpoint = null;
+		private VOMSEndpoint vomsEndpoint = null;
 		String data = null;
 
 		/*
@@ -256,12 +222,11 @@ public class VOConfigTask extends Task {
 
 			} else if ( qName.equals("VOMSServers") ) {
 				sectionVOMSServers = true;
-				voConfig.vomsServerList = new LinkedList<VOMSServerEndpoint>();
 
 			} else if ( sectionVOMSServers ) {
 				if ( qName.equals("VOMSServer") ) {
 					vomsServer = new VOMSServer();		
-					vomsServerEndpoint = new VOMSServerEndpoint();
+					vomsEndpoint = new VOMSEndpoint();
 				} else {
 					// This will enable collection/concatenation of data in characters()
 					data = "";
@@ -313,23 +278,23 @@ public class VOConfigTask extends Task {
 						}
 						vomsServers.put(VOMSServerKey,vomsServer);
 					}
-					vomsServerEndpoint.setServer(vomsServers.get(VOMSServerKey));
-					voConfig.vomsServerList.add(vomsServerEndpoint);					
+					vomsEndpoint.setServer(vomsServers.get(VOMSServerKey));
+					voConfig.addVomsEndpoint(vomsEndpoint);					
 				} else {
 					if ( qName.equals("HOSTNAME") ) {
 						vomsServer.setHost(data);
 					} else if ( qName.equals("HTTPS_PORT") ) {
 						vomsServer.setPort(Integer.parseInt(data));
 					} else if ( qName.equals("VOMS_PORT") ) {
-						vomsServerEndpoint.setPort(Integer.parseInt(data));
+						vomsEndpoint.setPort(Integer.parseInt(data));
 					} else if ( qName.equals("ServerEndpoint") ) {
-						vomsServerEndpoint.setEndpoint(data);
+						vomsEndpoint.setEndpoint(data);
 					} else if ( qName.equals("CertificatePublicKey") ) {
 						vomsServer.setCert(data);
 					} else if ( qName.equals("CERTIFICATE_EXPIRATION_DATE") ) {
 						vomsServer.setCertExpiry(data);
 					} else if ( qName.equals("IS_VOMSADMIN_SERVER") ) {
-						vomsServerEndpoint.setVomsAdminEnabled(Boolean.parseBoolean(data));
+						vomsEndpoint.setVomsAdminEnabled(Boolean.parseBoolean(data));
 					} else if ( qName.equals("DN") ) {
 						vomsServer.setDN(data);
 					}
@@ -370,10 +335,17 @@ public class VOConfigTask extends Task {
 		private String accountPrefix = null;
 
 		/* List of VOMS servers */
-		private LinkedList<VOMSServerEndpoint> vomsServerList = null;
+		private LinkedList<VOMSEndpoint> vomsEndpointList = null;
 
 
 		// Methods
+
+		public void addVomsEndpoint(VOMSEndpoint vomsEndpoint) {
+			if ( vomsEndpointList == null ) {
+				vomsEndpointList = new LinkedList<VOMSEndpoint>();
+			}
+			vomsEndpointList.add(vomsEndpoint);
+		}
 
 		public int getId() {
 			return (this.id);
@@ -381,6 +353,10 @@ public class VOConfigTask extends Task {
 
 		public String getName() {
 			return (this.name);
+		}
+		
+		public LinkedList<VOMSEndpoint> getVomsServerList() {
+			return (this.vomsEndpointList);
 		}
 
 		public void setId(int id) {
@@ -393,18 +369,51 @@ public class VOConfigTask extends Task {
 
 		public String toStr() {
 			String configStr = "";
-			for (VOMSServerEndpoint endpoint : vomsServerList) {
+			for (VOMSEndpoint endpoint : vomsEndpointList) {
 				configStr += "    VOMS Server: "+endpoint.getEndpoint()+" (VOMS port="+endpoint.getPort()+")\n";
 			}
 			return (configStr);
 		}
+		
+		private boolean writeVOParams(String templateBranch) throws BuildException {
+			boolean status = true;     // Assume success
+			
+			if ( debugTask ) {
+				System.out.println("VO configuration for VO "+getName()+" (ID="+getId()+"):\n"+toStr());
+			}
+			
+			String voParamsNS = paramsTplNS + "/" + getName();
+			String voParamsTpl = templateBranch + "/" + voParamsNS + ".tpl";
+			System.out.println("Writing templates for VO "+getName()+" ("+voParamsTpl+")");
+
+			try {
+				FileWriter template = new FileWriter(voParamsTpl);
+				template.write("unique template "+voParamsNS+";\n\n");
+				template.write("'name' ?= '"+getName()+"'\n");
+				template.write("\n");
+				template.write("'voms_servers' ?= list(\n");
+				for (VOMSEndpoint vomsServer : getVomsServerList()) {
+					template.write("                       nlist('name', '"+vomsServer.server.host+"',\n");
+					template.write("                             'host', '"+vomsServer.server.host+"',\n");
+					template.write("                             'port', '"+vomsServer.port+"',\n");
+					template.write("                            ),\n");
+				}
+				template.write(");\n");
+				template.close();
+			} catch (IOException e){
+				throw new BuildException("Error writing template for VO "+getName()+" ("+voParamsTpl+")\n"+e.getMessage());
+			}
+			
+			return (status);
+		}
+
 		
 	}
 
 
 	// Class representing a VOMS server endpoint (used by a specific V0)
 	
-	private class VOMSServerEndpoint {
+	private class VOMSEndpoint {
 		private VOMSServer server = null;
 		private int port;
 		private String endpoint = null;
