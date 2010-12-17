@@ -156,25 +156,59 @@ public class VOConfigTask extends Task {
 			throw new BuildException("BUILD FAILED : " + e.getMessage());						
 		}
 
+		// Retrieve list of template branches to update
+		DirectoryScanner ds = configDirs.getDirectoryScanner(getProject());
+		File templateBasedir = ds.getBasedir();
+		
 		// Write VO configurations to templates
 		Set<Entry<String,VOConfig>> voMapEntries = voMap.entrySet();
-		for (Entry<String,VOConfig> vo : voMapEntries) {
-			String voName = vo.getKey();
-			VOConfig voConfig = vo.getValue();
-			if ( debugTask ) {
-				System.out.println("VO configuration for VO "+voName+" (ID="+voConfig.getId()+"):\n"+voConfig.toStr());
+		for (String branch : ds.getIncludedDirectories()) {
+			for (Entry<String,VOConfig> vo : voMapEntries) {
+				VOConfig voConfig = vo.getValue();
+				writeVOParams(templateBasedir+"/"+branch,voConfig);
 			}
-			System.out.println("Writing templates for VO "+voName+" (ID="+voConfig.getId()+")");
 		}
+		
 	}
 
+	private boolean writeVOParams(String templateBranch, VOConfig voConfig) throws BuildException {
+		boolean status = true;     // Assume success
+		String voName = voConfig.name;
+		
+		if ( debugTask ) {
+			System.out.println("VO configuration for VO "+voName+" (ID="+voConfig.getId()+"):\n"+voConfig.toStr());
+		}
+		
+		String voParamsNS = paramsTplNS + "/" + voName;
+		String voParamsTpl = templateBranch + "/" + voParamsNS + ".tpl";
+		System.out.println("Writing templates for VO "+voName+" ("+voParamsTpl+")");
 
+		try {
+			FileWriter template = new FileWriter(voParamsTpl);
+			template.write("unique template "+voParamsNS+";\n\n");
+			template.write("'name' ?= "+voName+"\n");
+			template.write("'voms_servers' ?= list(\n");
+			for (VOMSServerEndpoint vomsServer : voConfig.vomsServerList) {
+				template.write("                       nlist('name', "+vomsServer.server.host+",\n");
+				template.write("                             'host', "+vomsServer.server.host+",\n");
+				template.write("                             'port', "+vomsServer.port+",\n");
+				template.write("                            )\n");
+			}
+			template.write(")\n");
+			template.close();
+		} catch (IOException e){
+			throw new BuildException("Error writing template for VO "+voName+" ("+voParamsTpl+")\n"+e.getMessage());
+		}
+		
+		return (status);
+	}
+
+	
 	// SAX content handler for VO cards
 
 	public class VOCardHandler extends DefaultHandler {
 
-		/* VO currently being processed */
-		private String voName = null;
+		/* Configuration of VO currently being processed */
 		private VOConfig voConfig = null;
 
 		/* Hash table of all defined VOMS servers.
@@ -206,17 +240,18 @@ public class VOConfigTask extends Task {
 		@Override
 		public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
 			if ( qName.equals("VO") ) {
-				voName = attributes.getValue("Name");
+				String voName = attributes.getValue("Name");
 				if ( voName == null ) {
 					throw new SAXException("Invalid configuration: VO has no name");
 				}
 				voName = voName.toLowerCase();
-				System.out.println("Processing VO "+voName);
+				System.out.println("Retrieving configuration for VO "+voName);
 				voConfig = new VOConfig();
 				String voId = attributes.getValue("ID");
 				if ( voId == null ) {
 					throw new SAXException("Invalid configuration: VO has no Id");
 				}
+				voConfig.setName(voName);
 				voConfig.setId(Integer.parseInt(voId));
 
 			} else if ( qName.equals("VOMSServers") ) {
@@ -241,14 +276,14 @@ public class VOConfigTask extends Task {
 		@Override
 		public void endElement(String uri, String localName, String qName) throws SAXException {
 			if ( qName.equals("VO") ) {
-				if ( voName != null ) {
+				if ( voConfig.getName() != null ) {
 					try {
-						voMap.put(voName, voConfig);
+						voMap.put(voConfig.getName(), voConfig);
 					} catch (NullPointerException e) {
-						throw new SAXException("Internal error: voMap or voConfig undefined at the end of VO "+voName+" configuration");
+						throw new SAXException("Internal error: voMap or voConfig undefined at the end of VO "+voConfig.getName()+" configuration");
 					}
 					if ( debugTask ) {
-						System.out.println("Finished processing VO "+voName);						
+						System.out.println("Finished processing VO "+voConfig.getName());						
 					}
 				} else {
 					throw new SAXException("Parsing error: end of VO configuration found before start");
@@ -325,8 +360,14 @@ public class VOConfigTask extends Task {
 	// Class representing a VO
 
 	private class VOConfig {
+		/* VO name */
+		private String name = null;
+		
 		/* VO ID number */
 		private int id = 0;
+		
+		/* Account prefix */
+		private String accountPrefix = null;
 
 		/* List of VOMS servers */
 		private LinkedList<VOMSServerEndpoint> vomsServerList = null;
@@ -338,6 +379,18 @@ public class VOConfigTask extends Task {
 			return (this.id);
 		}
 
+		public String getName() {
+			return (this.name);
+		}
+
+		public void setId(int id) {
+			this.id = id;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
 		public String toStr() {
 			String configStr = "";
 			for (VOMSServerEndpoint endpoint : vomsServerList) {
@@ -346,10 +399,6 @@ public class VOConfigTask extends Task {
 			return (configStr);
 		}
 		
-		public void setId(int id) {
-			this.id = id;
-		}
-
 	}
 
 
