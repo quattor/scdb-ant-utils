@@ -531,8 +531,7 @@ public class VOConfigTask extends Task {
 			try {
 				FileWriter template = new FileWriter(certParamsTpl);
 				template.write("unique template "+certParamsNS+";\n\n");
-				template.write("'name' ?= '"+getHost()+"'\n");
-				template.write("'cert' ?= <<EOF;");
+				template.write("'cert' ?= <<EOF;\n");
 				template.write(getCert());
 				template.write("EOF\n");
 				template.close();
