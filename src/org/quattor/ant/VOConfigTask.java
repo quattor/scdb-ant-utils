@@ -323,7 +323,7 @@ public class VOConfigTask extends Task {
 				} else {
 					if ( qName.equals("GROUP_ROLE") ) {
 						fqan.setFqan(data);
-						fqan.setIsSWManager(data);
+						fqan.setIsSWManager(data,voConfig.getName());
 					} else if ( qName.equals("DESCRIPTION") ) {
 						fqan.setDescription(data);
 					} else if ( qName.equals("IS_GROUP_USED") ) {
@@ -634,8 +634,9 @@ public class VOConfigTask extends Task {
 			this.mappingRequested = Boolean.parseBoolean(mappingRequested);
 		}
 		
-		public void setIsSWManager(String fqan) {
-			if ( fqanSWManager.contains(fqan) ) {
+		public void setIsSWManager(String fqan, String voName) {
+			String relativeFqan = fqan.replaceFirst("^/"+voName, "");
+			if ( fqanSWManager.contains(relativeFqan) ) {
 				this.isSWManager = true;
 			} else {
 				this.isSWManager = false;				
@@ -644,7 +645,7 @@ public class VOConfigTask extends Task {
 		
 		public void writeTemplate(FileWriter template) throws IOException {
 			String prefix = "";
-			if ( getMappingRequested() ) {
+			if ( !getMappingRequested() ) {
 				prefix = "#";
 			}
 			String description = getDescription();
