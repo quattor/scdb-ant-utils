@@ -58,6 +58,12 @@ public class VOConfigTask extends Task {
 	 */
 	private Hashtable<String,VOConfig> voMap = null;
 
+	/* Hash table of all defined VOMS servers.
+	 * Used to check consistency of VOMS server attributes across VOs.
+	 */
+	private Hashtable<String,VOMSServer>vomsServers = null;
+	
+
 	// Methods
 
 	/**
@@ -162,9 +168,14 @@ public class VOConfigTask extends Task {
 		
 		// Write VO configurations to templates
 		Set<Entry<String,VOConfig>> voMapEntries = voMap.entrySet();
+		Set<Entry<String,VOMSServer>> vomsServersEntries = vomsServers.entrySet();
 		for (String branch : ds.getIncludedDirectories()) {
+			System.err.println("Updating templates in branch "+branch);
 			for (Entry<String,VOConfig> vo : voMapEntries) {
-				vo.getValue().writeVOParams(templateBasedir+"/"+branch);
+				vo.getValue().writeVOTemplate(templateBasedir+"/"+branch);
+			}
+			for (Entry<String,VOMSServer> server : vomsServersEntries) {
+				server.getValue().updateVOMSServerTemplate(templateBasedir+"/"+branch);
 			}
 		}
 		
@@ -177,11 +188,6 @@ public class VOConfigTask extends Task {
 		/* Configuration of VO currently being processed */
 		private VOConfig voConfig = null;
 
-		/* Hash table of all defined VOMS servers.
-		 * Used to check consistency of VOMS server attributes across VOs.
-		 */
-		private Hashtable<String,VOMSServer>vomsServers = null;
-		
 		/* Context variables */
 		private boolean sectionVOMSServers = false;
 		private VOMSServer vomsServer = null;
@@ -367,21 +373,19 @@ public class VOConfigTask extends Task {
 		public String toStr() {
 			String configStr = "";
 			for (VOMSEndpoint endpoint : vomsEndpointList) {
-				configStr += "    VOMS Server: "+endpoint.getEndpoint()+" (VOMS port="+endpoint.getPort()+")\n";
+				configStr += "    VOMS Server: "+endpoint.getEndpoint()+" (VOMS port="+endpoint.getPort()+", voms-admin="+endpoint.getVomsAdminEnabled()+")\n";
 			}				
 			return (configStr);
 		}
 		
-		private boolean writeVOParams(String templateBranch) throws BuildException {
-			boolean status = true;     // Assume success
-			
+		private void writeVOTemplate(String templateBranch) throws BuildException {			
 			if ( debugTask ) {
 				System.out.println("VO configuration for VO "+getName()+" (ID="+getId()+"):\n"+toStr());
 			}
 			
 			String voParamsNS = paramsTplNS + "/" + getName();
 			String voParamsTpl = templateBranch + "/" + voParamsNS + ".tpl";
-			System.out.println("Writing templates for VO "+getName()+" ("+voParamsTpl+")");
+			System.out.println("Writing template for VO "+getName()+" ("+voParamsTpl+")");
 
 			try {
 				FileWriter template = new FileWriter(voParamsTpl);
@@ -390,7 +394,7 @@ public class VOConfigTask extends Task {
 				template.write("\n");
 				template.write("'voms_servers' ?= list(\n");
 				if ( getVomsServerList().isEmpty() ) {
-					System.err.println("    WARNING: VO "+getId()+" has no VOMS endpoint defined");
+					System.err.println("    WARNING: VO "+getName()+" has no VOMS endpoint defined");
 				}
 				for (VOMSEndpoint vomsServer : getVomsServerList()) {
 					template.write("                       nlist('name', '"+vomsServer.server.host+"',\n");
@@ -406,8 +410,6 @@ public class VOConfigTask extends Task {
 			} catch (IOException e){
 				throw new BuildException("Error writing template for VO "+getName()+" ("+voParamsTpl+")\n"+e.getMessage());
 			}
-			
-			return (status);
 		}
 
 		
@@ -521,6 +523,22 @@ public class VOConfigTask extends Task {
 			this.port = Integer.parseInt(port);
 		}
 		
+		private void updateVOMSServerTemplate(String templateBranch) throws BuildException {			
+			String certParamsNS = certsTplNS + "/" + getHost();
+			String certParamsTpl = templateBranch + "/" + certParamsNS + ".tpl";
+			System.out.println("Writing template for VOMS server "+getHost()+" ("+certParamsTpl+")");
 
+			try {
+				FileWriter template = new FileWriter(certParamsTpl);
+				template.write("unique template "+certParamsNS+";\n\n");
+				template.write("'name' ?= '"+getHost()+"'\n");
+				template.write("'cert' ?= <<EOF;");
+				template.write(getCert());
+				template.write("EOF\n");
+				template.close();
+			} catch (IOException e){
+				throw new BuildException("Error writing template for VO "+getHost()+" ("+certParamsTpl+")\n"+e.getMessage());
+			}			
+		}
 	}
 }
