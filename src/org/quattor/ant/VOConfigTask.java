@@ -284,9 +284,9 @@ public class VOConfigTask extends Task {
 					if ( qName.equals("HOSTNAME") ) {
 						vomsServer.setHost(data);
 					} else if ( qName.equals("HTTPS_PORT") ) {
-						vomsServer.setPort(Integer.parseInt(data));
+						vomsServer.setPort(data);
 					} else if ( qName.equals("VOMS_PORT") ) {
-						vomsEndpoint.setPort(Integer.parseInt(data));
+						vomsEndpoint.setPort(data);
 					} else if ( qName.equals("ServerEndpoint") ) {
 						vomsEndpoint.setEndpoint(data);
 					} else if ( qName.equals("CertificatePublicKey") ) {
@@ -294,7 +294,7 @@ public class VOConfigTask extends Task {
 					} else if ( qName.equals("CERTIFICATE_EXPIRATION_DATE") ) {
 						vomsServer.setCertExpiry(data);
 					} else if ( qName.equals("IS_VOMSADMIN_SERVER") ) {
-						vomsEndpoint.setVomsAdminEnabled(Boolean.parseBoolean(data));
+						vomsEndpoint.setVomsAdminEnabled(data);
 					} else if ( qName.equals("DN") ) {
 						vomsServer.setDN(data);
 					}
@@ -396,7 +396,7 @@ public class VOConfigTask extends Task {
 					template.write("                       nlist('name', '"+vomsServer.server.host+"',\n");
 					template.write("                             'host', '"+vomsServer.server.host+"',\n");
 					template.write("                             'port', '"+vomsServer.port+"',\n");
-					if ( !vomsServer.vomsAdminEnabled ) {
+					if ( !vomsServer.getVomsAdminEnabled() ) {
 						template.write("                             'type', 'voms-only',\n");
 					}
 					template.write("                            ),\n");
@@ -444,18 +444,21 @@ public class VOConfigTask extends Task {
 			this.server = server;
 		}
 		
-		public void setPort (int port) {
-			this.port = port;
+		public void setPort (String port) {
+			this.port = Integer.parseInt(port);
 		}
 		
 		public void setEndpoint (String endpoint) {
 			this.endpoint = endpoint;
 		}
 
-		public void setVomsAdminEnabled(boolean vomsAdminEnabled) {
-			this.vomsAdminEnabled = vomsAdminEnabled;
+		public void setVomsAdminEnabled(String vomsAdminEnabled) {
+			if ( (vomsAdminEnabled != null) && (vomsAdminEnabled != "0") ) {
+				vomsAdminEnabled = "true";
+			}
+			this.vomsAdminEnabled = Boolean.parseBoolean(vomsAdminEnabled);
 		}
-	}
+}
 	
 	
 	// Class representing a VOMS server
@@ -514,9 +517,10 @@ public class VOConfigTask extends Task {
 			this.host = host;
 		}
 
-		public void setPort(int port) {
-			this.port = port;
+		public void setPort (String port) {
+			this.port = Integer.parseInt(port);
 		}
+		
 
 	}
 }
