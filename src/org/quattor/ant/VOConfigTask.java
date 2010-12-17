@@ -643,9 +643,18 @@ public class VOConfigTask extends Task {
 		}
 		
 		public void writeTemplate(FileWriter template) throws IOException {
-			template.write("    nlist('description', '"+getDescription()+"',\n");
-			template.write("          'fqan', '"+getFqan()+"',\n");
-			template.write("         ),\n");
+			String prefix = "";
+			if ( getMappingRequested() ) {
+				prefix = "#";
+			}
+			String description = getDescription();
+			if ( getIsSWManager() ) {
+				// SW manager role must have an explicit description, whatever is in the VO card
+				description = "SW manager";
+			}
+			template.write(prefix+"    nlist('description', '"+description+"',\n");
+			template.write(prefix+"          'fqan', '"+getFqan()+"',\n");
+			template.write(prefix+"         ),\n");
 		}
 	}
 }
