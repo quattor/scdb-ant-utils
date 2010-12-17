@@ -386,9 +386,9 @@ public class VOConfigTask extends Task {
 	static private HashSet<String> fqanProductionManager;
 	static {
 		fqanProductionManager = new HashSet<String>();
-		fqanProductionManager.add("//Role=production");
-		fqanProductionManager.add("//Role=prod");
-		fqanProductionManager.add("//Role=ProductionManager");
+		fqanProductionManager.add("/Role=production");
+		fqanProductionManager.add("/Role=prod");
+		fqanProductionManager.add("/Role=ProductionManager");
 	}
 	
 	// Class representing a VO
@@ -647,7 +647,7 @@ public class VOConfigTask extends Task {
 		}
 		
 		public boolean isProductionManager() {
-			return (this.isSWManager);
+			return (this.isProductionManager);
 		}
 		
 		public void setDescription(String description) {
