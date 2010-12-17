@@ -192,6 +192,7 @@ public class VOConfigTask extends Task {
 		/* Context variables */
 		private boolean sectionVOMSServers = false;
 		private boolean sectionGroupsRoles = false;
+		private boolean softwareManagerFound = false;
 		private VOMSServer vomsServer = null;
 		private VOMSEndpoint vomsEndpoint = null;
 		private VOMSFqan fqan = null;
@@ -217,7 +218,8 @@ public class VOConfigTask extends Task {
 				}
 				voConfig.setName(voName);
 				voConfig.setId(Integer.parseInt(voId));
-
+				softwareManagerFound = false;
+				
 			} else if ( qName.equals("VOMSServers") ) {
 				sectionVOMSServers = true;
 				
@@ -319,11 +321,26 @@ public class VOConfigTask extends Task {
 
 			} else if ( sectionGroupsRoles ) {
 				if ( qName.equals("GroupAndRole") ) {
-					voConfig.fqanList.add(fqan);
+					// SW manager must be first in the list
+					if ( fqan.isSWManager() ) {
+						voConfig.fqanList.addFirst(fqan);
+					} else if ( fqan.isProductionManager() ) {
+						if ( softwareManagerFound ) {
+							voConfig.fqanList.add(1,fqan);														
+						} else {
+							voConfig.fqanList.addFirst(fqan);							
+						}
+					} else {
+						voConfig.fqanList.add(fqan);
+					}
 				} else {
 					if ( qName.equals("GROUP_ROLE") ) {
 						fqan.setFqan(data);
 						fqan.setIsSWManager(data,voConfig.getName());
+						fqan.setIsProductionManager(data,voConfig.getName());
+						if ( !softwareManagerFound ) {
+							softwareManagerFound = fqan.isSWManager();
+						}
 					} else if ( qName.equals("DESCRIPTION") ) {
 						fqan.setDescription(data);
 					} else if ( qName.equals("IS_GROUP_USED") ) {
@@ -363,6 +380,15 @@ public class VOConfigTask extends Task {
 		fqanSWManager.add("/Role=SoftwareManager");
 		fqanSWManager.add("/Role=VO-Software-Manager");
 		fqanSWManager.add("/Role=SW-Admin");
+	}
+	
+	// Possible FQAN for production role (required for backward compatibility)
+	static private HashSet<String> fqanProductionManager;
+	static {
+		fqanProductionManager = new HashSet<String>();
+		fqanProductionManager.add("//Role=production");
+		fqanProductionManager.add("//Role=prod");
+		fqanProductionManager.add("//Role=ProductionManager");
 	}
 	
 	// Class representing a VO
@@ -600,6 +626,7 @@ public class VOConfigTask extends Task {
 		private String fqan = null;
 		private String description = null;
 		private boolean isSWManager = false;
+		private boolean isProductionManager = false;
 		
 		// Methods
 		
@@ -615,7 +642,11 @@ public class VOConfigTask extends Task {
 			return (this.mappingRequested);
 		}
 		
-		public boolean getIsSWManager() {
+		public boolean isSWManager() {
+			return (this.isSWManager);
+		}
+		
+		public boolean isProductionManager() {
 			return (this.isSWManager);
 		}
 		
@@ -643,15 +674,27 @@ public class VOConfigTask extends Task {
 			}
 		}
 		
+		public void setIsProductionManager(String fqan, String voName) {
+			String relativeFqan = fqan.replaceFirst("^/"+voName, "");
+			if ( fqanProductionManager.contains(relativeFqan) ) {
+				this.isProductionManager = true;
+			} else {
+				this.isProductionManager = false;				
+			}
+		}
+		
 		public void writeTemplate(FileWriter template) throws IOException {
 			String prefix = "";
 			if ( !getMappingRequested() ) {
 				prefix = "#";
 			}
 			String description = getDescription();
-			if ( getIsSWManager() ) {
+			if ( isSWManager() ) {
 				// SW manager role must have an explicit description, whatever is in the VO card
 				description = "SW manager";
+			} else if ( isProductionManager() ) {
+				// Production manager role must have an explicit description, whatever is in the VO card
+				description = "production";
 			}
 			template.write(prefix+"    nlist('description', '"+description+"',\n");
 			template.write(prefix+"          'fqan', '"+getFqan()+"',\n");
