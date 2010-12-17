@@ -655,6 +655,7 @@ public class VOConfigTask extends Task {
 	private class VOMSFqan {
 		protected String fqan = null;
 		protected String description = null;
+		protected String suffix = null;
 		protected boolean mappingRequested = false;
 		protected boolean isSWManager = false;
 		protected boolean isProductionManager = false;
@@ -672,6 +673,13 @@ public class VOConfigTask extends Task {
 		
 		public boolean getMappingRequested() {
 			return (this.mappingRequested);
+		}
+		
+		public String getAccountSuffix (VOConfig voConfig) {
+			if ( this.suffix == null ) {
+				this.suffix = generateAccountSuffix(voConfig);
+			}
+			return (this.suffix);
 		}
 		
 		public boolean isSWManager() {
@@ -730,6 +738,9 @@ public class VOConfigTask extends Task {
 				boolean suffixUnique = false;
 				int j = 0;
 				while ( !suffixUnique ) {
+					if ( debugTask ) {
+						System.err.println("Suffix '"+suffix+"' not unique for FQAN "+getFqan()+" (j="+j+")");
+					}
 					suffix = VOConfigTask.toBase26(getFqan().length()+(j*100)) + VOConfigTask.toBase26(voConfig.getId());
 					j++;
 					suffixUnique = voConfig.accountSuffixUnique(suffix);
@@ -754,7 +765,7 @@ public class VOConfigTask extends Task {
 			}
 			template.write(prefix+"    nlist('description', '"+description+"',\n");
 			template.write(prefix+"          'fqan', '"+getFqan()+"',\n");
-			template.write(prefix+"          'suffix', '"+generateAccountSuffix(voConfig)+"',\n");
+			template.write(prefix+"          'suffix', '"+getAccountSuffix(voConfig)+"',\n");
 			template.write(prefix+"         ),\n");
 		}
 	}
