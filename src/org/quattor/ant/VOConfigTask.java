@@ -369,8 +369,12 @@ public class VOConfigTask extends Task {
 
 		public String toStr() {
 			String configStr = "";
-			for (VOMSEndpoint endpoint : vomsEndpointList) {
-				configStr += "    VOMS Server: "+endpoint.getEndpoint()+" (VOMS port="+endpoint.getPort()+")\n";
+			try {
+				for (VOMSEndpoint endpoint : vomsEndpointList) {
+					configStr += "    VOMS Server: "+endpoint.getEndpoint()+" (VOMS port="+endpoint.getPort()+")\n";
+				}				
+			} catch (NullPointerException e) {
+				System.err.println("    VOMS Server: none");
 			}
 			return (configStr);
 		}
@@ -392,11 +396,15 @@ public class VOConfigTask extends Task {
 				template.write("'name' ?= '"+getName()+"'\n");
 				template.write("\n");
 				template.write("'voms_servers' ?= list(\n");
-				for (VOMSEndpoint vomsServer : getVomsServerList()) {
-					template.write("                       nlist('name', '"+vomsServer.server.host+"',\n");
-					template.write("                             'host', '"+vomsServer.server.host+"',\n");
-					template.write("                             'port', '"+vomsServer.port+"',\n");
-					template.write("                            ),\n");
+				try {
+					for (VOMSEndpoint vomsServer : getVomsServerList()) {
+						template.write("                       nlist('name', '"+vomsServer.server.host+"',\n");
+						template.write("                             'host', '"+vomsServer.server.host+"',\n");
+						template.write("                             'port', '"+vomsServer.port+"',\n");
+						template.write("                            ),\n");
+					}
+				} catch (NullPointerException e) {
+					System.err.println("    WARNING: VO "+getId()+" has no VOMS endpoint defined");
 				}
 				template.write(");\n");
 				template.close();
