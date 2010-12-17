@@ -37,32 +37,32 @@ public class VOConfigTask extends Task {
 	// Variables
 
 	/* List of directories containing a VO configuration description (templates) */
-	private DirSet configDirs = null;
+	protected DirSet configDirs = null;
 
 	/* Namespace (relative directory) to use for templates containing VO parameters */
-	private String paramsTplNS = null;
+	protected String paramsTplNS = null;
 
 	/* Namespace (relative directory) to use for templates containing VOMS server certificates */
-	private String certsTplNS = null;
+	protected String certsTplNS = null;
 
 	/* Namespace (relative directory) to use for templates containing VO site-specific params */
-	private String siteParamsTplNS = null;
+	protected String siteParamsTplNS = null;
 
 	/* URI for VO ID card source */
-	private String voIdCardsUri = null;
+	protected String voIdCardsUri = null;
 
 	/* Control printing of debugging messages in this task */
-	private boolean debugTask = false;
+	protected boolean debugTask = false;
 
 	/* Configuration of VOs retrieved from VO ID cards.
 	 * This is a hash with one entry per VO : the key is the VO name.
 	 */
-	private Hashtable<String,VOConfig> voMap = new Hashtable<String,VOConfig>();;
+	protected Hashtable<String,VOConfig> voMap = new Hashtable<String,VOConfig>();;
 
 	/* Hash table of all defined VOMS servers.
 	 * Used to check consistency of VOMS server attributes across VOs.
 	 */
-	private Hashtable<String,VOMSServer>vomsServers = new Hashtable<String,VOMSServer>();;
+	protected Hashtable<String,VOMSServer>vomsServers = new Hashtable<String,VOMSServer>();;
 	
 
 	// Methods
@@ -137,7 +137,51 @@ public class VOConfigTask extends Task {
 		this.siteParamsTplNS = siteParamsTplNS;
 	}
 
+	// Possible FQAN for a Software Manager
+    static final private String softwareManagerSuffix = "s";
+	static private HashSet<String> fqanSWManager;
+	static {
+		fqanSWManager = new HashSet<String>();
+		fqanSWManager.add("/Role=lcgadmin");
+		fqanSWManager.add("/admin");
+		fqanSWManager.add("/Role=swadmin");
+		fqanSWManager.add("/Role=sgmadmin");
+		fqanSWManager.add("/Role=sgm");
+		fqanSWManager.add("/Role=SoftwareManager");
+		fqanSWManager.add("/Role=VO-Software-Manager");
+		fqanSWManager.add("/Role=SW-Admin");
+	}
+	
+	// Possible FQAN for production role (required for backward compatibility)
+    static final private String productionManagerSuffix = "p";
+	static private HashSet<String> fqanProductionManager;
+	static {
+		fqanProductionManager = new HashSet<String>();
+		fqanProductionManager.add("/Role=production");
+		fqanProductionManager.add("/Role=prod");
+		fqanProductionManager.add("/Role=ProductionManager");
+	}
+	
 
+	/*
+	 * Class method to generate a string representing a number in a base26-like representation.
+	 * Base26 digits are normally from 0 (zero) to P but the returned string is containing only
+	 * letters: digits from 0 to 9 are replaced by letters from q to z.
+	 * The returned string is in lowercase.
+	 */
+	public static String toBase26(int i) {
+		StringBuilder string26 = new StringBuilder(Integer.toString(i,26));
+		final int numberOffset = 'P' - '0';
+
+		for (int k = 0; k < string26.length(); k++) {
+			if ( (string26.charAt(k) >= '0') && (string26.charAt(k) <= '9') )  {
+				string26.setCharAt(k, (char) (string26.charAt(k)+numberOffset));
+			}
+		}
+		return (string26.toString().toLowerCase());
+	}
+
+	
 	/*
 	 * Method used by ant to execute this task.
 	 */
@@ -187,16 +231,16 @@ public class VOConfigTask extends Task {
 	public class VOCardHandler extends DefaultHandler {
 
 		/* Configuration of VO currently being processed */
-		private VOConfig voConfig = null;
+		protected VOConfig voConfig = null;
 
 		/* Context variables */
-		private boolean sectionVOMSServers = false;
-		private boolean sectionGroupsRoles = false;
-		private boolean softwareManagerFound = false;
-		private VOMSServer vomsServer = null;
-		private VOMSEndpoint vomsEndpoint = null;
-		private VOMSFqan fqan = null;
-		String data = null;
+		protected boolean sectionVOMSServers = false;
+		protected boolean sectionGroupsRoles = false;
+		protected boolean softwareManagerFound = false;
+		protected VOMSServer vomsServer = null;
+		protected VOMSEndpoint vomsEndpoint = null;
+		protected VOMSFqan fqan = null;
+		protected String data = null;
 
 		/**
 		 * Start of new element
@@ -368,52 +412,40 @@ public class VOConfigTask extends Task {
 	}
 		
 
-	// Possible FQAN for a Software Manager
-	static private HashSet<String> fqanSWManager;
-	static {
-		fqanSWManager = new HashSet<String>();
-		fqanSWManager.add("/Role=lcgadmin");
-		fqanSWManager.add("/admin");
-		fqanSWManager.add("/Role=swadmin");
-		fqanSWManager.add("/Role=sgmadmin");
-		fqanSWManager.add("/Role=sgm");
-		fqanSWManager.add("/Role=SoftwareManager");
-		fqanSWManager.add("/Role=VO-Software-Manager");
-		fqanSWManager.add("/Role=SW-Admin");
-	}
-	
-	// Possible FQAN for production role (required for backward compatibility)
-	static private HashSet<String> fqanProductionManager;
-	static {
-		fqanProductionManager = new HashSet<String>();
-		fqanProductionManager.add("/Role=production");
-		fqanProductionManager.add("/Role=prod");
-		fqanProductionManager.add("/Role=ProductionManager");
-	}
-	
 	// Class representing a VO
 
 	private class VOConfig {
 		/* VO name */
-		private String name = null;
+		protected String name = null;
 		
 		/* VO ID number */
-		private int id = 0;
+		protected int id = 0;
 		
 		/* Account prefix */
-		private String accountPrefix = null;
+		protected String accountPrefix = null;
 
 		/* List of VOMS servers */
-		private LinkedList<VOMSEndpoint> vomsEndpointList = new LinkedList<VOMSEndpoint>();
+		protected LinkedList<VOMSEndpoint> vomsEndpointList = new LinkedList<VOMSEndpoint>();
 
 		/* List of defined FQANs */
-		private LinkedList<VOMSFqan> fqanList = new LinkedList<VOMSFqan>();
+		protected LinkedList<VOMSFqan> fqanList = new LinkedList<VOMSFqan>();
+		
+		/* HashSet of generated account suffix: used to enforce uniqueness */
+		protected HashSet<String> accountSuffixes = new HashSet<String>();
 
 
 		// Methods
 
 		public void addVomsEndpoint(VOMSEndpoint vomsEndpoint) {
 			vomsEndpointList.add(vomsEndpoint);
+		}
+
+		public void addAccountSuffix(String suffix) {
+			accountSuffixes.add(suffix);
+		}
+
+		public boolean accountSuffixUnique(String suffix) {
+			return (!accountSuffixes.contains(suffix));
 		}
 
 		public int getId() {
@@ -471,26 +503,25 @@ public class VOConfigTask extends Task {
 					System.err.println("    INFO: VO "+getName()+" has no specific FQAN defined");
 				}
 				for (VOMSFqan fqan : fqanList) {
-					fqan.writeTemplate(template);
+					fqan.writeTemplate(template,this);
 				}
 				template.write(");\n");
 				template.close();
 			} catch (IOException e){
 				throw new BuildException("Error writing template for VO "+getName()+" ("+voParamsTpl+")\n"+e.getMessage());
-			}
+			}			
 		}
 
-		
 	}
 
 
 	// Class representing a VOMS server endpoint (used by a specific V0)
 	
 	private class VOMSEndpoint {
-		private VOMSServer server = null;
-		private int port;
-		private String endpoint = null;
-		private boolean vomsAdminEnabled = true;
+		protected VOMSServer server = null;
+		protected int port;
+		protected String endpoint = null;
+		protected boolean vomsAdminEnabled = true;
 		
 		// Methods
 		
@@ -544,11 +575,11 @@ public class VOConfigTask extends Task {
 	// Class representing a VOMS server
 
 	private class VOMSServer {
-		private String host = null;
-		private int port = 8443;
-		private String cert = null;
-		private Date certExpiry = null;
-		private String dn = null;
+		protected String host = null;
+		protected int port = 8443;
+		protected String cert = null;
+		protected Date certExpiry = null;
+		protected String dn = null;
 
 		// Methods
 
@@ -622,11 +653,12 @@ public class VOConfigTask extends Task {
 	// VOMS FQAN
 	
 	private class VOMSFqan {
-		private boolean mappingRequested = false;
-		private String fqan = null;
-		private String description = null;
-		private boolean isSWManager = false;
-		private boolean isProductionManager = false;
+		protected String fqan = null;
+		protected String description = null;
+		protected boolean mappingRequested = false;
+		protected boolean isSWManager = false;
+		protected boolean isProductionManager = false;
+
 		
 		// Methods
 		
@@ -655,7 +687,8 @@ public class VOConfigTask extends Task {
 		}
 		
 		public void setFqan(String fqan) {
-			this.fqan = fqan;
+			// Remove leading/trailing spaces if any added by mistake...
+			this.fqan = fqan.trim();
 		}
 		
 		public void setMappingRequested(String mappingRequested) {
@@ -683,7 +716,30 @@ public class VOConfigTask extends Task {
 			}
 		}
 		
-		public void writeTemplate(FileWriter template) throws IOException {
+		public String generateAccountSuffix(VOConfig voConfig) {
+			String suffix = "";
+			if ( isSWManager() ) {
+				suffix = softwareManagerSuffix;
+			} else if ( isProductionManager() ) {
+				suffix = productionManagerSuffix;
+			} else {
+				// Suffix is based on base26-like conversion of FQAN length and VO ID.
+				// Despite this is probably not the best way to generate a unique suffix inside the VO,
+				// this is difficult to change it without breaking backward compatibility for configuration
+				// based on these templates.
+				boolean suffixUnique = false;
+				int j = 0;
+				while ( !suffixUnique ) {
+					suffix = VOConfigTask.toBase26(getFqan().length()+(j*100)) + VOConfigTask.toBase26(voConfig.getId());
+					j++;
+					suffixUnique = voConfig.accountSuffixUnique(suffix);
+				}
+				voConfig.addAccountSuffix(suffix);
+			}
+			return (suffix);
+		}
+		
+		public void writeTemplate(FileWriter template, VOConfig voConfig) throws IOException {
 			String prefix = "";
 			if ( !getMappingRequested() ) {
 				prefix = "#";
@@ -698,6 +754,7 @@ public class VOConfigTask extends Task {
 			}
 			template.write(prefix+"    nlist('description', '"+description+"',\n");
 			template.write(prefix+"          'fqan', '"+getFqan()+"',\n");
+			template.write(prefix+"          'suffix', '"+generateAccountSuffix(voConfig)+"',\n");
 			template.write(prefix+"         ),\n");
 		}
 	}
