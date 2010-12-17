@@ -453,7 +453,7 @@ public class VOConfigTask extends Task {
 		}
 
 		public void setVomsAdminEnabled(String vomsAdminEnabled) {
-			if ( (vomsAdminEnabled != null) && (vomsAdminEnabled != "0") ) {
+			if ( (vomsAdminEnabled != null) && !vomsAdminEnabled.contentEquals("0") ) {
 				vomsAdminEnabled = "true";
 			}
 			this.vomsAdminEnabled = Boolean.parseBoolean(vomsAdminEnabled);
