@@ -390,7 +390,7 @@ public class VOConfigTask extends Task {
 			try {
 				FileWriter template = new FileWriter(voParamsTpl);
 				template.write("structure template "+voParamsNS+";\n\n");
-				template.write("'name' ?= '"+getName()+"'\n");
+				template.write("'name' ?= '"+getName()+"';\n");
 				template.write("\n");
 				template.write("'voms_servers' ?= list(\n");
 				if ( getVomsServerList().isEmpty() ) {
