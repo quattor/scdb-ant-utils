@@ -521,7 +521,10 @@ public class VOConfigTask extends Task {
 				Set<String> sortedFqanList;
 				if ( legacySuffixAlgorithm ) {
 					// Alphabetical order
-					sortedFqanList = (TreeSet<String>) fqanList.keySet();
+					sortedFqanList = new TreeSet<String>();
+					for (String key : fqanList.keySet()) {
+                                            sortedFqanList.add(key);
+                                        }
 				} else {
 					// Insertion order
 					sortedFqanList = fqanList.keySet();
