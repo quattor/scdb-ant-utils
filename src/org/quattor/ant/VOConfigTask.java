@@ -400,7 +400,7 @@ public class VOConfigTask extends Task {
                 } else {
                     if ( qName.equals("GROUP_ROLE") ) {
                         fqan.setFqan(data);
-                        fqan.setReservedRoles(fqan.getFqan(),voConfig.getName());
+                        fqan.setReservedRoles(voConfig.getName());
                     } else if ( qName.equals("DESCRIPTION") ) {
                         fqan.setDescription(data);
                     } else if ( qName.equals("IS_GROUP_USED") ) {
@@ -746,8 +746,8 @@ public class VOConfigTask extends Task {
         }
 
         // Set flags used to mark roles processed specifically
-        public void setReservedRoles(String fqan, String voName) {
-            String relativeFqan = fqan.replaceFirst("^/"+voName, "");
+        public void setReservedRoles(String voName) {
+            String relativeFqan = getFqan().replaceFirst("^/"+voName, "");
             if ( fqanSWManager.contains(relativeFqan) ) {
                 this.isSWManager = true;
             } else if ( fqanProductionManager.contains(relativeFqan) ) {
@@ -772,9 +772,24 @@ public class VOConfigTask extends Task {
         
         private String generateAccountSuffix(VOConfig voConfig) {
             String suffix = checkSpecificSuffix();
+
+            // New algorithm is based on relative FQAN to avoid characters similar in every FQAN.
+            // The FQAN is divided into 3 substring of equal length, each being hashed and then used
+            // to generate one suffix letter with the base26-like encoding. 
             if ( suffix == null ) {
                 suffix = "";
-            }
+                String relativeFqan = getFqan().replaceFirst("^/"+voConfig.getName(), "");
+                int tokenNumber = 3;
+                int substringLength = relativeFqan.length()/tokenNumber;
+                for (int i=0; i<tokenNumber; i++) {
+                    int substringEnd = ((i+1) * substringLength) -1;
+                    // For last chunk, use the remaining substring even if longer than substringLength
+                    if ( (substringEnd+substringLength) > relativeFqan.length() ) {
+                        substringEnd = relativeFqan.length();
+                    }
+                    suffix += VOConfigTask.toBase26(relativeFqan.substring(i*substringLength, substringEnd).hashCode());
+                }
+              }
             return (suffix);
         }
         
