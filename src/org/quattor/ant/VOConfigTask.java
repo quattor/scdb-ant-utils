@@ -203,7 +203,9 @@ public class VOConfigTask extends Task {
      * The returned string is in lowercase.
      */
     public static String toBase26(int i) {
-        StringBuilder string26 = new StringBuilder(Integer.toString(i,26));
+        // i must be converted to an unsigned long, else the string will contain the '-' sign
+	long unsignedI = i & 0xffffffffL;
+        StringBuilder string26 = new StringBuilder(Long.toString(unsignedI,26));
         final int numberOffset = 'P' - '0' + 1;
 
         for (int k = 0; k < string26.length(); k++) {
@@ -778,30 +780,27 @@ public class VOConfigTask extends Task {
             return (suffix);
         }
         
-        private String generateAccountSuffix(VOConfig voConfig) {
+        private String generateAccountSuffix(VOConfig voConfig) throws BuildException {
             String suffix = checkSpecificSuffix();
 
             // New algorithm is based on relative FQAN to avoid characters similar in every FQAN.
-            // The FQAN is divided into 3 substring of equal length, each being hashed and then used
-            // to generate one suffix letter with the base26-like encoding. 
+            // This generates a 3-character suffix corresponding to the base26-like encoding of the FQAN hashcode. 
             if ( suffix == null ) {
-                suffix = "";
                 String relativeFqan = getFqan().replaceFirst("^/"+voConfig.getName(), "");
-                int tokenNumber = 3;
-                int substringLength = relativeFqan.length()/tokenNumber;
-                for (int i=0; i<tokenNumber; i++) {
-                    int substringStart = i * substringLength;
-                    int substringEnd = substringStart + substringLength - 1;
-                    // For last chunk, use the remaining substring even if longer than substringLength
-                    if ( (substringEnd+substringLength) >= relativeFqan.length() ) {
-                        substringEnd = relativeFqan.length() - 1;
+                suffix = VOConfigTask.toBase26(relativeFqan.hashCode());
+                // In (unlikely) case, the suffix is not unique, add the VO name at the end of the relative FQAN
+                if ( ! voConfig.accountSuffixUnique(suffix) ) {
+                    if ( debugTask ) {
+                        System.err.println("Suffix '"+suffix+"' not unique for FQAN '"+relativeFqan+"':  retrying adding VO name");
                     }
-                    //if ( debugTask ) {
-                    //    System.err.println("Encoding FQAN '"+relativeFqan+"': substring "+substringStart+" to "+substringEnd);
-                    //}
-                    suffix += VOConfigTask.toBase26(relativeFqan.substring(substringStart, substringEnd).hashCode());
+                    suffix = VOConfigTask.toBase26((relativeFqan+"/"+voConfig.getName()).hashCode());
                 }
-              }
+                if ( ! voConfig.accountSuffixUnique(suffix) ) {
+                    throw new BuildException("VO "+voConfig.getName()+" FQAN '"+getFqan()+"': failed to generate a unique account suffix");
+                }
+                voConfig.addAccountSuffix(suffix);
+            }
+
             return (suffix);
         }
         
@@ -817,7 +816,7 @@ public class VOConfigTask extends Task {
                 int j = 0;
                 while ( !suffixUnique ) {
                     if ( debugTask && (j > 0) ) {
-                        System.err.println("Suffix '"+suffix+"' not unique for FQAN "+getFqan()+" (j="+j+")");
+                        System.err.println("Suffix '"+suffix+"' not unique for FQAN "+getFqan()+" (attempt "+j+")");
                     }
                     suffix = VOConfigTask.toBase26(getFqan().length()+(j*100)) + VOConfigTask.toBase26(voConfig.getId());
                     j++;
