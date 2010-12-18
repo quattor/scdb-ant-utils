@@ -9,10 +9,12 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.DirectoryScanner;
@@ -50,6 +52,17 @@ public class VOConfigTask extends Task {
 
 	/* URI for VO ID card source */
 	protected String voIdCardsUri = null;
+
+	/* Algorithm used to generate account suffix.
+	 * The original one was very bad at ensuring suffix uniqueness, requiring several retries to get
+	 * a unique suffix and thus making the actual suffix dependent on the FQAN order which historicall was alphabetical.
+	 * With the new algorithm, there is a very small chance of suffix conflict and the FQAN order in the VO card is
+	 * maintained to limit side effect of generation retries (with the assumption that new FQAN are added at the end of
+	 * the list in the VO ID card.
+	 * Default is to use the new algorithm but the option must be passed explicitly to preserve account
+	 * backward compatibility (in term of account names and uids).
+	 */
+	protected boolean legacySuffixAlgorithm = false;
 
 	/* Control printing of debugging messages in this task */
 	protected boolean debugTask = false;
@@ -136,6 +149,18 @@ public class VOConfigTask extends Task {
 	public void setsiteParamsTplNS(String siteParamsTplNS) {
 		this.siteParamsTplNS = siteParamsTplNS;
 	}
+
+	/**
+	 * Set the version of the algorithm to use for generating account suffix.
+	 * 
+	 * @param legacySuffixAlgorithm
+	 *            if true, used the legacy algorithm for backward compatibility.
+	 * 
+	 */
+	public void setlegacySuffixAlgorithm(boolean legacySuffixAlgorithm) {
+		this.legacySuffixAlgorithm = legacySuffixAlgorithm;
+	}
+
 
 	// Possible FQAN for a Software Manager
     static final private String softwareManagerSuffix = "s";
@@ -244,8 +269,6 @@ public class VOConfigTask extends Task {
 		/* Context variables */
 		protected boolean sectionVOMSServers = false;
 		protected boolean sectionGroupsRoles = false;
-		protected boolean softwareManagerFound = false;
-		protected boolean productionManagerFound = false;
 		protected VOMSServer vomsServer = null;
 		protected VOMSEndpoint vomsEndpoint = null;
 		protected VOMSFqan fqan = null;
@@ -271,7 +294,6 @@ public class VOConfigTask extends Task {
 				}
 				voConfig.setName(voName);
 				voConfig.setId(Integer.parseInt(voId));
-				softwareManagerFound = false;
 				
 			} else if ( qName.equals("VOMSServers") ) {
 				sectionVOMSServers = true;
@@ -374,44 +396,11 @@ public class VOConfigTask extends Task {
 
 			} else if ( sectionGroupsRoles ) {
 				if ( qName.equals("GroupAndRole") ) {
-					// SW manager must be first in the list
-					// Production manager must be after SW manager and before pilot role
-					// Pilot role must be after production manager
-					if ( fqan.isSWManager() ) {
-						voConfig.fqanList.addFirst(fqan);
-					} else  {
-						int productionIndex = 0;
-						int pilotIndex = 0;
-						if ( softwareManagerFound ) {
-							productionIndex = 1;
-							if ( productionManagerFound ) {
-								pilotIndex = 2;
-							} else {
-								pilotIndex = 1;
-							}
-						} else {
-							productionIndex = 0;
-							if ( productionManagerFound ) {
-								pilotIndex = 1;
-							} else {
-								pilotIndex = 0;
-							}							
-						}
-						if ( fqan.isProductionManager() ) {
-							voConfig.fqanList.add(productionIndex,fqan);
-						} else if ( fqan.isPilotRole() ) {
-							voConfig.fqanList.add(pilotIndex,fqan);
-						} else {
-							voConfig.fqanList.addFirst(fqan);							
-						}
-					}
+					voConfig.fqanList.put(fqan.getFqan(),fqan);
 				} else {
 					if ( qName.equals("GROUP_ROLE") ) {
 						fqan.setFqan(data);
 						fqan.setReservedRoles(fqan.getFqan(),voConfig.getName());
-						if ( !softwareManagerFound ) {
-							softwareManagerFound = fqan.isSWManager();
-						}
 					} else if ( qName.equals("DESCRIPTION") ) {
 						fqan.setDescription(data);
 					} else if ( qName.equals("IS_GROUP_USED") ) {
@@ -455,7 +444,7 @@ public class VOConfigTask extends Task {
 		protected LinkedList<VOMSEndpoint> vomsEndpointList = new LinkedList<VOMSEndpoint>();
 
 		/* List of defined FQANs */
-		protected LinkedList<VOMSFqan> fqanList = new LinkedList<VOMSFqan>();
+		protected LinkedHashMap<String,VOMSFqan> fqanList = new LinkedHashMap<String,VOMSFqan>();
 		
 		/* HashSet of generated account suffix: used to enforce uniqueness */
 		protected HashSet<String> accountSuffixes = new HashSet<String>();
@@ -529,7 +518,16 @@ public class VOConfigTask extends Task {
 				if ( debugTask && fqanList.isEmpty() ) {
 					System.err.println("    INFO: VO "+getName()+" has no specific FQAN defined");
 				}
-				for (VOMSFqan fqan : fqanList) {
+				Set<String> sortedFqanList;
+				if ( legacySuffixAlgorithm ) {
+					// Alphabetical order
+					sortedFqanList = (TreeSet<String>) fqanList.keySet();
+				} else {
+					// Insertion order
+					sortedFqanList = fqanList.keySet();
+				}
+				for (String key : sortedFqanList) {
+					VOMSFqan fqan = fqanList.get(key);
 					fqan.writeTemplate(template,this);
 				}
 				template.write(");\n");
@@ -705,7 +703,11 @@ public class VOConfigTask extends Task {
 		
 		public String getAccountSuffix (VOConfig voConfig) {
 			if ( this.suffix == null ) {
-				this.suffix = generateAccountSuffix(voConfig);
+				if ( legacySuffixAlgorithm ) {
+					this.suffix = generateLegacyAccountSuffix(voConfig);					
+				} else {
+					this.suffix = generateAccountSuffix(voConfig);					
+				}
 			}
 			return (this.suffix);
 		}
@@ -751,18 +753,36 @@ public class VOConfigTask extends Task {
 				this.isPilotRole = true;
 			}
 		}
-				
-		public String generateAccountSuffix(VOConfig voConfig) {
-			String suffix = "";
+		
+		// Check if current FQAN is flagged as a specific FQAN using an explicit suffix.
+		private String checkSpecificSuffix() {
+			String suffix = null;
 			if ( isSWManager() ) {
 				suffix = softwareManagerSuffix;
 			} else if ( isProductionManager() ) {
 				suffix = productionManagerSuffix;
-			} else {
-				// Suffix is based on base26-like conversion of FQAN length and VO ID.
-				// Despite this is probably not the best way to generate a unique suffix inside the VO,
-				// this is difficult to change it without breaking backward compatibility for configuration
-				// based on these templates.
+			} else if ( isProductionManager() ) {
+				suffix = productionManagerSuffix;
+			}
+			return (suffix);
+		}
+		
+		private String generateAccountSuffix(VOConfig voConfig) {
+			String suffix = checkSpecificSuffix();
+			if ( suffix == null ) {
+				suffix = "";
+			}
+			return (suffix);
+		}
+		
+		private String generateLegacyAccountSuffix(VOConfig voConfig) {
+			String suffix = checkSpecificSuffix();
+
+			// Generated suffix is based on base26-like conversion of FQAN length and VO ID.
+			// Despite this is probably not the best way to generate a unique suffix inside the VO,
+			// this is difficult to change it without breaking backward compatibility for configuration
+			// based on these templates.
+			if ( suffix == null ) {
 				boolean suffixUnique = false;
 				int j = 0;
 				while ( !suffixUnique ) {
