@@ -594,15 +594,15 @@ public class VOConfigTask extends Task {
         }
 
         public void writeTemplate(FileWriter template) throws IOException {
-            template.write("    nlist('name', '"+getServer().host+"',\n");
-            template.write("          'host', '"+getServer().host+"',\n");
-            template.write("          'port', '"+getServer().port+"',\n");
+            template.write("    nlist('name', '"+getServer().getHost()+"',\n");
+            template.write("          'host', '"+getServer().getHost()+"',\n");
+            template.write("          'port', "+getServer().getPort()+",\n");
             if ( !getVomsAdminEnabled() ) {
-                template.write("          'type', 'voms-only',\n");
+                template.write("          'type', list('voms-only'),\n");
             }
             template.write("         ),\n");
         }
-}
+    }
     
     
     // Class representing a VOMS server
