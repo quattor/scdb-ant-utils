@@ -396,10 +396,13 @@ public class VOConfigTask extends Task {
 
             } else if ( sectionGroupsRoles ) {
                 if ( qName.equals("GroupAndRole") ) {
-                    voConfig.fqanList.put(fqan.getFqan(),fqan);
+                    // An empty value for the FQAN means this FQAN must not be added to the list.
+                    if ( fqan.getFqan().length() != 0 ) {
+                        voConfig.fqanList.put(fqan.getFqan(),fqan);
+                    }
                 } else {
                     if ( qName.equals("GROUP_ROLE") ) {
-                        fqan.setFqan(data);
+                        fqan.setFqan(data,voConfig.getName());
                         fqan.setReservedRoles(voConfig.getName());
                     } else if ( qName.equals("DESCRIPTION") ) {
                         fqan.setDescription(data);
@@ -731,11 +734,16 @@ public class VOConfigTask extends Task {
             this.description = description;
         }
         
-        public void setFqan(String fqan) {
+        public void setFqan(String fqan, String voName) {
             // Remove leading/trailing spaces if any added by mistake...
             this.fqan = fqan.trim();
             // Remove /Role=NULL if speciied in VO ID card
             this.fqan = this.fqan.replaceFirst("/Role=NULL$", "");
+            // If the relative FQAN corresponds to the VO name without any role, set it to an empty string.
+            // An empty FQAN must not be added to the FQAN list as it is not a real FQAN.
+            if ( this.fqan.replaceFirst("^/"+voName,"").length() == 0 ) {
+                this.fqan = "";
+            }
         }
         
         public void setMappingRequested(String mappingRequested) {
@@ -782,12 +790,16 @@ public class VOConfigTask extends Task {
                 int tokenNumber = 3;
                 int substringLength = relativeFqan.length()/tokenNumber;
                 for (int i=0; i<tokenNumber; i++) {
-                    int substringEnd = ((i+1) * substringLength) -1;
+                    int substringStart = i * substringLength;
+                    int substringEnd = substringStart + substringLength - 1;
                     // For last chunk, use the remaining substring even if longer than substringLength
-                    if ( (substringEnd+substringLength) > relativeFqan.length() ) {
-                        substringEnd = relativeFqan.length();
+                    if ( (substringEnd+substringLength) >= relativeFqan.length() ) {
+                        substringEnd = relativeFqan.length() - 1;
                     }
-                    suffix += VOConfigTask.toBase26(relativeFqan.substring(i*substringLength, substringEnd).hashCode());
+                    //if ( debugTask ) {
+                    //    System.err.println("Encoding FQAN '"+relativeFqan+"': substring "+substringStart+" to "+substringEnd);
+                    //}
+                    suffix += VOConfigTask.toBase26(relativeFqan.substring(substringStart, substringEnd).hashCode());
                 }
               }
             return (suffix);
