@@ -618,7 +618,8 @@ public class VOConfigTask extends Task {
         protected Date certExpiry = null;
         protected String dn = null;
         protected Pattern certDelimiterPattern = Pattern.compile("^(\\w+)\\s*;");
-        protected Pattern certDeclarationPattern = Pattern.compile("^\\s*('|\")cert\1\\s*\\??=\\s*");
+        //protected Pattern certDeclarationPattern = Pattern.compile("^\\s*('|\")cert\\1\\s*\\??=\\s*(\\w+)\\s*;");
+        protected Pattern certDeclarationPattern = Pattern.compile("\\s*('|\")cert\\1\\s*\\??=\\s*");
         
         
         // Methods
@@ -685,6 +686,17 @@ public class VOConfigTask extends Task {
                 try {
                     Scanner templateScanner = new Scanner(templateFile);
                     currentCert = templateScanner.findWithinHorizon(certDeclarationPattern, 0);
+                    // To avoid a NullPointeException
+                    if ( currentCert == null ) {
+                        if ( debugTask ) {
+                            System.err.println("Failed to match '"+certDeclarationPattern+"' in certParamsTpl");
+                        };
+                        currentCert = "";
+                    } else {
+                        if ( debugTask ) {
+                            System.err.println("currentCert after findWithinHorizon: >>"+currentCert+"<<");
+                        };
+                    }
                     Matcher delimiterMatcher = certDelimiterPattern.matcher(currentCert);
                     if ( delimiterMatcher.matches() ) {
                         String delimiter = delimiterMatcher.group(1);
