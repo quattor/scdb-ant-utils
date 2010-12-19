@@ -676,7 +676,7 @@ public class VOConfigTask extends Task {
             String certParamsNS = certsTplNS + "/" + getHost();
             String certParamsTpl = templateBranch + "/" + certParamsNS + ".tpl";
             File templateFile = new File(certParamsTpl);
-            String oldCert = "";
+            String currentCert = "";
             
             // If a previous version of the template exists, retrieve current certificate to 
             // add it as 'oldcert' in the updated template
@@ -684,12 +684,12 @@ public class VOConfigTask extends Task {
                 System.out.println("Updating template for VOMS server "+getHost()+" ("+certParamsTpl+")");
                 try {
                     Scanner templateScanner = new Scanner(templateFile);
-                    String existingCert = templateScanner.findWithinHorizon(certDeclarationPattern, 0);
-                    Matcher delimiterMatcher = certDelimiterPattern.matcher(existingCert);
+                    currentCert = templateScanner.findWithinHorizon(certDeclarationPattern, 0);
+                    Matcher delimiterMatcher = certDelimiterPattern.matcher(currentCert);
                     if ( delimiterMatcher.matches() ) {
                         String delimiter = delimiterMatcher.group(1);
                         templateScanner.useDelimiter(delimiter+";*");
-                        existingCert = templateScanner.next();
+                        currentCert = templateScanner.next();
                     } else {
                         if ( debugTask ) {
                             System.err.println("WARNING: failed to match certificate delimiter");
@@ -713,9 +713,9 @@ public class VOConfigTask extends Task {
                 template.write("'cert' ?= <<EOF;\n");
                 template.write(getCert());
                 template.write("EOF\n\n");
-                if ( oldCert.length() > 0 ) {
+                if ( currentCert.length() > 0 ) {
                     template.write("'oldcert' ?= <<EOF;\n");
-                    template.write(oldCert);
+                    template.write(currentCert);
                     template.write("EOF\n\n");                    
                 }
                 template.close();
