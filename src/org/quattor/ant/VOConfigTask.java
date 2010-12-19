@@ -617,9 +617,7 @@ public class VOConfigTask extends Task {
         protected String cert = null;
         protected Date certExpiry = null;
         protected String dn = null;
-        protected Pattern certDelimiterPattern = Pattern.compile("^(\\w+)\\s*;");
-        //protected Pattern certDeclarationPattern = Pattern.compile("^\\s*('|\")cert\\1\\s*\\??=\\s*(\\w+)\\s*;");
-        protected Pattern certDeclarationPattern = Pattern.compile("\\s*('|\")cert\\1\\s*\\??=\\s*");
+        protected Pattern certDeclarationPattern = Pattern.compile("\\s*('|\")cert\\1\\s*\\??=\\s*<<(\\w+)\\s*;(?:\\n|\\r)+");
         
         
         // Methods
@@ -685,21 +683,20 @@ public class VOConfigTask extends Task {
                 System.out.println("Updating template for VOMS server "+getHost()+" ("+certParamsTpl+")");
                 try {
                     Scanner templateScanner = new Scanner(templateFile);
-                    currentCert = templateScanner.findWithinHorizon(certDeclarationPattern, 0);
-                    // To avoid a NullPointeException
-                    if ( currentCert == null ) {
+                    String certStartTag = templateScanner.findWithinHorizon(certDeclarationPattern, 0);
+                    // To avoid a NullPointerException
+                    if ( certStartTag == null ) {
                         if ( debugTask ) {
                             System.err.println("Failed to match '"+certDeclarationPattern+"' in certParamsTpl");
                         };
                         currentCert = "";
-                    } else {
-                        if ( debugTask ) {
-                            System.err.println("currentCert after findWithinHorizon: >>"+currentCert+"<<");
-                        };
                     }
-                    Matcher delimiterMatcher = certDelimiterPattern.matcher(currentCert);
+                    Matcher delimiterMatcher = certDeclarationPattern.matcher(certStartTag);
                     if ( delimiterMatcher.matches() ) {
-                        String delimiter = delimiterMatcher.group(1);
+                        String delimiter = delimiterMatcher.group(2);
+                        //if ( debugTask ) {
+                        //    System.err.println("Certificate delimiter="+delimiter);
+                        //}
                         templateScanner.useDelimiter(delimiter+";*");
                         currentCert = templateScanner.next();
                     } else {
