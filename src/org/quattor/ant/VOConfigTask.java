@@ -774,8 +774,8 @@ public class VOConfigTask extends Task {
                 suffix = softwareManagerSuffix;
             } else if ( isProductionManager() ) {
                 suffix = productionManagerSuffix;
-            } else if ( isProductionManager() ) {
-                suffix = productionManagerSuffix;
+            } else if ( isPilotRole() ) {
+                suffix = pilotSuffix;
             }
             return (suffix);
         }
