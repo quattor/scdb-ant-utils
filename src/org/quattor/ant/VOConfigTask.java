@@ -13,8 +13,12 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.DirectoryScanner;
@@ -232,13 +236,13 @@ public class VOConfigTask extends Task {
             SAXParser parser = factory.newSAXParser();
             parser.parse(urlstream, new VOCardHandler());        
         } catch (MalformedURLException e) { 
-            System.err.println("Invalid format used for specifying the source of VO ID cards (voIdCardsUri): "+voIdCardsUri);
+            System.out.println("Invalid format used for specifying the source of VO ID cards (voIdCardsUri): "+voIdCardsUri);
             throw new BuildException("BUILD FAILED : " + e.getMessage());
         } catch (IOException e) {
-            System.err.println("Failed to open VO ID card source ("+voIdCardsUri+")");
+            System.out.println("Failed to open VO ID card source ("+voIdCardsUri+")");
             throw new BuildException("BUILD FAILED : " + e.getMessage());            
         } catch (Exception e) {
-            System.err.println("Error parsing VO ID cars ("+voIdCardsUri+")");
+            System.out.println("Error parsing VO ID cars ("+voIdCardsUri+")");
             throw new BuildException("BUILD FAILED : " + e.getMessage());                        
         }
 
@@ -250,7 +254,7 @@ public class VOConfigTask extends Task {
         Set<Entry<String,VOConfig>> voMapEntries = voMap.entrySet();
         Set<Entry<String,VOMSServer>> vomsServersEntries = vomsServers.entrySet();
         for (String branch : ds.getIncludedDirectories()) {
-            System.err.println("Updating templates in branch "+branch);
+            System.out.println("Updating templates in branch "+branch);
             for (Entry<String,VOConfig> vo : voMapEntries) {
                 vo.getValue().writeVOTemplate(templateBasedir+"/"+branch);
             }
@@ -499,7 +503,7 @@ public class VOConfigTask extends Task {
         
         private void writeVOTemplate(String templateBranch) throws BuildException {            
             if ( debugTask ) {
-                System.out.println("VO configuration for VO "+getName()+" (ID="+getId()+"):\n"+toStr());
+                System.err.println("VO configuration for VO "+getName()+" (ID="+getId()+"):\n"+toStr());
             }
             
             String voParamsNS = paramsTplNS + "/" + getName();
@@ -613,7 +617,10 @@ public class VOConfigTask extends Task {
         protected String cert = null;
         protected Date certExpiry = null;
         protected String dn = null;
-
+        protected Pattern certDelimiterPattern = Pattern.compile("^(\\w+)\\s*;");
+        protected Pattern certDeclarationPattern = Pattern.compile("^\\s*('|\")cert\1\\s*\\??=\\s*");
+        
+        
         // Methods
 
         public String getCert() {
@@ -668,14 +675,49 @@ public class VOConfigTask extends Task {
         private void updateVOMSServerTemplate(String templateBranch) throws BuildException {            
             String certParamsNS = certsTplNS + "/" + getHost();
             String certParamsTpl = templateBranch + "/" + certParamsNS + ".tpl";
-            System.out.println("Writing template for VOMS server "+getHost()+" ("+certParamsTpl+")");
+            File templateFile = new File(certParamsTpl);
+            String oldCert = "";
+            
+            // If a previous version of the template exists, retrieve current certificate to 
+            // add it as 'oldcert' in the updated template
+            if ( templateFile.exists() ) {
+                System.out.println("Updating template for VOMS server "+getHost()+" ("+certParamsTpl+")");
+                try {
+                    Scanner templateScanner = new Scanner(templateFile);
+                    String existingCert = templateScanner.findWithinHorizon(certDeclarationPattern, 0);
+                    Matcher delimiterMatcher = certDelimiterPattern.matcher(existingCert);
+                    if ( delimiterMatcher.matches() ) {
+                        String delimiter = delimiterMatcher.group(1);
+                        templateScanner.useDelimiter(delimiter+";*");
+                        existingCert = templateScanner.next();
+                    } else {
+                        if ( debugTask ) {
+                            System.err.println("WARNING: failed to match certificate delimiter");
+                        }
+                    }
+                } catch (FileNotFoundException e) {
+                    // Should not happen as file existence was tested just before
+                    throw new BuildException("Internal error: file not found in VOMSServer.updateVOMSServerTemplate()");
+                } catch (NoSuchElementException e) {
+                    if ( debugTask ) {
+                        System.err.println("Failed to retrieve current certificate in exiting template "+certParamsTpl);
+                    }
+                }
+            } else {
+                System.out.println("Writing template for VOMS server "+getHost()+" ("+certParamsTpl+")");                
+            }
 
             try {
-                FileWriter template = new FileWriter(certParamsTpl);
+                FileWriter template = new FileWriter(templateFile);
                 template.write("structure template "+certParamsNS+";\n\n");
                 template.write("'cert' ?= <<EOF;\n");
                 template.write(getCert());
-                template.write("EOF\n");
+                template.write("EOF\n\n");
+                if ( oldCert.length() > 0 ) {
+                    template.write("'oldcert' ?= <<EOF;\n");
+                    template.write(oldCert);
+                    template.write("EOF\n\n");                    
+                }
                 template.close();
             } catch (IOException e){
                 throw new BuildException("Error writing template for VO "+getHost()+" ("+certParamsTpl+")\n"+e.getMessage());
