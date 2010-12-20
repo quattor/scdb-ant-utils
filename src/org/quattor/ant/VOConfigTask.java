@@ -473,6 +473,13 @@ public class VOConfigTask extends Task {
             return (!accountSuffixes.contains(suffix));
         }
         
+        public String getAccountPrefix() {
+            if ( this.accountPrefix == null ) {
+                setAccountPrefix();
+            }
+            return (this.accountPrefix);
+        }
+        
         public int getBaseUid() throws BuildException {
             if ( getId() == 0 ) {
                 throw new BuildException("VO "+getName()+": VO ID undefined, base_uid cannot be computed");
@@ -492,6 +499,20 @@ public class VOConfigTask extends Task {
             return (this.vomsEndpointList);
         }
 
+        /*
+         * Method to generate account prefix for the VO.
+         * The account prefix is made of the first 3 letters of the VO name (after removal of all non alphanumeric
+         * characters and the 'vo.' prefix if any) followed by letters generated from base26-like conversion of
+         * the VO creation count and the VO id.
+         */
+        public void setAccountPrefix() throws BuildException {
+            if ( (getName() == null) || (getId() == 0) ) {
+                throw new BuildException("VO name or ID undefined: cannot generate account prefix");                
+            }
+            this.accountPrefix = getName().replaceFirst("^vo\\.", "").replaceAll("[^A-Za-z0-9]", "").substring(0,3);
+            this.accountPrefix += VOConfigTask.toBase26(getId());
+        }
+        
         public void setId(int id) {
             this.id = id;
         }
@@ -523,8 +544,10 @@ public class VOConfigTask extends Task {
 
             try {
                 FileWriter template = new FileWriter(voParamsTpl);
-                template.write("structure template "+voParamsNS+";\n\n");
+                template.write("structure template "+voParamsNS+";\n");
+                template.write("\n");
                 template.write("'name' ?= '"+getName()+"';\n");
+                template.write("'account_prefix' ?= '"+getAccountPrefix()+"';\n");
                 template.write("\n");
                 template.write("'voms_servers' ?= list(\n");
                 if ( getVomsEndpointList().isEmpty() ) {
@@ -555,7 +578,7 @@ public class VOConfigTask extends Task {
                 }
                 template.write(");\n");
                 template.write("\n");
-                template.write("'base_uid' ?= "+getId()+";");
+                template.write("'base_uid' ?= "+getBaseUid()+";");
                 template.close();
             } catch (IOException e){
                 throw new BuildException("Error writing template for VO "+getName()+" ("+voParamsTpl+")\n"+e.getMessage());
@@ -977,4 +1000,5 @@ public class VOConfigTask extends Task {
             template.write(prefix+"         ),\n");
         }
     }
+
 }
