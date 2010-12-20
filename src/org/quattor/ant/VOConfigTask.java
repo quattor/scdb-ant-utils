@@ -622,7 +622,7 @@ public class VOConfigTask extends Task {
         protected String oldCert = null;
         protected Date certExpiry = null;
         protected String dn = null;
-        protected Pattern certDeclarationPattern = Pattern.compile("\\s*('|\")cert\\1\\s*\\??=\\s*<<(\\w+)\\s*;(?:\\n|\\r)+");
+        protected Pattern certDeclarationPattern = Pattern.compile("\\s*('|\")cert\\1\\s*\\??=\\s*\\{*\\s*<<(\\w+)\\s*\\}*\\s*;(?:\\n|\\r)+");
         
         
         // Methods
