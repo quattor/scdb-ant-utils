@@ -697,7 +697,7 @@ public class VOConfigTask extends Task {
                         //if ( debugTask ) {
                         //    System.err.println("Certificate delimiter="+delimiter);
                         //}
-                        templateScanner.useDelimiter(delimiter+";*");
+                        templateScanner.useDelimiter(delimiter+"\\s*;*");
                         currentCert = templateScanner.next();
                     } else {
                         if ( debugTask ) {
@@ -722,10 +722,17 @@ public class VOConfigTask extends Task {
                 template.write("'cert' ?= <<EOF;\n");
                 template.write(getCert());
                 template.write("EOF\n\n");
+                //TODO: check real certificate contents rather than strings
                 if ( currentCert.length() > 0 ) {
-                    template.write("'oldcert' ?= <<EOF;\n");
-                    template.write(currentCert);
-                    template.write("EOF\n\n");                    
+                    if ( currentCert.equals(getCert()) ) {
+                        if ( debugTask ) {
+                            System.err.println("Existing certificate matches the new certificate: 'oldcert' not defined");
+                        }
+                    } else {
+                        template.write("'oldcert' ?= <<EOF;\n");
+                        template.write(currentCert);
+                        template.write("EOF\n\n");
+                    }                   
                 }
                 template.close();
             } catch (IOException e){
