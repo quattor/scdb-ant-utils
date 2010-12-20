@@ -472,6 +472,13 @@ public class VOConfigTask extends Task {
         public boolean accountSuffixUnique(String suffix) {
             return (!accountSuffixes.contains(suffix));
         }
+        
+        public int getBaseUid() throws BuildException {
+            if ( getId() == 0 ) {
+                throw new BuildException("VO "+getName()+": VO ID undefined, base_uid cannot be computed");
+            }
+            return (getId() * 1000);
+        }
 
         public int getId() {
             return (this.id);
@@ -547,6 +554,8 @@ public class VOConfigTask extends Task {
                     fqan.writeTemplate(template,this);
                 }
                 template.write(");\n");
+                template.write("\n");
+                template.write("'base_uid' ?= "+getId()+";");
                 template.close();
             } catch (IOException e){
                 throw new BuildException("Error writing template for VO "+getName()+" ("+voParamsTpl+")\n"+e.getMessage());
