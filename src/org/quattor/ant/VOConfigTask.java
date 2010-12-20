@@ -556,7 +556,7 @@ public class VOConfigTask extends Task {
             this.name = name;
         }
 
-        public String toStr() {
+        public String toString() {
             String configStr = "";
             for (VOMSEndpoint endpoint : vomsEndpointList) {
                 if ( configStr.length() > 0 ) {
@@ -570,7 +570,7 @@ public class VOConfigTask extends Task {
         
         private void writeVOTemplate(String templateBranch) throws BuildException {            
             if ( debugTask ) {
-                System.err.println("VO configuration for VO "+getName()+" (ID="+getId()+"):\n"+toStr());
+                System.err.println("VO configuration for VO "+getName()+" (ID="+getId()+"):\n"+this);
             }
             
             String voParamsNS = paramsTplNS + "/" + getName();
