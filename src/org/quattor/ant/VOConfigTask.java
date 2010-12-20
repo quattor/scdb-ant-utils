@@ -695,6 +695,8 @@ public class VOConfigTask extends Task {
          *  If a previous version of the template exists, retrieve the certificates defined ('cert' 
          *  and 'oldcert') and define 'oldCert' to the certificate not matching the one in VO ID card.
          *  If not existing certificate can be retrieved, return an empty string.
+         *
+         * TODO: should check validy (expiration) of oldcert before defining it
          */
         protected void setOldCert(String templateBranch) throws BuildException {
             String certParamsTpl = getCertParamsTpl(templateBranch);
@@ -712,7 +714,7 @@ public class VOConfigTask extends Task {
                         Matcher delimiterMatcher = certDeclarationPattern.matcher(certStartTag);
                         if ( delimiterMatcher.matches() ) {
                             String certType = "cert";
-                            if ( delimiterMatcher.group(2).length() > 0 ) {
+                            if ( delimiterMatcher.group(2) != null ) {
                                 certType = "oldcert";                                
                             }
                             String delimiter = delimiterMatcher.group(3);
@@ -734,7 +736,7 @@ public class VOConfigTask extends Task {
                             }
                         }
                     }
-                    if ( this.oldCert == null ) {
+                    if ( (this.oldCert == null) && (existingCerts.size() == 0) ) {
                         if ( debugTask ) {
                             System.err.println("    Failed to match '"+certDeclarationPattern+"' in existing template");
                         };
