@@ -578,7 +578,7 @@ public class VOConfigTask extends Task {
                 }
                 template.write(");\n");
                 template.write("\n");
-                template.write("'base_uid' ?= "+getBaseUid()+";");
+                template.write("'base_uid' ?= "+getBaseUid()+";\n");
                 template.close();
             } catch (IOException e){
                 throw new BuildException("Error writing template for VO "+getName()+" ("+voParamsTpl+")\n"+e.getMessage());
