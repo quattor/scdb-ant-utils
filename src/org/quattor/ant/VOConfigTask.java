@@ -193,6 +193,7 @@ public class VOConfigTask extends Task {
     static {
         fqanProductionManager = new HashSet<String>();
         fqanProductionManager.add("/Role=production");
+        fqanProductionManager.add("/Role=Production");
         fqanProductionManager.add("/Role=prod");
         fqanProductionManager.add("/Role=ProductionManager");
     }
