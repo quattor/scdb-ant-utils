@@ -81,6 +81,12 @@ public class VOConfigTask extends Task {
      */
     protected Hashtable<String,VOMSServer>vomsServers = new Hashtable<String,VOMSServer>();;
     
+    /* HashSet of generated VO account prefix: used to detect potential clashes */
+    // accountPrefixes keeps track of the first VO to use a prefix
+    protected Hashtable<String,String> accountPrefixes = new Hashtable<String,String>();
+    // accountPrefixConflicts keeps track of VOs using a conflicting prefix
+    protected Hashtable<String,AccountPrefixConflict> accountPrefixConflicts = new Hashtable<String,AccountPrefixConflict>();
+
 
     // Methods
 
@@ -261,6 +267,16 @@ public class VOConfigTask extends Task {
             for (Entry<String,VOMSServer> server : vomsServersEntries) {
                 server.getValue().updateVOMSServerTemplate(templateBasedir+"/"+branch);
             }
+        }
+        
+        // Warn about VO account prefix conflicts if any
+        if ( accountPrefixConflicts.size() > 0 ) {
+            System.out.println("\nWARNING: the following account prefixes are used by several VOs:");
+            Set<Entry<String,AccountPrefixConflict>> conflictEntries = accountPrefixConflicts.entrySet();
+            for (Entry<String,AccountPrefixConflict> entry : conflictEntries) {
+                System.out.println("    "+entry.getKey()+": "+entry.getValue());
+            }
+            System.out.println("Should you use several conflicting VOs, be sure to define their account prefix explicitly.");
         }
         
     }
@@ -503,7 +519,9 @@ public class VOConfigTask extends Task {
          * Method to generate account prefix for the VO.
          * The account prefix is made of the first 3 letters of the VO name (after removal of all non alphanumeric
          * characters and the 'vo.' prefix if any) followed by letters generated from base26-like conversion of
-         * the VO creation count and the VO id.
+         * the VO id.
+         * In case of clash between 2 VOs, no attempt is made to solve it but a warning is displayed that if using
+         * several of the conflicting VOS, some VO prefix must be defined explicitly.
          */
         public void setAccountPrefix() throws BuildException {
             if ( (getName() == null) || (getId() == 0) ) {
@@ -511,6 +529,23 @@ public class VOConfigTask extends Task {
             }
             this.accountPrefix = getName().replaceFirst("^vo\\.", "").replaceAll("[^A-Za-z0-9]", "").substring(0,3);
             this.accountPrefix += VOConfigTask.toBase26(getId());
+            // Check uniqueness and keep track of potential conflicts
+            if ( accountPrefixes.contains(this.accountPrefix) ) {
+                if ( debugTask ) {
+                    System.err.println("    VO "+getName()+": generated account prefix ("+this.accountPrefix+") already used by another VO");
+                }
+                AccountPrefixConflict conflicts;
+                if ( accountPrefixConflicts.containsKey(this.accountPrefix) ) {
+                    conflicts = accountPrefixConflicts.get(this.accountPrefix);
+                } else {
+                    conflicts = new AccountPrefixConflict();
+                    conflicts.addVO(accountPrefixes.get(this.accountPrefix));
+                    accountPrefixConflicts.put(this.accountPrefix, conflicts);
+                }
+                conflicts.addVO(getTaskName());
+            } else {
+                accountPrefixes.put(this.accountPrefix,getName());
+            }
         }
         
         public void setId(int id) {
@@ -1003,4 +1038,31 @@ public class VOConfigTask extends Task {
         }
     }
 
+    
+    // Class to keep track of VOs using the same accounting prefix
+    
+    private class AccountPrefixConflict {
+        protected LinkedList<String> vos = new LinkedList<String>();
+        
+        // Methods
+        
+        public void addVO (String vo) {
+            vos.add(vo);
+        }
+        
+        public LinkedList<String> getVOs() {
+            return (this.vos);
+        }
+        
+        public String toStr() {
+            String voListStr = "";
+            for (String vo : getVOs()) {
+                if ( voListStr.length() > 0 ) {
+                    voListStr += ", ";
+                }
+                voListStr += vo;
+            }
+            return (voListStr);
+        }
+    }
 }
