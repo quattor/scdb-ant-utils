@@ -530,7 +530,7 @@ public class VOConfigTask extends Task {
             this.accountPrefix = getName().replaceFirst("^vo\\.", "").replaceAll("[^A-Za-z0-9]", "").substring(0,3);
             this.accountPrefix += VOConfigTask.toBase26(getId());
             // Check uniqueness and keep track of potential conflicts
-            if ( accountPrefixes.contains(this.accountPrefix) ) {
+            if ( accountPrefixes.containsKey(this.accountPrefix) ) {
                 if ( debugTask ) {
                     System.err.println("    VO "+getName()+": generated account prefix ("+this.accountPrefix+") already used by another VO");
                 }
@@ -542,7 +542,7 @@ public class VOConfigTask extends Task {
                     conflicts.addVO(accountPrefixes.get(this.accountPrefix));
                     accountPrefixConflicts.put(this.accountPrefix, conflicts);
                 }
-                conflicts.addVO(getTaskName());
+                conflicts.addVO(getName());
             } else {
                 accountPrefixes.put(this.accountPrefix,getName());
             }
@@ -1054,11 +1054,11 @@ public class VOConfigTask extends Task {
             return (this.vos);
         }
         
-        public String toStr() {
+        public String toString() {
             String voListStr = "";
             for (String vo : getVOs()) {
                 if ( voListStr.length() > 0 ) {
-                    voListStr += ", ";
+                    voListStr += " ";
                 }
                 voListStr += vo;
             }
