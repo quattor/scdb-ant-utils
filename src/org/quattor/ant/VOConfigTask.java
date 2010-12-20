@@ -691,7 +691,7 @@ public class VOConfigTask extends Task {
             this.port = Integer.parseInt(port);
         }
         
-        protected void setOldCert(String templateBranch) {
+        protected void setOldCert(String templateBranch) throws BuildException {
             String certParamsTpl = getCertParamsTpl(templateBranch);
             File templateFile = new File(certParamsTpl);
             this.oldCert = "";      // Default value meaning that there is no old certificate defined
@@ -747,7 +747,10 @@ public class VOConfigTask extends Task {
 
         private void updateVOMSServerTemplate(String templateBranch) throws BuildException {
             String certParamsTpl = getCertParamsTpl(templateBranch);
-            System.out.println("    Updating template for VOMS server "+getHost()+" ("+certParamsTpl+")");
+            System.out.println("Updating template for VOMS server "+getHost()+" ("+certParamsTpl+")");
+            
+            // Existing certificate must be retrieved before creating new template
+            String oldCert = getOldCert(templateBranch);
 
             try {
                 FileWriter template = new FileWriter(certParamsTpl);
@@ -756,9 +759,9 @@ public class VOConfigTask extends Task {
                 template.write(getCert());
                 template.write("EOF\n\n");
                 //TODO: check real certificate contents rather than strings
-                if ( getOldCert(templateBranch).length() > 0 ) {
+                if ( oldCert.length() > 0 ) {
                     template.write("'oldcert' ?= <<EOF;\n");
-                    template.write(getOldCert(templateBranch));
+                    template.write(oldCert);
                     template.write("EOF\n\n");
                 }
                 template.close();
