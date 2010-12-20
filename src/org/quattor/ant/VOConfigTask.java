@@ -615,6 +615,7 @@ public class VOConfigTask extends Task {
         protected String host = null;
         protected int port = 8443;
         protected String cert = null;
+        String oldCert = null;
         protected Date certExpiry = null;
         protected String dn = null;
         protected Pattern certDeclarationPattern = Pattern.compile("\\s*('|\")cert\\1\\s*\\??=\\s*<<(\\w+)\\s*;(?:\\n|\\r)+");
@@ -629,6 +630,14 @@ public class VOConfigTask extends Task {
         public Date getCertExpiry () {
             return (this.certExpiry);
         }
+        
+        protected String getCertParamsNS() {
+            return (certsTplNS + "/" + getHost());            
+        }
+
+        protected String getCertParamsTpl(String templateBranch) {
+            return (templateBranch + "/" + getCertParamsNS() + ".tpl");
+        }
 
         public String getDN() {
             return (this.dn);
@@ -636,6 +645,13 @@ public class VOConfigTask extends Task {
 
         public String getHost() {
             return (this.host);
+        }
+        
+        protected String getOldCert(String templateBranch) {
+            if ( this.oldCert == null ) {
+                setOldCert(templateBranch);
+            }
+            return (this.oldCert);
         }
 
         public int getPort() {
@@ -671,16 +687,15 @@ public class VOConfigTask extends Task {
             this.port = Integer.parseInt(port);
         }
         
-        private void updateVOMSServerTemplate(String templateBranch) throws BuildException {            
-            String certParamsNS = certsTplNS + "/" + getHost();
-            String certParamsTpl = templateBranch + "/" + certParamsNS + ".tpl";
+        protected void setOldCert(String templateBranch) {
+            String certParamsTpl = getCertParamsTpl(templateBranch);
             File templateFile = new File(certParamsTpl);
-            String currentCert = "";
             
-            // If a previous version of the template exists, retrieve current certificate to 
-            // add it as 'oldcert' in the updated template
+            // If a previous version of the template exists, retrieve current certificate in oldCert
             if ( templateFile.exists() ) {
-                System.out.println("Updating template for VOMS server "+getHost()+" ("+certParamsTpl+")");
+                if ( debugTask ) {
+                    System.err.println("Retrieving VOMS server "+getHost()+" existing certificate");
+                }
                 try {
                     Scanner templateScanner = new Scanner(templateFile);
                     String certStartTag = templateScanner.findWithinHorizon(certDeclarationPattern, 0);
@@ -689,7 +704,7 @@ public class VOConfigTask extends Task {
                         if ( debugTask ) {
                             System.err.println("Failed to match '"+certDeclarationPattern+"' in certParamsTpl");
                         };
-                        currentCert = "";
+                        this.oldCert = "";
                     }
                     Matcher delimiterMatcher = certDeclarationPattern.matcher(certStartTag);
                     if ( delimiterMatcher.matches() ) {
@@ -698,7 +713,13 @@ public class VOConfigTask extends Task {
                         //    System.err.println("Certificate delimiter="+delimiter);
                         //}
                         templateScanner.useDelimiter(delimiter+"\\s*;*");
-                        currentCert = templateScanner.next();
+                        this.oldCert = templateScanner.next();
+                        if ( this.oldCert.equals(getCert()) ) {
+                            if ( debugTask ) {
+                                System.err.println("Existing certificate matches the new certificate: 'oldcert' not defined");
+                            }
+                            this.oldCert = "";
+                        }
                     } else {
                         if ( debugTask ) {
                             System.err.println("WARNING: failed to match certificate delimiter");
@@ -713,26 +734,28 @@ public class VOConfigTask extends Task {
                     }
                 }
             } else {
-                System.out.println("Writing template for VOMS server "+getHost()+" ("+certParamsTpl+")");                
+                if ( debugTask ) {
+                    System.err.println("No certificate previously defined for VOMS server "+getHost()+": 'oldcert' not defined");
+                }
+                this.oldCert = "";
             }
+        }
+
+        private void updateVOMSServerTemplate(String templateBranch) throws BuildException {
+            String certParamsTpl = getCertParamsTpl(templateBranch);
+            System.out.println("Updating template for VOMS server "+getHost()+" ("+certParamsTpl+")");
 
             try {
-                FileWriter template = new FileWriter(templateFile);
-                template.write("structure template "+certParamsNS+";\n\n");
+                FileWriter template = new FileWriter(certParamsTpl);
+                template.write("structure template "+getCertParamsNS()+";\n\n");
                 template.write("'cert' ?= <<EOF;\n");
                 template.write(getCert());
                 template.write("EOF\n\n");
                 //TODO: check real certificate contents rather than strings
-                if ( currentCert.length() > 0 ) {
-                    if ( currentCert.equals(getCert()) ) {
-                        if ( debugTask ) {
-                            System.err.println("Existing certificate matches the new certificate: 'oldcert' not defined");
-                        }
-                    } else {
-                        template.write("'oldcert' ?= <<EOF;\n");
-                        template.write(currentCert);
-                        template.write("EOF\n\n");
-                    }                   
+                if ( getOldCert(templateBranch).length() > 0 ) {
+                    template.write("'oldcert' ?= <<EOF;\n");
+                    template.write(getOldCert(templateBranch));
+                    template.write("EOF\n\n");
                 }
                 template.close();
             } catch (IOException e){
