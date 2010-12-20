@@ -615,7 +615,7 @@ public class VOConfigTask extends Task {
         protected String host = null;
         protected int port = 8443;
         protected String cert = null;
-        String oldCert = null;
+        protected String oldCert = null;
         protected Date certExpiry = null;
         protected String dn = null;
         protected Pattern certDeclarationPattern = Pattern.compile("\\s*('|\")cert\\1\\s*\\??=\\s*<<(\\w+)\\s*;(?:\\n|\\r)+");
@@ -690,11 +690,12 @@ public class VOConfigTask extends Task {
         protected void setOldCert(String templateBranch) {
             String certParamsTpl = getCertParamsTpl(templateBranch);
             File templateFile = new File(certParamsTpl);
+            this.oldCert = "";      // Default value meaning that there is no old certificate defined
             
             // If a previous version of the template exists, retrieve current certificate in oldCert
             if ( templateFile.exists() ) {
                 if ( debugTask ) {
-                    System.err.println("Retrieving VOMS server "+getHost()+" existing certificate");
+                    System.err.println("    Retrieving VOMS server "+getHost()+" existing certificate");
                 }
                 try {
                     Scanner templateScanner = new Scanner(templateFile);
@@ -702,9 +703,9 @@ public class VOConfigTask extends Task {
                     // To avoid a NullPointerException
                     if ( certStartTag == null ) {
                         if ( debugTask ) {
-                            System.err.println("Failed to match '"+certDeclarationPattern+"' in certParamsTpl");
+                            System.err.println("    Failed to match '"+certDeclarationPattern+"' in certParamsTpl");
                         };
-                        this.oldCert = "";
+                        certStartTag = "";
                     }
                     Matcher delimiterMatcher = certDeclarationPattern.matcher(certStartTag);
                     if ( delimiterMatcher.matches() ) {
@@ -716,13 +717,13 @@ public class VOConfigTask extends Task {
                         this.oldCert = templateScanner.next();
                         if ( this.oldCert.equals(getCert()) ) {
                             if ( debugTask ) {
-                                System.err.println("Existing certificate matches the new certificate: 'oldcert' not defined");
+                                System.err.println("    Existing certificate matches the new certificate: 'oldcert' not defined");
                             }
                             this.oldCert = "";
                         }
                     } else {
                         if ( debugTask ) {
-                            System.err.println("WARNING: failed to match certificate delimiter");
+                            System.err.println("    WARNING: failed to match certificate delimiter");
                         }
                     }
                 } catch (FileNotFoundException e) {
@@ -730,20 +731,19 @@ public class VOConfigTask extends Task {
                     throw new BuildException("Internal error: file not found in VOMSServer.updateVOMSServerTemplate()");
                 } catch (NoSuchElementException e) {
                     if ( debugTask ) {
-                        System.err.println("Failed to retrieve current certificate in exiting template "+certParamsTpl);
+                        System.err.println("    Failed to retrieve current certificate in exiting template "+certParamsTpl);
                     }
                 }
             } else {
                 if ( debugTask ) {
-                    System.err.println("No certificate previously defined for VOMS server "+getHost()+": 'oldcert' not defined");
+                    System.err.println("    No certificate previously defined for VOMS server "+getHost()+": 'oldcert' not defined");
                 }
-                this.oldCert = "";
             }
         }
 
         private void updateVOMSServerTemplate(String templateBranch) throws BuildException {
             String certParamsTpl = getCertParamsTpl(templateBranch);
-            System.out.println("Updating template for VOMS server "+getHost()+" ("+certParamsTpl+")");
+            System.out.println("    Updating template for VOMS server "+getHost()+" ("+certParamsTpl+")");
 
             try {
                 FileWriter template = new FileWriter(certParamsTpl);
@@ -872,7 +872,7 @@ public class VOConfigTask extends Task {
                 // In (unlikely) case, the suffix is not unique, add the VO name at the end of the relative FQAN
                 if ( ! voConfig.accountSuffixUnique(suffix) ) {
                     if ( debugTask ) {
-                        System.err.println("Suffix '"+suffix+"' not unique for FQAN '"+relativeFqan+"':  retrying adding VO name");
+                        System.err.println("    Suffix '"+suffix+"' not unique for FQAN '"+relativeFqan+"':  retrying adding VO name");
                     }
                     suffix = VOConfigTask.toBase26((relativeFqan+"/"+voConfig.getName()).hashCode());
                 }
@@ -897,7 +897,7 @@ public class VOConfigTask extends Task {
                 int j = 0;
                 while ( !suffixUnique ) {
                     if ( debugTask && (j > 0) ) {
-                        System.err.println("Suffix '"+suffix+"' not unique for FQAN "+getFqan()+" (attempt "+j+")");
+                        System.err.println("    Suffix '"+suffix+"' not unique for FQAN "+getFqan()+" (attempt "+j+")");
                     }
                     suffix = VOConfigTask.toBase26(getFqan().length()+(j*100)) + VOConfigTask.toBase26(voConfig.getId());
                     j++;
