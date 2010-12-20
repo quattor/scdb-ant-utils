@@ -636,7 +636,7 @@ public class VOConfigTask extends Task {
         public void writeTemplate(FileWriter template) throws IOException {
             template.write("    nlist('name', '"+getServer().getHost()+"',\n");
             template.write("          'host', '"+getServer().getHost()+"',\n");
-            template.write("          'port', "+getServer().getPort()+",\n");
+            template.write("          'port', "+getPort()+",\n");
             if ( !getVomsAdminEnabled() ) {
                 template.write("          'type', list('voms-only'),\n");
             }
