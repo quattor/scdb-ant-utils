@@ -622,7 +622,7 @@ public class VOConfigTask extends Task {
         protected String oldCert = null;
         protected Date certExpiry = null;
         protected String dn = null;
-        protected Pattern certDeclarationPattern = Pattern.compile("\\s*('|\")cert\\1\\s*\\??=\\s*\\{*\\s*<<(\\w+)\\s*\\}*\\s*;(?:\\n|\\r)+");
+        protected Pattern certDeclarationPattern = Pattern.compile("\\s*('|\")(old)?cert\\1\\s*\\??=\\s*\\{*\\s*<<(\\w+)\\s*\\}*\\s*;(?:\\n|\\r)+");
         
         
         // Methods
@@ -690,44 +690,72 @@ public class VOConfigTask extends Task {
         public void setPort (String port) {
             this.port = Integer.parseInt(port);
         }
-        
+
+        /*
+         *  If a previous version of the template exists, retrieve the certificates defined ('cert' 
+         *  and 'oldcert') and define 'oldCert' to the certificate not matching the one in VO ID card.
+         *  If not existing certificate can be retrieved, return an empty string.
+         */
         protected void setOldCert(String templateBranch) throws BuildException {
             String certParamsTpl = getCertParamsTpl(templateBranch);
             File templateFile = new File(certParamsTpl);
-            this.oldCert = "";      // Default value meaning that there is no old certificate defined
-            
-            // If a previous version of the template exists, retrieve current certificate in oldCert
+            Hashtable<String,String> existingCerts = new Hashtable<String,String>();
+                        
             if ( templateFile.exists() ) {
                 if ( debugTask ) {
                     System.err.println("    Retrieving VOMS server "+getHost()+" existing certificate");
                 }
                 try {
                     Scanner templateScanner = new Scanner(templateFile);
-                    String certStartTag = templateScanner.findWithinHorizon(certDeclarationPattern, 0);
-                    // To avoid a NullPointerException
-                    if ( certStartTag == null ) {
-                        if ( debugTask ) {
-                            System.err.println("    Failed to match '"+certDeclarationPattern+"' in certParamsTpl");
-                        };
-                        certStartTag = "";
-                    }
-                    Matcher delimiterMatcher = certDeclarationPattern.matcher(certStartTag);
-                    if ( delimiterMatcher.matches() ) {
-                        String delimiter = delimiterMatcher.group(2);
-                        //if ( debugTask ) {
-                        //    System.err.println("Certificate delimiter="+delimiter);
-                        //}
-                        templateScanner.useDelimiter(delimiter+"\\s*;*");
-                        this.oldCert = templateScanner.next();
-                        if ( this.oldCert.equals(getCert()) ) {
+                    String certStartTag;
+                    while ( (certStartTag = templateScanner.findWithinHorizon(certDeclarationPattern,0)) != null ) {
+                        Matcher delimiterMatcher = certDeclarationPattern.matcher(certStartTag);
+                        if ( delimiterMatcher.matches() ) {
+                            String certType = "cert";
+                            if ( delimiterMatcher.group(2).length() > 0 ) {
+                                certType = "oldcert";                                
+                            }
+                            String delimiter = delimiterMatcher.group(3);
+                            //if ( debugTask ) {
+                            //    System.err.println("Certificate delimiter="+delimiter);
+                            //}
+                            templateScanner.useDelimiter(delimiter+"\\s*;*");
+                            String certValue = templateScanner.next();
+                            if ( certValue != null ) {
+                                existingCerts.put(certType, certValue);
+                            } else {
+                                System.out.println("    WARNING: invalid format of certificate declaration in existing template");
+                                this.oldCert = "";
+                            }
+                        } else {
                             if ( debugTask ) {
-                                System.err.println("    Existing certificate matches the new certificate: 'oldcert' not defined");
+                                System.err.println("    WARNING: failed to match certificate delimiter in existing template");
+                                this.oldCert = "";
+                            }
+                        }
+                    }
+                    if ( this.oldCert == null ) {
+                        if ( debugTask ) {
+                            System.err.println("    Failed to match '"+certDeclarationPattern+"' in existing template");
+                        };
+                        this.oldCert = "";
+                    } else {
+                        // If 'cert' was defined and is not matching the cert in VO ID card, use it for 'oldcert'
+                        if ( existingCerts.containsKey("cert") && !existingCerts.get("cert").equals(getCert()) ) {
+                            if ( debugTask ) {
+                                System.err.println("    Existing certificate ('cert') found and different from VO ID card: 'oldcert' defined");
+                            }
+                            this.oldCert = existingCerts.get("cert");
+                        } else if ( existingCerts.containsKey("oldcert") && !existingCerts.get("oldcert").equals(getCert()) ) {
+                            if ( debugTask ) {
+                                System.err.println("    Existing certificate ('oldcert') found and different from VO ID card: 'oldcert' defined");
+                            }                            
+                            this.oldCert = existingCerts.get("oldcert");
+                        } else {
+                            if ( debugTask ) {
+                                System.err.println("    Existing certificates match the new certificate: 'oldcert' not defined");
                             }
                             this.oldCert = "";
-                        }
-                    } else {
-                        if ( debugTask ) {
-                            System.err.println("    WARNING: failed to match certificate delimiter");
                         }
                     }
                 } catch (FileNotFoundException e) {
@@ -735,13 +763,14 @@ public class VOConfigTask extends Task {
                     throw new BuildException("Internal error: file not found in VOMSServer.updateVOMSServerTemplate()");
                 } catch (NoSuchElementException e) {
                     if ( debugTask ) {
-                        System.err.println("    Failed to retrieve current certificate in exiting template "+certParamsTpl);
+                        System.err.println("    Failed to retrieve current certificate in exiting template ");
                     }
                 }
             } else {
                 if ( debugTask ) {
                     System.err.println("    No certificate previously defined for VOMS server "+getHost()+": 'oldcert' not defined");
                 }
+                this.oldCert = "";
             }
         }
 
