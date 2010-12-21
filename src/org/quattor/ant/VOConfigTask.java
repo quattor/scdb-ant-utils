@@ -638,18 +638,7 @@ public class VOConfigTask extends Task {
                 if ( debugTask && fqanList.isEmpty() ) {
                     System.err.println("    INFO: VO "+getName()+" has no specific FQAN defined");
                 }
-                Set<String> sortedFqanList;
-                if ( legacySuffixAlgorithm ) {
-                    // Alphabetical order
-                    sortedFqanList = new TreeSet<String>();
-                    for (String key : fqanList.keySet()) {
-                        sortedFqanList.add(key);
-                    }
-                } else {
-                    // Insertion order
-                    sortedFqanList = fqanList.keySet();
-                }
-                for (String key : sortedFqanList) {
+                for (String key : fqanList.keySet()) {
                     VOMSFqan fqan = fqanList.get(key);
                     fqan.writeTemplate(template,this);
                 }
@@ -1112,9 +1101,9 @@ public class VOConfigTask extends Task {
             String suffix = checkSpecificSuffix();
 
             // Generated suffix is based on base26-like conversion of FQAN length and VO ID.
-            // Despite this is probably not the best way to generate a unique suffix inside the VO,
-            // this is difficult to change it without breaking backward compatibility for configuration
-            // based on these templates.
+            // Despite this is a very bad choice for uniqueness, it is impossible to change
+            // without breaking backward compatibility of generated accounts.
+            // New algorithm is implemented as a distinct method.
             if ( suffix == null ) {
                 boolean suffixUnique = false;
                 int j = 0;
