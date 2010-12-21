@@ -1,8 +1,14 @@
 package org.quattor.ant;
 
 import java.io.*;
+import java.lang.reflect.Array;
+import java.math.BigInteger;
 import java.net.URL;
 import java.net.MalformedURLException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateExpiredException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.text.ParseException;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
@@ -382,7 +388,7 @@ public class VOConfigTask extends Task {
                         if ( (vomsServer.getCertExpiry() != null) && (vomsServer.getCert() != vomsServers.get(VOMSServerKey).getCert()) ) {
                             if ( vomsServer.getCertExpiry().after(vomsServers.get(VOMSServerKey).getCertExpiry())) {
                                 System.err.println("    WARNING: VOMS server '"+VOMSServerKey+"' already defined with an older certificate, updating it.");
-                                vomsServers.get(VOMSServerKey).setCertExpiry(vomsServer.getCertExpiry());
+                                vomsServers.get(VOMSServerKey).setCert(vomsServer.getCert());
                             } else if ( vomsServer.getCertExpiry().before(vomsServers.get(VOMSServerKey).getCertExpiry())) {
                                 System.err.println("    WARNING: VOMS server '"+VOMSServerKey+"' already defined with a newer certificate, keeping previous one.");                                
                             }
@@ -406,12 +412,8 @@ public class VOConfigTask extends Task {
                         vomsEndpoint.setEndpoint(data);
                     } else if ( qName.equals("CertificatePublicKey") ) {
                         vomsServer.setCert(data);
-                    } else if ( qName.equals("CERTIFICATE_EXPIRATION_DATE") ) {
-                        vomsServer.setCertExpiry(data);
                     } else if ( qName.equals("IS_VOMSADMIN_SERVER") ) {
                         vomsEndpoint.setVomsAdminEnabled(data);
-                    } else if ( qName.equals("DN") ) {
-                        vomsServer.setDN(data);
                     }
                     // Disable collection of data
                     data = null;
@@ -686,21 +688,19 @@ public class VOConfigTask extends Task {
     private class VOMSServer {
         protected String host = null;
         protected int port = 8443;
-        protected String cert = null;
-        protected String oldCert = null;
-        protected Date certExpiry = null;
-        protected String dn = null;
+        protected VOMSServerCertificate cert = null;
+        protected VOMSServerCertificate oldCert = null;
         protected Pattern certDeclarationPattern = Pattern.compile("\\s*('|\")(old)?cert\\1\\s*\\??=\\s*\\{*\\s*<<(\\w+)\\s*\\}*\\s*;(?:\\n|\\r)+");
         
         
         // Methods
 
         public String getCert() {
-            return (this.cert);
+            return (this.cert.getCert());
         }
         
         public Date getCertExpiry () {
-            return (this.certExpiry);
+            return (this.cert.getExpiry());
         }
         
         protected String getCertParamsNS() {
@@ -712,7 +712,7 @@ public class VOConfigTask extends Task {
         }
 
         public String getDN() {
-            return (this.dn);
+            return (this.cert.getDN());
         }
 
         public String getHost() {
@@ -720,10 +720,7 @@ public class VOConfigTask extends Task {
         }
         
         protected String getOldCert(String templateBranch) {
-            if ( this.oldCert == null ) {
-                setOldCert(templateBranch);
-            }
-            return (this.oldCert);
+            return (this.oldCert.getCert());
         }
 
         public int getPort() {
@@ -731,26 +728,7 @@ public class VOConfigTask extends Task {
         }
 
         public void setCert(String cert) {
-            this.cert = cert;
-        }
-
-        public void setCertExpiry(String expiry) throws SAXException {
-            SimpleDateFormat expiryFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
-            try {
-                if ( expiry.length() > 0 ) {
-                    this.certExpiry = expiryFormat.parse(expiry);
-                };
-            } catch (ParseException e) {
-                throw new SAXException("Failed to parse VOMS server "+getHost()+" certificate expiry date ("+expiry+")");
-            }
-        }
-
-        public void setCertExpiry(Date expiry) {
-            this.certExpiry = expiry;
-        }
-
-        public void setDN(String dn) {
-            this.dn = dn;
+            this.cert = new VOMSServerCertificate(cert);
         }
 
         public void setHost(String host) {
@@ -771,7 +749,7 @@ public class VOConfigTask extends Task {
         protected void setOldCert(String templateBranch) throws BuildException {
             String certParamsTpl = getCertParamsTpl(templateBranch);
             File templateFile = new File(certParamsTpl);
-            Hashtable<String,String> existingCerts = new Hashtable<String,String>();
+            Hashtable<String,VOMSServerCertificate> existingCerts = new Hashtable<String,VOMSServerCertificate>();
                         
             if ( templateFile.exists() ) {
                 if ( debugTask ) {
@@ -794,15 +772,15 @@ public class VOConfigTask extends Task {
                             templateScanner.useDelimiter(delimiter+"\\s*;*");
                             String certValue = templateScanner.next();
                             if ( certValue != null ) {
-                                existingCerts.put(certType, certValue);
+                                existingCerts.put(certType, new VOMSServerCertificate(certValue));
                             } else {
                                 System.out.println("    WARNING: invalid format of certificate declaration in existing template");
-                                this.oldCert = "";
+                                this.oldCert = new VOMSServerCertificate("");
                             }
                         } else {
                             if ( debugTask ) {
                                 System.err.println("    WARNING: failed to match certificate delimiter in existing template");
-                                this.oldCert = "";
+                                this.oldCert = new VOMSServerCertificate("");
                             }
                         }
                     }
@@ -810,7 +788,7 @@ public class VOConfigTask extends Task {
                         if ( debugTask ) {
                             System.err.println("    Failed to match '"+certDeclarationPattern+"' in existing template");
                         };
-                        this.oldCert = "";
+                        this.oldCert = new VOMSServerCertificate("");
                     } else {
                         // If 'cert' was defined and is not matching the cert in VO ID card, use it for 'oldcert'
                         if ( existingCerts.containsKey("cert") && !existingCerts.get("cert").equals(getCert()) ) {
@@ -827,7 +805,7 @@ public class VOConfigTask extends Task {
                             if ( debugTask ) {
                                 System.err.println("    Existing certificates match the new certificate: 'oldcert' not defined");
                             }
-                            this.oldCert = "";
+                            this.oldCert = new VOMSServerCertificate("");
                         }
                     }
                 } catch (FileNotFoundException e) {
@@ -842,7 +820,7 @@ public class VOConfigTask extends Task {
                 if ( debugTask ) {
                     System.err.println("    No certificate previously defined for VOMS server "+getHost()+": 'oldcert' not defined");
                 }
-                this.oldCert = "";
+                this.oldCert = new VOMSServerCertificate("");
             }
         }
 
@@ -867,10 +845,84 @@ public class VOConfigTask extends Task {
                 }
                 template.close();
             } catch (IOException e){
-                throw new BuildException("Error writing template for VO "+getHost()+" ("+certParamsTpl+")\n"+e.getMessage());
+                throw new BuildException("Error writing template for VOMS server "+getHost()+" ("+certParamsTpl+")\n"+e.getMessage());
             }            
         }
     }
+    
+    
+    // Class to represent a VOMS server certificate
+    
+    private class VOMSServerCertificate {
+        private String base64 = null;
+        private BigInteger serial = null;
+        private String dn = null;
+        private String issuer= null;
+        private Date expiry = null;
+        
+        // Constructor: retrieve main informations from certificate
+        public VOMSServerCertificate (String base64) {
+            this.base64 = base64;
+            try {
+                CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
+                X509Certificate cert = (X509Certificate) certFactory.generateCertificate(new ByteArrayInputStream(base64.getBytes()));
+                cert.checkValidity();
+                this.expiry = cert.getNotAfter();
+                this.serial = cert.getSerialNumber();
+                this.dn = cert.getSubjectDN().getName();
+                this.issuer = cert.getIssuerDN().getName();
+            } catch (CertificateExpiredException e) {
+                System.out.println("    VOMS server certificate expired: ignoring it");
+                this.base64 = "";
+            } catch (CertificateException e) {
+                System.out.println("    Invalid VOMS server certificate: "+e.getMessage());
+                this.base64 = "";
+            }
+        }
+        
+        public boolean equals (VOMSServerCertificate cert) {
+            if ( getSerial().equals(cert.getSerial())) {
+                return (true);
+            } else {
+                return (false);
+            }
+        }
+        
+        public String getCert() {
+            return (this.base64);
+        }
+        
+        public String getDN() {
+            return (this.dn);
+        }
+        
+        public Date getExpiry() {
+            return (this.expiry);
+        }
+        
+        public String getIssuer() {
+            return (this.issuer);
+        }
+        
+        public BigInteger getSerial() {
+            return (this.serial);
+        }
+        
+        // Convert the java standard representation of a DN to LDAP one.
+        // Revert order of attribues, '/' instead of ',' as a separator
+        protected String ldapDN (String dn) {
+            String[] tokens = dn.split("/\\s*");
+            String ldapDN = "";
+            for (int i=Array.getLength(tokens)-1; i>=0; i--) {
+                if ( ldapDN.length() > 0 ) {
+                    ldapDN += "/";
+                }
+                ldapDN += tokens[i];
+            }
+            return (ldapDN);
+        }
+    }
+    
     
     // VOMS FQAN
     
@@ -1066,4 +1118,5 @@ public class VOConfigTask extends Task {
             return (voListStr);
         }
     }
+    
 }
