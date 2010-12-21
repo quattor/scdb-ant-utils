@@ -18,6 +18,7 @@ import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -82,12 +83,12 @@ public class VOConfigTask extends Task {
     /* Configuration of VOs retrieved from VO ID cards.
      * This is a hash with one entry per VO : the key is the VO name.
      */
-    protected Hashtable<String,VOConfig> voTable = new Hashtable<String,VOConfig>();;
+    protected TreeMap<String,VOConfig> voTable = new TreeMap<String,VOConfig>();;
 
     /* Hash table of all defined VOMS servers.
      * Used to check consistency of VOMS server attributes across VOs.
      */
-    protected Hashtable<String,VOMSServer>vomsServers = new Hashtable<String,VOMSServer>();;
+    protected TreeMap<String,VOMSServer>vomsServers = new TreeMap<String,VOMSServer>();;
     
     /* HashSet of generated VO account prefix: used to detect potential clashes */
     // accountPrefixes keeps track of the first VO to use a prefix
@@ -302,7 +303,7 @@ public class VOConfigTask extends Task {
      */
     protected void writeVOList(String templateBranch) {
         String voListNS = paramsTplNS + "/" + allVosTemplate;
-        String voListTpl = templateBranch + "/" + voListNS;
+        String voListTpl = templateBranch + "/" + voListNS + ".tpl";
         System.out.println("Writing the list of defined VOs ("+voListNS+")");
 
         
@@ -313,7 +314,7 @@ public class VOConfigTask extends Task {
             for (String vo : voTable.keySet()) {
                 template.write("        '"+vo+"',\n");
             }
-            template.write(")\n\n");
+            template.write(");\n\n");
             template.close();
         } catch (IOException e){
             throw new BuildException("Error writing the VO list ("+voListTpl+")\n"+e.getMessage());
