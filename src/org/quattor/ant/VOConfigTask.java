@@ -696,7 +696,11 @@ public class VOConfigTask extends Task {
         // Methods
 
         public String getCert() {
-            return (this.cert.getCert());
+            if ( this.cert == null ) {
+                return ("");
+            } else {
+                return (this.cert.getCert());                
+            }
         }
         
         public Date getCertExpiry () {
@@ -720,9 +724,13 @@ public class VOConfigTask extends Task {
         }
         
         protected String getOldCert(String templateBranch) {
-            return (this.oldCert.getCert());
+            if ( this.oldCert == null ) {
+                return ("");
+            } else {
+                return (this.oldCert.getCert());                
+            }
         }
-
+        
         public int getPort() {
             return (this.port);
         }
