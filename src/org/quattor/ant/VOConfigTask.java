@@ -806,12 +806,10 @@ public class VOConfigTask extends Task {
                                 try {
                                     existingCerts.put(certType, new VOMSServerCertificate(certValue));
                                 } catch (CertificateException e) {
-                                    if ( debugTask ) {
-                                        System.err.println("    WARNING: existing certificate no longer valid, ignoring it.");
-                                    }                                    
+                                        System.out.println("    Existing certificate ('"+certType+"') no longer valid, ignoring it.");
                                 }
                             } else {
-                                System.out.println("    WARNING: invalid format of certificate declaration in existing template");
+                                System.out.println("    WARNING: invalid format of certificate declaration ('"+certType+"') in existing template");
                             }
                         } else {
                             if ( debugTask ) {
