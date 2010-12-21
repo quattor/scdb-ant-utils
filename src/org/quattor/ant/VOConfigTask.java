@@ -746,7 +746,11 @@ public class VOConfigTask extends Task {
         }
 
         public void setCert(String cert) {
-            this.cert = new VOMSServerCertificate(cert);
+            try {
+                this.cert = new VOMSServerCertificate(cert);
+            } catch (CertificateException e) {
+                this.cert = null;
+            }
         }
 
         public void setHost(String host) {
@@ -799,7 +803,13 @@ public class VOConfigTask extends Task {
                             templateScanner.useDelimiter(delimiter+"\\s*;*");
                             String certValue = templateScanner.next();
                             if ( certValue != null ) {
-                                existingCerts.put(certType, new VOMSServerCertificate(certValue));
+                                try {
+                                    existingCerts.put(certType, new VOMSServerCertificate(certValue));
+                                } catch (CertificateException e) {
+                                    if ( debugTask ) {
+                                        System.err.println("    WARNING: existing certificate no longer valid, ignoring it.");
+                                    }                                    
+                                }
                             } else {
                                 System.out.println("    WARNING: invalid format of certificate declaration in existing template");
                             }
@@ -884,7 +894,7 @@ public class VOConfigTask extends Task {
         private Date expiry = null;
         
         // Constructor: retrieve main informations from certificate
-        public VOMSServerCertificate (String base64) {
+        public VOMSServerCertificate (String base64) throws CertificateException {
             this.base64 = base64;
             try {
                 CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
@@ -896,10 +906,10 @@ public class VOConfigTask extends Task {
                 this.issuer = cert.getIssuerDN().getName();
             } catch (CertificateExpiredException e) {
                 System.out.println("    VOMS server certificate expired: ignoring it");
-                this.base64 = "";
+                throw e;
             } catch (CertificateException e) {
                 System.out.println("    Invalid VOMS server certificate: "+e.getMessage());
-                this.base64 = "";
+                throw e;
             }
         }
         
