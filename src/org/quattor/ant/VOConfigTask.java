@@ -725,10 +725,9 @@ public class VOConfigTask extends Task {
         
         protected String getOldCert(String templateBranch) {
             if ( this.oldCert == null ) {
-                return ("");
-            } else {
-                return (this.oldCert.getCert());                
+                setOldCert(templateBranch);
             }
+            return (this.oldCert.getCert());              
         }
         
         public int getPort() {
@@ -755,10 +754,17 @@ public class VOConfigTask extends Task {
          * TODO: should check validy (expiration) of oldcert before defining it
          */
         protected void setOldCert(String templateBranch) throws BuildException {
+            if ( this.cert == null ) {
+                if ( debugTask ) {
+                    System.err.println("    VOMS server "+getHost()+" has no certificate defined in VO ID card. Ignoring existing certificate.");
+                }
+                return;
+            }
+                        
             String certParamsTpl = getCertParamsTpl(templateBranch);
             File templateFile = new File(certParamsTpl);
             Hashtable<String,VOMSServerCertificate> existingCerts = new Hashtable<String,VOMSServerCertificate>();
-                        
+
             if ( templateFile.exists() ) {
                 if ( debugTask ) {
                     System.err.println("    Retrieving VOMS server "+getHost()+" existing certificate");
@@ -799,12 +805,12 @@ public class VOConfigTask extends Task {
                         this.oldCert = new VOMSServerCertificate("");
                     } else {
                         // If 'cert' was defined and is not matching the cert in VO ID card, use it for 'oldcert'
-                        if ( existingCerts.containsKey("cert") && !existingCerts.get("cert").equals(getCert()) ) {
+                        if ( existingCerts.containsKey("cert") && !existingCerts.get("cert").equals(this.cert) ) {
                             if ( debugTask ) {
                                 System.err.println("    Existing certificate ('cert') found and different from VO ID card: 'oldcert' defined");
                             }
                             this.oldCert = existingCerts.get("cert");
-                        } else if ( existingCerts.containsKey("oldcert") && !existingCerts.get("oldcert").equals(getCert()) ) {
+                        } else if ( existingCerts.containsKey("oldcert") && !existingCerts.get("oldcert").equals(this.cert) ) {
                             if ( debugTask ) {
                                 System.err.println("    Existing certificate ('oldcert') found and different from VO ID card: 'oldcert' defined");
                             }                            
@@ -889,7 +895,12 @@ public class VOConfigTask extends Task {
         }
         
         public boolean equals (VOMSServerCertificate cert) {
-            if ( getSerial().equals(cert.getSerial())) {
+            // If getCerts() returs an empty string, this means an invalid certificate
+            if ( (getCert().length() == 0) && (cert.getCert().length() == 0) ) {
+                return (true);
+            } else if ( (getCert().length() == 0) || (cert.getCert().length() == 0) ) {
+                return(false);
+            } else if ( getSerial().equals(cert.getSerial()) ) {
                 return (true);
             } else {
                 return (false);
