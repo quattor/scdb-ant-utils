@@ -383,19 +383,24 @@ public class VOConfigTask extends Task {
                 if ( qName.equals("VOMSServer") ) {
                     if ( vomsServers.containsKey(VOMSServerKey) ) {
                         if ( debugTask ) {
-                            System.err.println("VOMS server '"+VOMSServerKey+"' already defined: checking attribute consistency.");
+                            System.err.println("    VOMS server '"+VOMSServerKey+"' already defined: checking attribute consistency.");
                         }
                         if ( (vomsServer.getCertExpiry() != null) && (vomsServer.getCert() != vomsServers.get(VOMSServerKey).getCert()) ) {
-                            if ( vomsServer.getCertExpiry().after(vomsServers.get(VOMSServerKey).getCertExpiry())) {
-                                System.err.println("    WARNING: VOMS server '"+VOMSServerKey+"' already defined with an older certificate, updating it.");
+                            if ( vomsServers.get(VOMSServerKey).getCert().length() == 0 ) {
+                                System.err.println("    WARNING: VOMS server '"+VOMSServerKey+"' already defined but without certificate, updating it.");
                                 vomsServers.get(VOMSServerKey).setCert(vomsServer.getCert());
-                            } else if ( vomsServer.getCertExpiry().before(vomsServers.get(VOMSServerKey).getCertExpiry())) {
-                                System.err.println("    WARNING: VOMS server '"+VOMSServerKey+"' already defined with a newer certificate, keeping previous one.");                                
+                            } else {
+                                if ( vomsServer.getCertExpiry().after(vomsServers.get(VOMSServerKey).getCertExpiry())) {
+                                    System.err.println("    WARNING: VOMS server '"+VOMSServerKey+"' already defined with an older certificate, updating it.");
+                                    vomsServers.get(VOMSServerKey).setCert(vomsServer.getCert());
+                                } else if ( vomsServer.getCertExpiry().before(vomsServers.get(VOMSServerKey).getCertExpiry())) {
+                                    System.err.println("    WARNING: VOMS server '"+VOMSServerKey+"' already defined with a newer certificate, keeping previous one.");                                
+                                }
                             }
                         }
                     } else {
                         if ( debugTask ) {
-                            System.err.println("Adding VOMS server '"+VOMSServerKey+"' to global VOMS server list.");
+                            System.err.println("    Adding VOMS server '"+VOMSServerKey+"' to global VOMS server list.");
                         }
                         vomsServers.put(VOMSServerKey,vomsServer);
                     }
@@ -690,6 +695,7 @@ public class VOConfigTask extends Task {
         protected int port = 8443;
         protected VOMSServerCertificate cert = null;
         protected VOMSServerCertificate oldCert = null;
+        protected boolean oldCertRetrieved = false;
         protected Pattern certDeclarationPattern = Pattern.compile("\\s*('|\")(old)?cert\\1\\s*\\??=\\s*\\{*\\s*<<(\\w+)\\s*\\}*\\s*;(?:\\n|\\r)+");
         
         
@@ -704,7 +710,11 @@ public class VOConfigTask extends Task {
         }
         
         public Date getCertExpiry () {
-            return (this.cert.getExpiry());
+            if ( this.cert == null ) {
+                return(null);
+            } else {
+                return (this.cert.getExpiry());
+            }
         }
         
         protected String getCertParamsNS() {
@@ -715,19 +725,20 @@ public class VOConfigTask extends Task {
             return (templateBranch + "/" + getCertParamsNS() + ".tpl");
         }
 
-        public String getDN() {
-            return (this.cert.getDN());
-        }
-
         public String getHost() {
             return (this.host);
         }
         
         protected String getOldCert(String templateBranch) {
-            if ( this.oldCert == null ) {
+            if ( !oldCertRetrieved ) {
                 setOldCert(templateBranch);
+                oldCertRetrieved = true;
             }
-            return (this.oldCert.getCert());              
+            if ( this.oldCert == null ) {
+                return ("");
+            } else {
+                return (this.oldCert.getCert());  
+            }
         }
         
         public int getPort() {
@@ -772,7 +783,9 @@ public class VOConfigTask extends Task {
                 try {
                     Scanner templateScanner = new Scanner(templateFile);
                     String certStartTag;
+                    boolean certFound = false;
                     while ( (certStartTag = templateScanner.findWithinHorizon(certDeclarationPattern,0)) != null ) {
+                        certFound = true;
                         Matcher delimiterMatcher = certDeclarationPattern.matcher(certStartTag);
                         if ( delimiterMatcher.matches() ) {
                             String certType = "cert";
@@ -789,21 +802,18 @@ public class VOConfigTask extends Task {
                                 existingCerts.put(certType, new VOMSServerCertificate(certValue));
                             } else {
                                 System.out.println("    WARNING: invalid format of certificate declaration in existing template");
-                                this.oldCert = new VOMSServerCertificate("");
                             }
                         } else {
                             if ( debugTask ) {
                                 System.err.println("    WARNING: failed to match certificate delimiter in existing template");
-                                this.oldCert = new VOMSServerCertificate("");
                             }
                         }
                     }
-                    if ( (this.oldCert == null) && (existingCerts.size() == 0) ) {
+                    if ( !certFound ) {
                         if ( debugTask ) {
                             System.err.println("    Failed to match '"+certDeclarationPattern+"' in existing template");
                         };
-                        this.oldCert = new VOMSServerCertificate("");
-                    } else {
+                    } else if ( existingCerts.size() > 0 ) {
                         // If 'cert' was defined and is not matching the cert in VO ID card, use it for 'oldcert'
                         if ( existingCerts.containsKey("cert") && !existingCerts.get("cert").equals(this.cert) ) {
                             if ( debugTask ) {
@@ -819,7 +829,6 @@ public class VOConfigTask extends Task {
                             if ( debugTask ) {
                                 System.err.println("    Existing certificates match the new certificate: 'oldcert' not defined");
                             }
-                            this.oldCert = new VOMSServerCertificate("");
                         }
                     }
                 } catch (FileNotFoundException e) {
@@ -834,7 +843,6 @@ public class VOConfigTask extends Task {
                 if ( debugTask ) {
                     System.err.println("    No certificate previously defined for VOMS server "+getHost()+": 'oldcert' not defined");
                 }
-                this.oldCert = new VOMSServerCertificate("");
             }
         }
 
@@ -868,6 +876,7 @@ public class VOConfigTask extends Task {
     // Class to represent a VOMS server certificate
     
     private class VOMSServerCertificate {
+        // An empty string for base64 means that the certificate is not valid and must be ignored
         private String base64 = null;
         private BigInteger serial = null;
         private String dn = null;
