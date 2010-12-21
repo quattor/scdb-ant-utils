@@ -9,15 +9,11 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateExpiredException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.text.ParseException;
-import java.text.ParsePosition;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -63,6 +59,12 @@ public class VOConfigTask extends Task {
     /* URI for VO ID card source */
     protected String voIdCardsUri = null;
 
+    /* Name of the template containing the list of all defined VOs */
+    protected String allVosTemplate = "allvos";
+
+    /* Name of the template containing the list of all defined VOs */
+    protected String vomsServerDNsTemplate = "voms_dn_list";
+
     /* Algorithm used to generate account suffix.
      * The original one was very bad at ensuring suffix uniqueness, requiring several retries to get
      * a unique suffix and thus making the actual suffix dependent on the FQAN order which historicall was alphabetical.
@@ -80,7 +82,7 @@ public class VOConfigTask extends Task {
     /* Configuration of VOs retrieved from VO ID cards.
      * This is a hash with one entry per VO : the key is the VO name.
      */
-    protected Hashtable<String,VOConfig> voMap = new Hashtable<String,VOConfig>();;
+    protected Hashtable<String,VOConfig> voTable = new Hashtable<String,VOConfig>();;
 
     /* Hash table of all defined VOMS servers.
      * Used to check consistency of VOMS server attributes across VOs.
@@ -263,17 +265,23 @@ public class VOConfigTask extends Task {
         DirectoryScanner ds = configDirs.getDirectoryScanner(getProject());
         File templateBasedir = ds.getBasedir();
         
-        // Write VO configurations to templates
-        Set<Entry<String,VOConfig>> voMapEntries = voMap.entrySet();
+        // Write templates
+        Set<Entry<String,VOConfig>> voTableEntries = voTable.entrySet();
         Set<Entry<String,VOMSServer>> vomsServersEntries = vomsServers.entrySet();
         for (String branch : ds.getIncludedDirectories()) {
             System.out.println("Updating templates in branch "+branch);
-            for (Entry<String,VOConfig> vo : voMapEntries) {
-                vo.getValue().writeVOTemplate(templateBasedir+"/"+branch);
+            String templateBranch = templateBasedir+"/"+branch;
+            // Write VO configurations to templates
+            for (Entry<String,VOConfig> vo : voTableEntries) {
+                vo.getValue().writeVOTemplate(templateBranch);
             }
+            // Write VOMS server certificate templates
             for (Entry<String,VOMSServer> server : vomsServersEntries) {
-                server.getValue().updateVOMSServerTemplate(templateBasedir+"/"+branch);
+                server.getValue().updateVOMSServerTemplate(templateBranch);
             }
+            // Write template containing the list all defined VOs
+            writeVOList(templateBranch);
+            
         }
         
         // Warn about VO account prefix conflicts if any
@@ -286,7 +294,32 @@ public class VOConfigTask extends Task {
             System.out.println("Should you use several conflicting VOs, be sure to define their account prefix explicitly.");
         }
         
+        
     }
+
+    /*
+     *  Write template containing a list of all defined VOs
+     */
+    protected void writeVOList(String templateBranch) {
+        String voListNS = paramsTplNS + "/" + allVosTemplate;
+        String voListTpl = templateBranch + "/" + voListNS;
+        System.out.println("Writing the list of defined VOs ("+voListNS+")");
+
+        
+        try {
+            FileWriter template = new FileWriter(voListTpl);
+            template.write("unique template "+voListNS+";\n\n");
+            template.write("variable ALLVOS ?= list(\n");
+            for (String vo : voTable.keySet()) {
+                template.write("        '"+vo+"',\n");
+            }
+            template.write(")\n\n");
+            template.close();
+        } catch (IOException e){
+            throw new BuildException("Error writing the VO list ("+voListTpl+")\n"+e.getMessage());
+        }            
+    }
+    
 
     // SAX content handler for VO cards
 
@@ -359,9 +392,9 @@ public class VOConfigTask extends Task {
             if ( qName.equals("VO") ) {
                 if ( voConfig.getName() != null ) {
                     try {
-                        voMap.put(voConfig.getName(), voConfig);
+                        voTable.put(voConfig.getName(), voConfig);
                     } catch (NullPointerException e) {
-                        throw new SAXException("Internal error: voMap or voConfig undefined at the end of VO "+voConfig.getName()+" configuration");
+                        throw new SAXException("Internal error: voTable or voConfig undefined at the end of VO "+voConfig.getName()+" configuration");
                     }
                     if ( debugTask ) {
                         System.out.println("Finished processing VO "+voConfig.getName());                        
@@ -765,8 +798,6 @@ public class VOConfigTask extends Task {
          *  If a previous version of the template exists, retrieve the certificates defined ('cert' 
          *  and 'oldcert') and define 'oldCert' to the certificate not matching the one in VO ID card.
          *  If not existing certificate can be retrieved, return an empty string.
-         *
-         * TODO: should check validy (expiration) of oldcert before defining it
          */
         protected void setOldCert(String templateBranch) throws BuildException {
             if ( this.cert == null ) {
@@ -867,7 +898,7 @@ public class VOConfigTask extends Task {
                 template.write("'cert' ?= <<EOF;\n");
                 template.write(getCert());
                 template.write("EOF\n\n");
-                //TODO: check real certificate contents rather than strings
+                // Zero length means no certificate
                 if ( oldCert.length() > 0 ) {
                     template.write("'oldcert' ?= <<EOF;\n");
                     template.write(oldCert);
@@ -912,12 +943,7 @@ public class VOConfigTask extends Task {
         }
         
         public boolean equals (VOMSServerCertificate cert) {
-            // If getCerts() returs an empty string, this means an invalid certificate
-            if ( (getCert().length() == 0) && (cert.getCert().length() == 0) ) {
-                return (true);
-            } else if ( (getCert().length() == 0) || (cert.getCert().length() == 0) ) {
-                return(false);
-            } else if ( getSerial().equals(cert.getSerial()) ) {
+            if ( getSerial().equals(cert.getSerial()) ) {
                 return (true);
             } else {
                 return (false);
