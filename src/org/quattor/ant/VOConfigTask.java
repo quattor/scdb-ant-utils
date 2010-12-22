@@ -972,8 +972,9 @@ public class VOConfigTask extends Task {
             }
             String entrySuffix = "";
             for (VOMSServerCertificate cert: certs) {
-                template.write("    '"+getHost()+entrySuffix+"', nlist('subject', '"+cert.getDN()+"',");
-                template.write("                                'issuer', '"+cert.getIssuer()+"',");
+                template.write(String.format("%-36s%s\n", "    '"+getHost()+entrySuffix+"', ", "nlist('subject', '"+cert.getDN()+"',"));
+                template.write(String.format("%-42s%s\n","", "'issuer', '"+cert.getIssuer()+"',"));
+                template.write(String.format("%-41s%s\n","", "),"));
                 entrySuffix = "_2";
             }
         }
@@ -1041,13 +1042,10 @@ public class VOConfigTask extends Task {
         // Convert the java standard representation of a DN to LDAP one.
         // Revert order of attribues, '/' instead of ',' as a separator
         protected String ldapDN (String dn) {
-            String[] tokens = dn.split("/\\s*");
+            String[] tokens = dn.split(",\\s*");
             String ldapDN = "";
             for (int i=Array.getLength(tokens)-1; i>=0; i--) {
-                if ( ldapDN.length() > 0 ) {
-                    ldapDN += "/";
-                }
-                ldapDN += tokens[i];
+                ldapDN += "/" + tokens[i];
             }
             return (ldapDN);
         }
