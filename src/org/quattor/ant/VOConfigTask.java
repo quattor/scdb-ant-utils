@@ -282,6 +282,9 @@ public class VOConfigTask extends Task {
             }
             // Write template containing the list all defined VOs
             writeVOList(templateBranch);
+            // Write subject name and issuer of all valid VOMS server certificates
+            // in template used to produce .lsc files
+            writeDNList(templateBranch);
             
         }
         
@@ -318,6 +321,40 @@ public class VOConfigTask extends Task {
             template.close();
         } catch (IOException e){
             throw new BuildException("Error writing the VO list ("+voListTpl+")\n"+e.getMessage());
+        }            
+    }
+    
+
+    /*
+     *  Write template containing subject/issuer of all valid VOMS server certificates
+     */
+    protected void writeDNList(String templateBranch) {
+        String dnListNS = certsTplNS + "/" + vomsServerDNsTemplate;
+        String dnListTpl = templateBranch + "/" + dnListNS + ".tpl";
+        System.out.println("Writing the list of defined VOs ("+dnListNS+")");
+
+        
+        try {
+            FileWriter template = new FileWriter(dnListTpl);
+            template.write("unique template "+dnListNS+";\n\n");
+            if ( vomsServers != null ) {
+                template.write("variable VOMS_SERVER_DN ?= list(\n");
+                TreeSet<String> serverList = new TreeSet<String>();
+                for (String server : vomsServers.keySet()) {
+                    serverList.add(server);
+                }
+                for (String server : serverList) {
+                    vomsServers.get(server).writeCertInfo(template);
+                }
+                template.write(");\n\n");
+            } else {
+                if ( debugTask ) {
+                    System.err.println("    No VOMS server defined in any VO");
+                }
+            }
+            template.close();
+        } catch (IOException e){
+            throw new BuildException("Error writing the VO list ("+dnListTpl+")\n"+e.getMessage());
         }            
     }
     
@@ -462,6 +499,9 @@ public class VOConfigTask extends Task {
                 if ( qName.equals("GroupAndRole") ) {
                     // An empty value for the FQAN means this FQAN must not be added to the list.
                     if ( fqan.getFqan().length() != 0 ) {
+                        if ( fqan.isPilotRole() ) {
+                            voConfig.setPilotRoleFQAN(fqan.getFqan());
+                        }
                         voConfig.fqanList.put(fqan.getFqan(),fqan);
                     }
                 } else {
@@ -513,6 +553,9 @@ public class VOConfigTask extends Task {
         /* List of defined FQANs */
         protected LinkedHashMap<String,VOMSFqan> fqanList = new LinkedHashMap<String,VOMSFqan>();
         
+        /* FQAN corresponding to pilot role */
+        protected String pilotRoleFQAN = null;
+        
         /* HashSet of generated account suffix: used to enforce uniqueness */
         protected HashSet<String> accountSuffixes = new HashSet<String>();
 
@@ -551,6 +594,10 @@ public class VOConfigTask extends Task {
 
         public String getName() {
             return (this.name);
+        }
+        
+        public String getPilotRoleFQAN() {
+            return (this.pilotRoleFQAN);
         }
         
         public LinkedList<VOMSEndpoint> getVomsEndpointList() {
@@ -598,6 +645,10 @@ public class VOConfigTask extends Task {
             this.name = name;
         }
 
+        public void setPilotRoleFQAN(String fqan) {
+            this.pilotRoleFQAN = fqan;
+        }
+
         public String toString() {
             String configStr = "";
             for (VOMSEndpoint endpoint : vomsEndpointList) {
@@ -638,9 +689,16 @@ public class VOConfigTask extends Task {
                 if ( debugTask && fqanList.isEmpty() ) {
                     System.err.println("    INFO: VO "+getName()+" has no specific FQAN defined");
                 }
+                // Pilot role if defined must be written first to ensure it uses the first available UID
+                // after reserved UIDs.
+                if ( getPilotRoleFQAN() != null ) {
+                    fqanList.get(getPilotRoleFQAN()).writeTemplate(template,this);
+                }
                 for (String key : fqanList.keySet()) {
                     VOMSFqan fqan = fqanList.get(key);
-                    fqan.writeTemplate(template,this);
+                    if ( !fqan.isPilotRole() ) {
+                        fqan.writeTemplate(template,this);
+                    }
                 }
                 template.write(");\n");
                 template.write("\n");
@@ -875,7 +933,7 @@ public class VOConfigTask extends Task {
             }
         }
 
-        private void updateVOMSServerTemplate(String templateBranch) throws BuildException {
+        public void updateVOMSServerTemplate(String templateBranch) throws BuildException {
             String certParamsTpl = getCertParamsTpl(templateBranch);
             System.out.println("Updating template for VOMS server "+getHost()+" ("+certParamsTpl+")");
             
@@ -899,6 +957,26 @@ public class VOConfigTask extends Task {
                 throw new BuildException("Error writing template for VOMS server "+getHost()+" ("+certParamsTpl+")\n"+e.getMessage());
             }            
         }
+        
+        /*
+         * This method writes subject and issuer of VOMS server valid certificates as
+         * a nlist element
+         */
+        public void writeCertInfo(FileWriter template) throws IOException {
+            LinkedList<VOMSServerCertificate> certs = new LinkedList<VOMSServerCertificate>();
+            if ( this.cert != null ) {
+                certs.add(cert);
+            }
+            if ( this.oldCert != null ) {
+                certs.add(oldCert);
+            }
+            String entrySuffix = "";
+            for (VOMSServerCertificate cert: certs) {
+                template.write("    '"+getHost()+entrySuffix+"', nlist('subject', '"+cert.getDN()+"',");
+                template.write("                                'issuer', '"+cert.getIssuer()+"',");
+                entrySuffix = "_2";
+            }
+        }
     }
     
     
@@ -921,8 +999,8 @@ public class VOConfigTask extends Task {
                 cert.checkValidity();
                 this.expiry = cert.getNotAfter();
                 this.serial = cert.getSerialNumber();
-                this.dn = cert.getSubjectDN().getName();
-                this.issuer = cert.getIssuerDN().getName();
+                this.dn = ldapDN(cert.getSubjectDN().getName());
+                this.issuer = ldapDN(cert.getIssuerDN().getName());
             } catch (CertificateExpiredException e) {
                 System.out.println("    VOMS server certificate expired: ignoring it");
                 throw e;
@@ -973,7 +1051,7 @@ public class VOConfigTask extends Task {
             }
             return (ldapDN);
         }
-    }
+}
     
     
     // VOMS FQAN
