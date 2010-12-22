@@ -944,10 +944,7 @@ public class VOConfigTask extends Task {
                 FileWriter template = new FileWriter(certParamsTpl);
                 template.write("structure template "+getCertParamsNS()+";\n\n");
                 template.write("'cert' ?= <<EOF;\n");
-                if ( getCert().length() > 0 ) {
-                    template.write(cert.getCertInfo());
-                    template.write(getCert());
-                }
+                template.write(getCert());
                 template.write("EOF\n\n");
                 // Zero length means no certificate
                 if ( oldCert.length() > 0 ) {
@@ -1024,13 +1021,6 @@ public class VOConfigTask extends Task {
         
         public String getCert() {
             return (this.base64);
-        }
-        
-        public String getCertInfo() {
-            String certInfo = "Subject DN: "+getDN()+"\n";
-            certInfo += "Issuer DN: "+getIssuer()+"\n";
-            certInfo += "Expiry date: "+getExpiry()+"\n\n";
-            return (certInfo);
         }
         
         public String getDN() {
