@@ -685,6 +685,7 @@ public class VOConfigTask extends Task {
                     vomsEndpoint.writeTemplate(template);
                 }
                 template.write(");\n");
+                template.write("\n");
                 template.write("'voms_mappings' ?= list(\n");
                 if ( debugTask && fqanList.isEmpty() ) {
                     System.err.println("    INFO: VO "+getName()+" has no specific FQAN defined");
@@ -761,6 +762,7 @@ public class VOConfigTask extends Task {
             template.write("    nlist('name', '"+getServer().getHost()+"',\n");
             template.write("          'host', '"+getServer().getHost()+"',\n");
             template.write("          'port', "+getPort()+",\n");
+            template.write("          'adminport', "+getServer().getPort()+",\n");
             if ( !getVomsAdminEnabled() ) {
                 template.write("          'type', list('voms-only'),\n");
             }
