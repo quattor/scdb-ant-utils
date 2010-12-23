@@ -497,6 +497,7 @@ public class VOConfigTask extends Task {
 
             } else if ( sectionGroupsRoles ) {
                 if ( qName.equals("GroupAndRole") ) {
+                    fqan.setReservedRoles(voConfig);
                     // An empty value for the FQAN means this FQAN must not be added to the list.
                     if ( fqan.getFqan().length() != 0 ) {
                         if ( fqan.isPilotRole() ) {
@@ -507,11 +508,12 @@ public class VOConfigTask extends Task {
                 } else {
                     if ( qName.equals("GROUP_ROLE") ) {
                         fqan.setFqan(data,voConfig.getName());
-                        fqan.setReservedRoles(voConfig.getName());
                     } else if ( qName.equals("DESCRIPTION") ) {
                         fqan.setDescription(data);
                     } else if ( qName.equals("IS_GROUP_USED") ) {
                         fqan.setMappingRequested(data);
+                    } else if ( qName.equals("GROUP_TYPE") ) {
+                        fqan.setReservedRoles(data);
                     }
                     // Disable collection of data
                     data = null;
@@ -1126,15 +1128,32 @@ public class VOConfigTask extends Task {
             this.mappingRequested = Boolean.parseBoolean(mappingRequested);
         }
 
-        // Set flags used to mark roles processed specifically
-        public void setReservedRoles(String voName) {
-            String relativeFqan = getFqan().replaceFirst("^/"+voName, "");
-            if ( fqanSWManager.contains(relativeFqan) ) {
+        // Set flags used to mark roles processed specifically based VO card data
+        public void setReservedRoles(String fqanType) {
+            if ( fqanType.equals("Sofware Manager") ) {
+                if ( debugTask ) {
+                    System.err.println("    FQAN "+getFqan()+" is declared as the VO software manager");
+                }
                 this.isSWManager = true;
-            } else if ( fqanProductionManager.contains(relativeFqan) ) {
-                this.isProductionManager = true;
-            } else if ( fqanPilot.contains(relativeFqan) ) {
-                this.isPilotRole = true;
+            }
+        }
+
+        // Set flags used to mark roles processed specifically based on FQAN value.
+        // This method does nothing if FQAN is already flagged (based on VO ID card for example)
+        public void setReservedRoles(VOConfig voConfig) {
+            String relativeFqan = getFqan().replaceFirst("^/"+voConfig.getName(), "");
+            if ( this.isSWManager || this.isProductionManager() || this.isPilotRole ) {
+                if ( debugTask ) {
+                    System.err.println("    FQAN "+getFqan()+" specific role already set (probably from VO ID card)");
+                }                
+            } else {
+                if ( fqanSWManager.contains(relativeFqan) ) {
+                    this.isSWManager = true;
+                } else if ( fqanProductionManager.contains(relativeFqan) ) {
+                    this.isProductionManager = true;
+                } else if ( fqanPilot.contains(relativeFqan) ) {
+                    this.isPilotRole = true;
+                }
             }
         }
         
