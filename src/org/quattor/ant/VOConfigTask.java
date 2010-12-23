@@ -1130,11 +1130,21 @@ public class VOConfigTask extends Task {
 
         // Set flags used to mark roles processed specifically based VO card data
         public void setReservedRoles(String fqanType) {
-            if ( fqanType.equals("Sofware Manager") ) {
+            if ( fqanType.equals("Software Manager") ) {
                 if ( debugTask ) {
                     System.err.println("    FQAN "+getFqan()+" is declared as the VO software manager");
                 }
                 this.isSWManager = true;
+            } else if ( fqanType.equals("Production Manager") ) {
+                if ( debugTask ) {
+                    System.err.println("    FQAN "+getFqan()+" is declared as the VO production manager");
+                }
+                this.isProductionManager = true;
+            } else if ( fqanType.equals("Pilot") ) {
+                if ( debugTask ) {
+                    System.err.println("    FQAN "+getFqan()+" is declared as the VO pilot role");
+                }
+                this.isPilotRole = true;
             }
         }
 
