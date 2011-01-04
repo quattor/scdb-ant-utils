@@ -680,11 +680,14 @@ public class VOConfigTask extends Task {
                 template.write("'account_prefix' ?= '"+getAccountPrefix()+"';\n");
                 template.write("\n");
                 template.write("'voms_servers' ?= list(\n");
+                boolean forceVomsAdmin = false;
                 if ( getVomsEndpointList().isEmpty() ) {
                     System.err.println("    WARNING: VO "+getName()+" has no VOMS endpoint defined");
+                } else if ( getVomsEndpointList().size() == 1 ) {
+                    forceVomsAdmin = true;
                 }
                 for (VOMSEndpoint vomsEndpoint : getVomsEndpointList()) {
-                    vomsEndpoint.writeTemplate(template);
+                    vomsEndpoint.writeTemplate(template,forceVomsAdmin);
                 }
                 template.write(");\n");
                 template.write("\n");
@@ -760,12 +763,12 @@ public class VOConfigTask extends Task {
             this.vomsAdminEnabled = Boolean.parseBoolean(vomsAdminEnabled);
         }
 
-        public void writeTemplate(FileWriter template) throws IOException {
+        public void writeTemplate(FileWriter template, boolean forceVomsAdmin) throws IOException {
             template.write("    nlist('name', '"+getServer().getHost()+"',\n");
             template.write("          'host', '"+getServer().getHost()+"',\n");
             template.write("          'port', "+getPort()+",\n");
             template.write("          'adminport', "+getServer().getPort()+",\n");
-            if ( !getVomsAdminEnabled() ) {
+            if ( !getVomsAdminEnabled() && !forceVomsAdmin ) {
                 template.write("          'type', list('voms-only'),\n");
             }
             template.write("         ),\n");
