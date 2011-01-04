@@ -768,8 +768,12 @@ public class VOConfigTask extends Task {
             template.write("          'host', '"+getServer().getHost()+"',\n");
             template.write("          'port', "+getPort()+",\n");
             template.write("          'adminport', "+getServer().getPort()+",\n");
-            if ( !getVomsAdminEnabled() && !forceVomsAdmin ) {
-                template.write("          'type', list('voms-only'),\n");
+            if ( !getVomsAdminEnabled() ) {
+                if ( !forceVomsAdmin ) {
+                    template.write("          'type', list('voms-only'),\n");
+                } else if ( debugTask ) {
+                    System.err.println("    WARNING: voms-admin enabled on "+getServer().getHost()+" as this is the only VOMS server (VO card inconsistency)");
+                }
             }
             template.write("         ),\n");
         }
