@@ -771,8 +771,8 @@ public class VOConfigTask extends Task {
             if ( !getVomsAdminEnabled() ) {
                 if ( !forceVomsAdmin ) {
                     template.write("          'type', list('voms-only'),\n");
-                } else if ( debugTask ) {
-                    System.err.println("    WARNING: voms-admin enabled on "+getServer().getHost()+" as this is the only VOMS server (VO card inconsistency)");
+                } else {
+                    System.out.println("    WARNING: voms-admin enabled on "+getServer().getHost()+" as this is the only VOMS server (VO card inconsistency)");
                 }
             }
             template.write("         ),\n");
