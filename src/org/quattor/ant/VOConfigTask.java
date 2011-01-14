@@ -995,8 +995,8 @@ public class VOConfigTask extends Task {
                     writeEntry = true;
                 }
                 if ( writeEntry ) {
-                    template.write(String.format("%-36s%s\n", "    '"+getHost()+entrySuffix+"', ", "nlist('subject', '"+cert.getDN()+"',"));
-                    template.write(String.format("%-42s%s\n","", "'issuer', '"+cert.getIssuer()+"',"));
+                    template.write(String.format("%-36s%s\n", "    '"+getHost()+entrySuffix+"', ", "nlist('subject', '"+subject+"',"));
+                    template.write(String.format("%-42s%s\n","", "'issuer', '"+issuer+"',"));
                     template.write(String.format("%-41s%s\n","", "),"));
                     entrySuffix = "_2";                    
                 }
@@ -1081,6 +1081,7 @@ public class VOConfigTask extends Task {
     private class VOMSFqan {
         protected String fqan = null;
         protected String description = null;
+        protected String legacySuffix = null;
         protected String suffix = null;
         protected boolean mappingRequested = false;
         protected boolean isSWManager = false;
@@ -1100,17 +1101,6 @@ public class VOConfigTask extends Task {
         
         public boolean getMappingRequested() {
             return (this.mappingRequested);
-        }
-        
-        public String getAccountSuffix (VOConfig voConfig, boolean legacySuffix) {
-            if ( this.suffix == null ) {
-                if ( legacySuffix ) {
-                    this.suffix = generateLegacyAccountSuffix(voConfig);                    
-                } else {
-                    this.suffix = generateAccountSuffix(voConfig);                    
-                }
-            }
-            return (this.suffix);
         }
         
         public boolean isSWManager() {
@@ -1208,51 +1198,53 @@ public class VOConfigTask extends Task {
          * Note that changing from old to new suffix is disruptive for the configuration as the accounts must be regenerated.
          */
 
-        private String generateAccountSuffix(VOConfig voConfig) throws BuildException {
-            String suffix = checkSpecificSuffix();
-
-            // New algorithm is based on relative FQAN to avoid characters similar in every FQAN.
-            // This generates a 3-character suffix corresponding to the base26-like encoding of the FQAN hashcode. 
-            if ( suffix == null ) {
-                String relativeFqan = getFqan().replaceFirst("^/"+voConfig.getName(), "");
-                suffix = VOConfigTask.toBase26(relativeFqan.hashCode());
-                // In (unlikely) case, the suffix is not unique, add the VO name at the end of the relative FQAN
-                if ( ! voConfig.accountSuffixUnique(suffix) ) {
-                    if ( debugTask ) {
-                        System.err.println("    Suffix '"+suffix+"' not unique for FQAN '"+relativeFqan+"':  retrying adding VO name");
+        private String getAccountSuffix(VOConfig voConfig) throws BuildException {
+            if ( this.suffix == null ) {
+                // New algorithm is based on relative FQAN to avoid characters similar in every FQAN.
+                // This generates a 3-character suffix corresponding to the base26-like encoding of the FQAN hashcode. 
+                this.suffix = checkSpecificSuffix();
+                if ( this.suffix == null ) {
+                    String relativeFqan = getFqan().replaceFirst("^/"+voConfig.getName(), "");
+                    this.suffix = VOConfigTask.toBase26(relativeFqan.hashCode());
+                    // In (unlikely) case, the suffix is not unique, add the VO name at the end of the relative FQAN
+                    if ( ! voConfig.accountSuffixUnique(this.suffix) ) {
+                        if ( debugTask ) {
+                            System.err.println("    Suffix '"+this.suffix+"' not unique for FQAN '"+relativeFqan+"':  retrying adding VO name");
+                        }
+                        this.suffix = VOConfigTask.toBase26((relativeFqan+"/"+voConfig.getName()).hashCode());
                     }
-                    suffix = VOConfigTask.toBase26((relativeFqan+"/"+voConfig.getName()).hashCode());
+                    if ( ! voConfig.accountSuffixUnique(this.suffix) ) {
+                        throw new BuildException("VO "+voConfig.getName()+" FQAN '"+getFqan()+"': failed to generate a unique account suffix");
+                    }
+                    voConfig.addAccountSuffix(this.suffix);
                 }
-                if ( ! voConfig.accountSuffixUnique(suffix) ) {
-                    throw new BuildException("VO "+voConfig.getName()+" FQAN '"+getFqan()+"': failed to generate a unique account suffix");
-                }
-                voConfig.addAccountSuffix(suffix);
             }
-
-            return (suffix);
+            
+            return this.suffix;
         }
         
-        private String generateLegacyAccountSuffix(VOConfig voConfig) {
-            String suffix = checkSpecificSuffix();
-
-            // Generated suffix is based on base26-like conversion of FQAN length and VO ID.
-            // Despite this is a very bad choice for uniqueness, it is impossible to change
-            // without breaking backward compatibility of generated accounts.
-            // New algorithm is implemented as a distinct method.
-            if ( suffix == null ) {
-                boolean suffixUnique = false;
-                int j = 0;
-                while ( !suffixUnique ) {
-                    if ( debugTask && (j > 0) ) {
-                        System.err.println("    Suffix '"+suffix+"' not unique for FQAN "+getFqan()+" (attempt "+j+")");
+        private String getLegacyAccountSuffix(VOConfig voConfig) {
+            if ( this.legacySuffix == null ) {
+                // Generated suffix is based on base26-like conversion of FQAN length and VO ID.
+                // Despite this is a very bad choice for uniqueness, it is impossible to change
+                // without breaking backward compatibility of generated accounts.
+                // New algorithm is implemented as a distinct method.
+                if ( this.legacySuffix == null ) {
+                    boolean suffixUnique = false;
+                    int j = 0;
+                    while ( !suffixUnique ) {
+                        if ( debugTask && (j > 0) ) {
+                            System.err.println("    Suffix '"+this.legacySuffix+"' not unique for FQAN "+getFqan()+" (attempt "+j+")");
+                        }
+                        this.legacySuffix = VOConfigTask.toBase26(getFqan().length()+(j*100)) + VOConfigTask.toBase26(voConfig.getId());
+                        j++;
+                        suffixUnique = voConfig.accountSuffixUnique(this.legacySuffix);
                     }
-                    suffix = VOConfigTask.toBase26(getFqan().length()+(j*100)) + VOConfigTask.toBase26(voConfig.getId());
-                    j++;
-                    suffixUnique = voConfig.accountSuffixUnique(suffix);
-                }
-                voConfig.addAccountSuffix(suffix);
+                    voConfig.addAccountSuffix(suffix);
+                }                
             }
-            return (suffix);
+            
+            return (this.legacySuffix);
         }
         
         public void writeTemplate(FileWriter template, VOConfig voConfig) throws IOException {
@@ -1275,8 +1267,8 @@ public class VOConfigTask extends Task {
             template.write(prefix+"          'fqan', '"+getFqan()+"',\n");
             // Both old and new suffix are present in the template as different attributes.
             // The one to use can be choosen at compilation time.
-            template.write(prefix+"          'suffix', '"+getAccountSuffix(voConfig,true)+"',\n");
-            template.write(prefix+"          'suffix2', '"+getAccountSuffix(voConfig,false)+"',\n");
+            template.write(prefix+"          'suffix', '"+getLegacyAccountSuffix(voConfig)+"',\n");
+            template.write(prefix+"          'suffix2', '"+getAccountSuffix(voConfig)+"',\n");
             template.write(prefix+"         ),\n");
         }
     }
