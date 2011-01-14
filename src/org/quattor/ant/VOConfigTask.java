@@ -1229,6 +1229,7 @@ public class VOConfigTask extends Task {
                 // Despite this is a very bad choice for uniqueness, it is impossible to change
                 // without breaking backward compatibility of generated accounts.
                 // New algorithm is implemented as a distinct method.
+                this.legacySuffix = checkSpecificSuffix();
                 if ( this.legacySuffix == null ) {
                     boolean suffixUnique = false;
                     int j = 0;
