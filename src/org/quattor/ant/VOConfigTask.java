@@ -986,11 +986,17 @@ public class VOConfigTask extends Task {
             String issuer = null;
             for (VOMSServerCertificate cert: certs) {
                 boolean writeEntry = false;
-                if ( (subject == null) || (cert.getDN() != subject) ) {
+                if ( (subject == null) || !subject.equals(cert.getDN()) ) {
+if ( (entrySuffix.length() > 0) ) {
+  System.out.println("New cert subject found: old="+subject+", new="+cert.getDN());
+}
                     subject = cert.getDN();
                     writeEntry = true;
                 }
-                if ( (issuer == null) || (cert.getIssuer() != issuer) ) {
+                if ( (issuer == null) || !issuer.equals(cert.getIssuer()) ) {
+if ( (entrySuffix.length() > 0) ) {
+  System.out.println("New cert issuer found: old="+issuer+", new="+cert.getIssuer());
+}
                     issuer = cert.getIssuer();
                     writeEntry = true;
                 }
