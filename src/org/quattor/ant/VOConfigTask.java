@@ -982,11 +982,24 @@ public class VOConfigTask extends Task {
                 certs.add(oldCert);
             }
             String entrySuffix = "";
+            String subject = null;
+            String issuer = null;
             for (VOMSServerCertificate cert: certs) {
-                template.write(String.format("%-36s%s\n", "    '"+getHost()+entrySuffix+"', ", "nlist('subject', '"+cert.getDN()+"',"));
-                template.write(String.format("%-42s%s\n","", "'issuer', '"+cert.getIssuer()+"',"));
-                template.write(String.format("%-41s%s\n","", "),"));
-                entrySuffix = "_2";
+                boolean writeEntry = false;
+                if ( (subject == null) || (cert.getDN() != subject) ) {
+                    subject = cert.getDN();
+                    writeEntry = true;
+                }
+                if ( (issuer == null) || (cert.getIssuer() != issuer) ) {
+                    issuer = cert.getIssuer();
+                    writeEntry = true;
+                }
+                if ( writeEntry ) {
+                    template.write(String.format("%-36s%s\n", "    '"+getHost()+entrySuffix+"', ", "nlist('subject', '"+cert.getDN()+"',"));
+                    template.write(String.format("%-42s%s\n","", "'issuer', '"+cert.getIssuer()+"',"));
+                    template.write(String.format("%-41s%s\n","", "),"));
+                    entrySuffix = "_2";                    
+                }
             }
         }
     }
@@ -1089,9 +1102,9 @@ public class VOConfigTask extends Task {
             return (this.mappingRequested);
         }
         
-        public String getAccountSuffix (VOConfig voConfig) {
+        public String getAccountSuffix (VOConfig voConfig, boolean legacySuffix) {
             if ( this.suffix == null ) {
-                if ( legacySuffixAlgorithm ) {
+                if ( legacySuffix ) {
                     this.suffix = generateLegacyAccountSuffix(voConfig);                    
                 } else {
                     this.suffix = generateAccountSuffix(voConfig);                    
@@ -1187,6 +1200,14 @@ public class VOConfigTask extends Task {
             return (suffix);
         }
         
+        /* Remarks on algorithms used to generate account suffix.
+         * The original one (implemented in generateLegacyAccountSuffix) was very bad at ensuring suffix uniqueness, 
+         * requiring several retries to get a unique suffix and thus making the actual suffix dependent on the FQAN 
+         * order which historicall was alphabetical.
+         * With the new algorithm (implemented in generateAccountSuffix), there is a very small chance of suffix conflict.
+         * Note that changing from old to new suffix is disruptive for the configuration as the accounts must be regenerated.
+         */
+
         private String generateAccountSuffix(VOConfig voConfig) throws BuildException {
             String suffix = checkSpecificSuffix();
 
@@ -1252,7 +1273,10 @@ public class VOConfigTask extends Task {
             }
             template.write(prefix+"    nlist('description', '"+description+"',\n");
             template.write(prefix+"          'fqan', '"+getFqan()+"',\n");
-            template.write(prefix+"          'suffix', '"+getAccountSuffix(voConfig)+"',\n");
+            // Both old and new suffix are present in the template as different attributes.
+            // The one to use can be choosen at compilation time.
+            template.write(prefix+"          'suffix', '"+getAccountSuffix(voConfig,true)+"',\n");
+            template.write(prefix+"          'suffix2', '"+getAccountSuffix(voConfig,false)+"',\n");
             template.write(prefix+"         ),\n");
         }
     }
