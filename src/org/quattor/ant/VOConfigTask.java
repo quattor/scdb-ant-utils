@@ -1241,7 +1241,7 @@ public class VOConfigTask extends Task {
                         j++;
                         suffixUnique = voConfig.accountSuffixUnique(this.legacySuffix);
                     }
-                    voConfig.addAccountSuffix(suffix);
+                    voConfig.addAccountSuffix(this.legacySuffix);
                 }                
             }
             
