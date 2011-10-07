@@ -380,7 +380,7 @@ public class VOConfigTask extends Task {
 
         @Override
         public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-            if ( qName.equals("VO") ) {
+            if ( qName.equals("IDCard") ) {
                 String voName = attributes.getValue("Name");
                 if ( voName == null ) {
                     throw new SAXException("Invalid configuration: VO has no name");
@@ -388,7 +388,7 @@ public class VOConfigTask extends Task {
                 voName = voName.toLowerCase();
                 System.out.println("Retrieving configuration for VO "+voName);
                 voConfig = new VOConfig();
-                String voId = attributes.getValue("ID");
+                String voId = attributes.getValue("CIC_ID");
                 if ( voId == null ) {
                     throw new SAXException("Invalid configuration: VO has no Id");
                 }
@@ -398,21 +398,26 @@ public class VOConfigTask extends Task {
             } else if ( qName.equals("VOMSServers") ) {
                 sectionVOMSServers = true;
                 
-            } else if ( qName.equals("GroupsAndRoles") ) {
+            } else if ( qName.equals("FQANs") ) {
                 sectionGroupsRoles = true;
                 
             } else if ( sectionVOMSServers ) {
-                if ( qName.equals("VOMSServer") ) {
+                if ( qName.equals("VOMS_Server") ) {
                     vomsServer = new VOMSServer();        
                     vomsEndpoint = new VOMSEndpoint();
+                    vomsServer.setPort(attributes.getValue("HttpsPort"));
+                    vomsEndpoint.setPort(attributes.getValue("VomsesPort"));
+                    vomsEndpoint.setVomsAdminEnabled(attributes.getValue("IsVomsAdminServer"));
                 } else {
                     // This will enable collection/concatenation of data in characters()
                     data = "";
                 }
                 
             } else if ( sectionGroupsRoles ) {
-                if ( qName.equals("GroupAndRole") ) {
+                if ( qName.equals("FQAN") ) {
                     fqan = new VOMSFqan();
+                    fqan.setMappingRequested(attributes.getValue("IsGroupUsed"));
+                    fqan.setReservedRoles(attributes.getValue("GroupType"));
                 } else {
                     // This will enable collection/concatenation of data in characters()
                     data = "";
@@ -427,7 +432,7 @@ public class VOConfigTask extends Task {
 
         @Override
         public void endElement(String uri, String localName, String qName) throws SAXException {
-            if ( qName.equals("VO") ) {
+            if ( qName.equals("IDCard") ) {
                 if ( voConfig.getName() != null ) {
                     try {
                         voTable.put(voConfig.getName(), voConfig);
@@ -444,14 +449,14 @@ public class VOConfigTask extends Task {
             } else if ( qName.equals("VOMSServers") ) {
                 sectionVOMSServers = false;
 
-            } else if ( qName.equals("GroupsAndRoles") ) {
+            } else if ( qName.equals("FQANs") ) {
                 sectionGroupsRoles = false;
                 
             } else if ( sectionVOMSServers ) {
                 // Check the VOMS server has not been defined yet by another VO or that attributes are consistent
                 // A unique VOMS server is identified by host+port combination
                 String VOMSServerKey = vomsServer.getHost() + ":" + Integer.toString(vomsServer.getPort());
-                if ( qName.equals("VOMSServer") ) {
+                if ( qName.equals("VOMS_Server") ) {
                     if ( vomsServers.containsKey(VOMSServerKey) ) {
                         if ( debugTask ) {
                             System.err.println("    VOMS server '"+VOMSServerKey+"' already defined: checking attribute consistency.");
@@ -478,25 +483,19 @@ public class VOConfigTask extends Task {
                     vomsEndpoint.setServer(vomsServers.get(VOMSServerKey));
                     voConfig.addVomsEndpoint(vomsEndpoint);                    
                 } else {
-                    if ( qName.equals("HOSTNAME") ) {
+                    if ( qName.equals("hostname") ) {
                         vomsServer.setHost(data);
-                    } else if ( qName.equals("HTTPS_PORT") ) {
-                        vomsServer.setPort(data);
-                    } else if ( qName.equals("VOMS_PORT") ) {
-                        vomsEndpoint.setPort(data);
                     } else if ( qName.equals("ServerEndpoint") ) {
                         vomsEndpoint.setEndpoint(data);
-                    } else if ( qName.equals("CertificatePublicKey") ) {
+                    } else if ( qName.equals("X509PublicKey") ) {
                         vomsServer.setCert(data);
-                    } else if ( qName.equals("IS_VOMSADMIN_SERVER") ) {
-                        vomsEndpoint.setVomsAdminEnabled(data);
                     }
                     // Disable collection of data
                     data = null;
                 }
 
             } else if ( sectionGroupsRoles ) {
-                if ( qName.equals("GroupAndRole") ) {
+                if ( qName.equals("FQAN") ) {
                     fqan.setReservedRoles(voConfig);
                     // An empty value for the FQAN means this FQAN must not be added to the list.
                     if ( fqan.getFqan().length() != 0 ) {
@@ -506,14 +505,10 @@ public class VOConfigTask extends Task {
                         voConfig.fqanList.put(fqan.getFqan(),fqan);
                     }
                 } else {
-                    if ( qName.equals("GROUP_ROLE") ) {
+                    if ( qName.equals("FqanExpr") ) {
                         fqan.setFqan(data,voConfig.getName());
-                    } else if ( qName.equals("DESCRIPTION") ) {
-                        fqan.setDescription(data);
-                    } else if ( qName.equals("IS_GROUP_USED") ) {
-                        fqan.setMappingRequested(data);
-                    } else if ( qName.equals("GROUP_TYPE") ) {
-                        fqan.setReservedRoles(data);
+                    } else if ( qName.equals("Description") ) {
+                        fqan.setDescription(data.trim());
                     }
                     // Disable collection of data
                     data = null;
@@ -946,8 +941,9 @@ public class VOConfigTask extends Task {
 
         public void updateVOMSServerTemplate(String templateBranch) throws BuildException {
             String certParamsTpl = getCertParamsTpl(templateBranch);
+						if ( getHost() != "" ) {
             System.out.println("Updating template for VOMS server "+getHost()+" ("+certParamsTpl+")");
-            
+
             // Existing certificate must be retrieved before creating new template
             String oldCert = getOldCert(templateBranch);
 
@@ -966,7 +962,8 @@ public class VOConfigTask extends Task {
                 template.close();
             } catch (IOException e){
                 throw new BuildException("Error writing template for VOMS server "+getHost()+" ("+certParamsTpl+")\n"+e.getMessage());
-            }            
+            }							
+         }
         }
         
         /*
@@ -1023,7 +1020,6 @@ if ( (entrySuffix.length() > 0) ) {
         
         // Constructor: retrieve main informations from certificate
         public VOMSServerCertificate (String base64) throws CertificateException {
-            this.base64 = base64;
             try {
                 CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
                 X509Certificate cert = (X509Certificate) certFactory.generateCertificate(new ByteArrayInputStream(base64.getBytes()));
@@ -1032,6 +1028,7 @@ if ( (entrySuffix.length() > 0) ) {
                 this.serial = cert.getSerialNumber();
                 this.dn = ldapDN(cert.getSubjectDN().getName());
                 this.issuer = ldapDN(cert.getIssuerDN().getName());
+                this.base64 = "-----BEGIN CERTIFICATE-----\n" + (resplitLines(new sun.misc.BASE64Encoder().encode(cert.getEncoded()),64)) + "-----END CERTIFICATE-----\n";
             } catch (CertificateExpiredException e) {
                 System.out.println("    VOMS server certificate expired: ignoring it");
                 throw e;
@@ -1079,7 +1076,28 @@ if ( (entrySuffix.length() > 0) ) {
             }
             return (ldapDN);
         }
-}
+			
+        private String resplitLines(String string, int length) {
+            StringBuffer r = new StringBuffer();
+            char a = 10; // char \n
+            String lines = "";
+
+            // Merge the string
+            for (int i = 0; i < string.length(); i ++) {
+                if ( string.charAt(i) !=  10) {
+                    r.append(string.charAt(i));
+                }
+            };
+            string =  r.toString();
+
+            // Split it
+            for (int i = 0; i < string.length(); i += length) {
+                lines += string.substring(i, Math.min(string.length(), i + length));
+                lines += "\n";
+            }
+            return lines;
+        }
+    }
     
     
     // VOMS FQAN
