@@ -37,7 +37,7 @@ public class NotifyClientTask extends Task {
     private HashMap<File, Long> filetimes = new HashMap<File, Long>(100);
 
     static private final Pattern PROFILE_REGEX = Pattern
-            .compile("^(?!profile-info)(\\.*?)(?\\.\\w+)(?\\.gz|\\.GZ|\\.bz2|\\.BZ2)?$");
+            .compile("^(?!profile-info)(\\.+?)(?:\\.\\w+)(?:\\.gz|\\.GZ|\\.bz2|\\.BZ2)?$");
 
     @Override
     public void execute() throws BuildException {
