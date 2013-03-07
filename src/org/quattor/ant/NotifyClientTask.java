@@ -37,7 +37,7 @@ public class NotifyClientTask extends Task {
     private HashMap<File, Long> filetimes = new HashMap<File, Long>(100);
 
     static private final Pattern PROFILE_REGEX = Pattern
-            .compile("^(?!profile-info)(\\.+?)(?:\\.\\w+)(?:\\.gz|\\.GZ|\\.bz2|\\.BZ2)?$");
+            .compile("^(?!profiles-info)(.+?)(?:\\.\\w+)(?:\\.gz|\\.GZ|\\.bz2|\\.BZ2)?$");
 
     @Override
     public void execute() throws BuildException {
@@ -82,7 +82,7 @@ public class NotifyClientTask extends Task {
     /*
      * Set the message to send to the client. This should either be the string
      * 'ccm' or 'cdb'.
-     * 
+     *
      * @param msg String of either 'ccm' or 'cdb'
      */
     public void setMessage(String msg) {
@@ -95,7 +95,7 @@ public class NotifyClientTask extends Task {
 
     /*
      * Set the port number to use to notify client. The default is 7777.
-     * 
+     *
      * @param int port number to use to notify client
      */
     public void setPort(int port) {
@@ -104,7 +104,7 @@ public class NotifyClientTask extends Task {
 
     /*
      * Set the default domain name to use for unqualified host names.
-     * 
+     *
      * @param String domain name (without leading dot)
      */
     public void setDomain(String domain) {
@@ -115,7 +115,7 @@ public class NotifyClientTask extends Task {
      * Support nested fileset elements. This is called by ant only after all of
      * the children of the fileset have been processed. Collect all of the
      * selected files from the fileset.
-     * 
+     *
      * @param fileset a configured FileSet
      */
     public void addConfiguredFileSet(FileSet fileset) {
@@ -126,7 +126,7 @@ public class NotifyClientTask extends Task {
     /*
      * Collect all of the files listed within enclosed fileSet tags, get the
      * modification times, and add each pair to the given filetimes hash.
-     * 
+     *
      * @param fs FileSet from which to get the file names
      */
     private void addFiles(FileSet fs) {
@@ -154,9 +154,9 @@ public class NotifyClientTask extends Task {
     /*
      * Read the given XML machine profile and extract the full hostname from the
      * given host and domain.
-     * 
+     *
      * @param file a File referencing the machine profile
-     * 
+     *
      * @return a String containing the full hostname or null if an error occurs
      */
     private String getFullHostname(File file) {
@@ -180,7 +180,7 @@ public class NotifyClientTask extends Task {
 
     /*
      * Construct a datagram packet from the given information.
-     * 
+     *
      * @param String full hostname of client @param String message (either 'ccm'
      * or 'cdb') @param Long modification time in seconds since the epoch
      */
@@ -211,7 +211,7 @@ public class NotifyClientTask extends Task {
 
     /*
      * Send the list of packets to notify clients.
-     * 
+     *
      * @param LinkedList containing DatagramPackets to send
      */
     private void notify(LinkedList<DatagramPacket> packets) {
