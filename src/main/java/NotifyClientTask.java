@@ -1,3 +1,9 @@
+/*
+${license-info}
+${developer-info}
+${author-info}
+*/
+
 package org.quattor.ant;
 
 import java.io.File;
@@ -16,6 +22,11 @@ import org.apache.tools.ant.Task;
 import org.apache.tools.ant.types.FileSet;
 
 public class NotifyClientTask extends Task {
+
+    /*
+     *  scdb-ant-utils version
+     */
+    private final String version = "${version}";
 
     /*
      * The message to set to the client. Either 'ccm' or 'cdb'. The default is

@@ -1,3 +1,9 @@
+/*
+${license-info}
+${developer-info}
+${author-info}
+*/
+
 package org.quattor.ant;
 
 import java.io.File;
@@ -40,6 +46,11 @@ import org.tmatesoft.svn.core.wc.SVNWCUtil;
  * 
  */
 public class SvnTagTask extends Task {
+
+        /*
+         *  scdb-ant-utils version
+         */
+        private final String version = "${version}";
 
 	// The repository factory must be setup to know about http/https
 	// protocols (DAV) and the svn protocol (SVN).

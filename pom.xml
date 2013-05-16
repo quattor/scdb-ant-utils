@@ -11,7 +11,15 @@ http://maven.apache.org/maven-v4_0_0.xsd">
   <description>Ant tasks for Quattor SCDB</description>
   <packaging>jar</packaging>
 
+  <parent>
+    <groupId>org.quattor.maven</groupId>
+    <artifactId>maven</artifactId>
+    <version>1.31</version>
+  </parent>
+
   <build>
+
+    <sourceDirectory>target/java</sourceDirectory>
 
     <resources>
       <resource>
@@ -21,7 +29,7 @@ http://maven.apache.org/maven-v4_0_0.xsd">
     </resources>
 
     <plugins>
-
+ 
       <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
@@ -59,6 +67,32 @@ http://maven.apache.org/maven-v4_0_0.xsd">
                 </resource>
               </resources>
             </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.4</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>org.quattor.ant.ShowVersion</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.quattor.maven</groupId>
+        <artifactId>quattor-build-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>set-build-properties</id>
+            <goals>
+              <goal>set-build-properties</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>
