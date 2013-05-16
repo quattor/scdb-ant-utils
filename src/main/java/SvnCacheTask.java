@@ -38,7 +38,7 @@ public class SvnCacheTask extends Task {
         /*
          *  scdb-ant-utils version
          */
-        private String version = "${version}";
+        private final String version = "${version}";
 
 	// The repository factory must be setup to know about http/https
 	// protocols (DAV) and the svn protocol (SVN).

@@ -26,7 +26,7 @@ public class NotifyClientTask extends Task {
     /*
      *  scdb-ant-utils version
      */
-    private String version = "${version}";
+    private final String version = "${version}";
 
     /*
      * The message to set to the client. Either 'ccm' or 'cdb'. The default is

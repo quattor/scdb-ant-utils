@@ -54,7 +54,7 @@ public class VOConfigTask extends Task {
     /*
      *  scdb-ant-utils version
      */
-    private String version = "${version}";
+    private final String version = "${version}";
 
     /* List of directories containing a VO configuration description (templates) */
     protected DirSet configDirs = null;

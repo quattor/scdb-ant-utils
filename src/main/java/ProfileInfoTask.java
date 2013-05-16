@@ -20,7 +20,7 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
         /*
          *  scdb-ant-utils version
          */
-        private String version = "${version}";
+        private final String version = "${version}";
 
 	/* The output directory for compiled profiles. */
 	private String profilesDirName = null;
