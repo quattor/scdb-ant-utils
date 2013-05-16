@@ -1,3 +1,9 @@
+/*
+${license-info}
+${developer-info}
+${author-info}
+*/
+
 package org.quattor.ant;
 
 import java.io.File;
@@ -10,6 +16,11 @@ import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Task;
 
 public class ProfileInfoTask extends Task implements java.io.FileFilter {
+
+        /*
+         *  scdb-ant-utils version
+         */
+        private String version = "${version}";
 
 	/* The output directory for compiled profiles. */
 	private String profilesDirName = null;

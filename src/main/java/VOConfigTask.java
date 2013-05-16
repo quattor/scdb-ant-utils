@@ -1,3 +1,9 @@
+/*
+${license-info}
+${developer-info}
+${author-info}
+*/
+
 package org.quattor.ant;
 
 import java.io.*;
@@ -44,6 +50,11 @@ import javax.xml.parsers.SAXParserFactory;
 public class VOConfigTask extends Task {
 
     // Variables
+
+    /*
+     *  scdb-ant-utils version
+     */
+    private String version = "${version}";
 
     /* List of directories containing a VO configuration description (templates) */
     protected DirSet configDirs = null;

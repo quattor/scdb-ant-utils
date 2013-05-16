@@ -1,3 +1,9 @@
+/*
+${license-info}
+${developer-info}
+${author-info}
+*/
+
 package org.quattor.ant;
 
 import java.io.File;
@@ -24,6 +30,11 @@ import org.apache.tools.ant.Task;
 import org.apache.tools.ant.types.FileSet;
 
 public class RepositoryTask extends Task {
+
+        /*
+         *  scdb-ant-utils version
+         */
+        private String version = "${version}";
 
 	/* The pattern for matching the name information. */
 	private static Pattern namePattern = Pattern
