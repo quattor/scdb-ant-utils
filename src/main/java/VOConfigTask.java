@@ -647,9 +647,16 @@ public class VOConfigTask extends Task {
          */
         public void setAccountPrefix() throws BuildException {
             if ( (getName() == null) || (getId() == 0) ) {
-                throw new BuildException("VO name or ID undefined: cannot generate account prefix");                
+                throw new BuildException("VO name or ID undefined: cannot generate account prefix");
             }
-            this.accountPrefix = getName().replaceFirst("^vo\\.", "").replaceAll("[^A-Za-z0-9]", "").substring(0,3);
+            String voName = getName().replaceFirst("^vo\\.", "").replaceAll("[^A-Za-z0-9]", "");
+            if ( voName.length() >= 3 ) {
+                this.accountPrefix = voName.substring(0,3);
+            } else if ( voName.length() == 2 ) {
+                this.accountPrefix = voName.substring(0,2);
+            } else {
+                throw new BuildException("The VO name is too short: cannot generate account prefix");
+            }
             this.accountPrefix += VOConfigTask.toBase26(getId());
             // Check uniqueness and keep track of potential conflicts
             if ( accountPrefixes.containsKey(this.accountPrefix) ) {
