@@ -90,7 +90,7 @@ public class RepositoryTask extends Task {
 	@Override
 	public void execute() throws BuildException {
 		// need to get path as parameter
-		String listFileName = listName+".tpl";
+		String listFileName = listName+".pan";
 		LinkedList<Repository> repositoryList = new LinkedList<Repository>();
 		
 		// Loop over all of the given files. Write those that are repository
