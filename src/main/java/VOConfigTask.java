@@ -317,7 +317,7 @@ public class VOConfigTask extends Task {
      */
     protected void writeVOList(String templateBranch) {
         String voListNS = paramsTplNS + "/" + allVosTemplate;
-        String voListTpl = templateBranch + "/" + voListNS + ".tpl";
+        String voListTpl = templateBranch + "/" + voListNS + ".pan";
         System.out.println("Writing the list of defined VOs ("+voListNS+")");
 
         
@@ -341,7 +341,7 @@ public class VOConfigTask extends Task {
      */
     protected void writeDNList(String templateBranch) {
         String dnListNS = certsTplNS + "/" + vomsServerDNsTemplate;
-        String dnListTpl = templateBranch + "/" + dnListNS + ".tpl";
+        String dnListTpl = templateBranch + "/" + dnListNS + ".pan";
         System.out.println("Writing the list of defined VOs ("+dnListNS+")");
 
         
@@ -707,7 +707,7 @@ public class VOConfigTask extends Task {
             }
             
             String voParamsNS = paramsTplNS + "/" + getName();
-            String voParamsTpl = templateBranch + "/" + voParamsNS + ".tpl";
+            String voParamsTpl = templateBranch + "/" + voParamsNS + ".pan";
             System.out.println("Writing template for VO "+getName()+" ("+voParamsTpl+")");
 
             try {
@@ -852,7 +852,7 @@ public class VOConfigTask extends Task {
         }
 
         protected String getCertParamsTpl(String templateBranch) {
-            return (templateBranch + "/" + getCertParamsNS() + ".tpl");
+            return (templateBranch + "/" + getCertParamsNS() + ".pan");
         }
 
         public String getHost() {
