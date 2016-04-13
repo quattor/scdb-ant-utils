@@ -71,6 +71,9 @@ public class VOConfigTask extends Task {
     /* URI for VO ID card source */
     protected String voIdCardsUri = null;
 
+    /* Name of the attribute containing the VO ID */
+    protected String voIdAttributeName = "CIC_ID";
+
     /* Name of the template containing the list of all defined VOs */
     protected String allVosTemplate = "allvos";
 
@@ -143,6 +146,21 @@ public class VOConfigTask extends Task {
      */
     public void setvoIdCardsUri(String voIdCardsUri) {
         this.voIdCardsUri = voIdCardsUri;
+    }
+
+    /**
+     * Set the name of the attribute containing the VO ID
+     *
+     * @param voIdAttributeName
+     *            String containing the name of the attribute defining
+     *            the VO ID
+     *
+     */
+    public void setvoIdAttributeName(String voIdAttributeName) {
+        this.voIdAttributeName = voIdAttributeName;
+        if ( this.voIdAttributeName.equals("CIC_ID") ) {
+            System.err.println("    WARNING: The use of the CIC_ID attribute is deprecated. The attribute named Serial should be used instead.");
+        }
     }
 
     /**
@@ -261,7 +279,9 @@ public class VOConfigTask extends Task {
             URL voIdCardsUrl = new URL(voIdCardsUri);
             InputStream urlstream = voIdCardsUrl.openStream();
             SAXParser parser = factory.newSAXParser();
-            parser.parse(urlstream, new VOCardHandler());        
+            VOCardHandler vocardhandler = new VOCardHandler();
+            vocardhandler.setVoIdAttributeName(this.voIdAttributeName);
+            parser.parse(urlstream, vocardhandler);
         } catch (MalformedURLException e) { 
             System.out.println("Invalid format used for specifying the source of VO ID cards (voIdCardsUri): "+voIdCardsUri);
             throw new BuildException("BUILD FAILED : " + e.getMessage());
@@ -384,6 +404,7 @@ public class VOConfigTask extends Task {
         protected VOMSEndpoint vomsEndpoint = null;
         protected VOMSFqan fqan = null;
         protected String data = null;
+        protected String voIdAttributeName = null;
 
         /**
          * Start of new element
@@ -399,13 +420,19 @@ public class VOConfigTask extends Task {
                 voName = voName.toLowerCase();
                 System.out.println("Retrieving configuration for VO "+voName);
                 voConfig = new VOConfig();
-                String voId = attributes.getValue("CIC_ID");
+                if ( voIdAttributeName == null) {
+                    throw new SAXException("Invalid configuration: the voIdAttributeName is not set");
+                }
+                String voId = attributes.getValue(voIdAttributeName);
                 if ( voId == null ) {
                     throw new SAXException("Invalid configuration: VO has no Id");
                 }
                 voConfig.setName(voName);
-                voConfig.setId(Integer.parseInt(voId));
-                
+                if ( this.voIdAttributeName.equals("CIC_ID") ) {
+                    voConfig.setId(Integer.parseInt(voId));
+                } else {
+                    voConfig.setId(Integer.parseInt(voId)*10+40);
+                }
             } else if ( qName.equals("VOMSServers") ) {
                 sectionVOMSServers = true;
                 
@@ -565,8 +592,20 @@ public class VOConfigTask extends Task {
             }
         }
 
+       /**
+        * Set the name of the attribute containing the VO ID
+        *
+        * @param voIdAttributeName
+        *            String containing the name of the attribute defining
+        *            the VO ID
+        *
+        */
+
+        public void setVoIdAttributeName(String voIdAttributeName) {
+            this.voIdAttributeName = voIdAttributeName;
+        }
     }
-        
+
 
     // Class representing a VO
 
