@@ -524,7 +524,7 @@ public class VOConfigTask extends Task {
                         String hostname = data.trim();
                         vomsServer.setHost(data.trim());
                     } else if ( qName.equals("X509PublicKey") ) {
-                        vomsServer.setCert(data);
+                        vomsServer.setCert(data.trim());
                     }
                     // Disable collection of data
                     data = null;
@@ -988,12 +988,12 @@ public class VOConfigTask extends Task {
                 template.write("structure template "+getCertParamsNS()+";\n\n");
                 template.write("'cert' ?= <<EOF;\n");
                 template.write(getCert());
-                template.write("EOF\n\n");
+                template.write("\nEOF\n\n");
                 // Zero length means no certificate
                 if ( oldCert.length() > 0 ) {
                     template.write("'oldcert' ?= <<EOF;\n");
                     template.write(oldCert);
-                    template.write("EOF\n\n");
+                    template.write("\nEOF\n\n");
                 }
                 template.close();
             } catch (IOException e){
