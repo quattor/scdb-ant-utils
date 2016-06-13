@@ -107,6 +107,16 @@ http://maven.apache.org/maven-v4_0_0.xsd">
 
   </dependencies>
 
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>findbugs-maven-plugin</artifactId>
+        <version>3.0.1</version>
+      </plugin>
+    </plugins>
+  </reporting>
+
   <licenses>
     <license>
       <name>Apache 2.0</name>
