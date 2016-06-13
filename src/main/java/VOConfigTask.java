@@ -6,7 +6,14 @@ ${author-info}
 
 package org.quattor.ant;
 
-import java.io.*;
+import java.io.File;
+import java.io.InputStream;
+import java.io.ByteArrayInputStream;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.IOException;
+import java.io.FileNotFoundException;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.net.URL;
@@ -28,6 +35,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.nio.charset.Charset;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.DirectoryScanner;
@@ -342,7 +350,7 @@ public class VOConfigTask extends Task {
 
         
         try {
-            FileWriter template = new FileWriter(voListTpl);
+            OutputStreamWriter template = new OutputStreamWriter(new FileOutputStream(voListTpl), Charset.forName("utf-8"));
             template.write("unique template "+voListNS+";\n\n");
             template.write("variable ALLVOS ?= list(\n");
             for (String vo : voTable.keySet()) {
@@ -366,7 +374,7 @@ public class VOConfigTask extends Task {
 
         
         try {
-            FileWriter template = new FileWriter(dnListTpl);
+            OutputStreamWriter template = new OutputStreamWriter(new FileOutputStream(dnListTpl), Charset.forName("utf-8"));
             template.write("unique template "+dnListNS+";\n\n");
             if ( vomsServers != null ) {
                 template.write("variable VOMS_SERVER_DN ?= list(\n");
@@ -744,7 +752,7 @@ public class VOConfigTask extends Task {
             System.out.println("Writing template for VO "+getName()+" ("+voParamsTpl+")");
 
             try {
-                FileWriter template = new FileWriter(voParamsTpl);
+                OutputStreamWriter template = new OutputStreamWriter(new FileOutputStream(voParamsTpl), Charset.forName("utf-8"));
                 template.write("structure template "+voParamsNS+";\n");
                 template.write("\n");
                 template.write("'name' ?= '"+getName()+"';\n");
@@ -834,7 +842,7 @@ public class VOConfigTask extends Task {
             this.vomsAdminEnabled = Boolean.parseBoolean(vomsAdminEnabled);
         }
 
-        public void writeTemplate(FileWriter template, boolean forceVomsAdmin) throws IOException {
+        public void writeTemplate(OutputStreamWriter template, boolean forceVomsAdmin) throws IOException {
             template.write("    nlist('name', '"+getServer().getHost()+"',\n");
             template.write("          'host', '"+getServer().getHost()+"',\n");
             template.write("          'port', "+getPort()+",\n");
@@ -946,7 +954,7 @@ public class VOConfigTask extends Task {
                     System.err.println("    Retrieving VOMS server "+getHost()+" existing certificate");
                 }
                 try {
-                    Scanner templateScanner = new Scanner(templateFile);
+                    Scanner templateScanner = new Scanner(templateFile, "utf-8");
                     String certStartTag;
                     boolean certFound = false;
                     while ( (certStartTag = templateScanner.findWithinHorizon(certDeclarationPattern,0)) != null ) {
@@ -1023,7 +1031,7 @@ public class VOConfigTask extends Task {
             String oldCert = getOldCert(templateBranch);
 
             try {
-                FileWriter template = new FileWriter(certParamsTpl);
+                OutputStreamWriter template = new OutputStreamWriter(new FileOutputStream(certParamsTpl), Charset.forName("utf-8"));
                 template.write("structure template "+getCertParamsNS()+";\n\n");
                 template.write("'cert' ?= <<EOF;\n");
                 template.write(getCert());
@@ -1044,7 +1052,7 @@ public class VOConfigTask extends Task {
          * This method writes subject and issuer of VOMS server valid certificates as
          * a nlist element
          */
-        public void writeCertInfo(FileWriter template) throws IOException {
+        public void writeCertInfo(OutputStreamWriter template) throws IOException {
             LinkedList<VOMSServerCertificate> certs = new LinkedList<VOMSServerCertificate>();
             if ( this.cert != null ) {
                 certs.add(cert);
@@ -1093,11 +1101,11 @@ if ( (entrySuffix.length() > 0) ) {
         private Date expiry = null;
         
         // Constructor: retrieve main informations from certificate
-        public VOMSServerCertificate (String base64) throws CertificateException {
+        public VOMSServerCertificate (String base64) throws CertificateExpiredException, CertificateException {
             this.base64 = base64;
             try {
                 CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-                X509Certificate cert = (X509Certificate) certFactory.generateCertificate(new ByteArrayInputStream(base64.getBytes()));
+                X509Certificate cert = (X509Certificate) certFactory.generateCertificate(new ByteArrayInputStream(base64.getBytes("utf-8")));
                 cert.checkValidity();
                 this.expiry = cert.getNotAfter();
                 this.serial = cert.getSerialNumber();
@@ -1109,6 +1117,8 @@ if ( (entrySuffix.length() > 0) ) {
             } catch (CertificateException e) {
                 System.out.println("    Invalid VOMS server certificate: "+e.getMessage());
                 throw e;
+            } catch (UnsupportedEncodingException e) {
+                System.out.println("    Unable to encode certificate as utf-8: "+e.getMessage());
             }
         }
         
@@ -1325,7 +1335,7 @@ if ( (entrySuffix.length() > 0) ) {
             return (this.legacySuffix);
         }
         
-        public void writeTemplate(FileWriter template, VOConfig voConfig) throws IOException {
+        public void writeTemplate(OutputStreamWriter template, VOConfig voConfig) throws IOException {
             String prefix = "";
             if ( !getMappingRequested() ) {
                 prefix = "#";

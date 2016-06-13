@@ -7,10 +7,11 @@ ${author-info}
 package org.quattor.ant;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.io.LineNumberReader;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -23,6 +24,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.nio.charset.Charset;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.DirectoryScanner;
@@ -120,7 +122,7 @@ public class RepositoryTask extends Task {
 		
 			try {
                                 System.out.println("Updating "+listFileName);
-				FileWriter allRepos = new FileWriter(listFileName,false);
+			        OutputStreamWriter allRepos = new OutputStreamWriter(new FileOutputStream(listFileName), Charset.forName("utf-8"));
 				allRepos.write("# List of all existing repository templates\n");
 				allRepos.write("template "+listName+";\n\n");
 				allRepos.write("variable ALL_REPOSITORIES= nlist( \n");
@@ -247,7 +249,7 @@ public class RepositoryTask extends Task {
 		try {
 
 			// Open the file for reading.
-			reader = new LineNumberReader(new FileReader(template));
+			reader = new LineNumberReader(new InputStreamReader(new FileInputStream(template), Charset.forName("utf-8")));
 
 			// Loop over all lines searching for key/value pair matches in
 			// comment lines.
@@ -444,7 +446,7 @@ public class RepositoryTask extends Task {
 				if (contents != null) {
 
 					try {
-						FileWriter writer = new FileWriter(template);
+			                        OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(template), Charset.forName("utf-8"));
 						writer.write(contents);
 						writer.close();
 					} catch (IOException ioe) {
@@ -507,7 +509,7 @@ public class RepositoryTask extends Task {
 			try {
 
 				// Get an input stream for the URL.
-				InputStreamReader is = new InputStreamReader(url.openStream());
+				InputStreamReader is = new InputStreamReader(url.openStream(), Charset.forName("utf-8"));
 
 				// Create a character buffer for holding the data while
 				// transferring it to a string buffer.

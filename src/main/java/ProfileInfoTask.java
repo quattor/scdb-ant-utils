@@ -11,6 +11,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.charset.Charset;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Task;
@@ -86,7 +87,7 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 		try {
 
 			// Open the output file.
-			Writer writer = new OutputStreamWriter(new FileOutputStream(info));
+			Writer writer = new OutputStreamWriter(new FileOutputStream(info), Charset.forName("utf-8"));
 			writer.write(contents.toString());
 			writer.close();
 
