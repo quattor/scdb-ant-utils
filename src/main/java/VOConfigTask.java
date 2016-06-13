@@ -1084,9 +1084,9 @@ if ( (entrySuffix.length() > 0) ) {
                     writeEntry = true;
                 }
                 if ( writeEntry ) {
-                    template.write(String.format("%-36s%s\n", "    '"+getHost()+entrySuffix+"', ", "nlist('subject', '"+subject+"',"));
-                    template.write(String.format("%-42s%s\n","", "'issuer', '"+issuer+"',"));
-                    template.write(String.format("%-41s%s\n","", "),"));
+                    template.write(String.format("%-36s%s%n", "    '"+getHost()+entrySuffix+"', ", "nlist('subject', '"+subject+"',"));
+                    template.write(String.format("%-42s%s%n","", "'issuer', '"+issuer+"',"));
+                    template.write(String.format("%-41s%s%n","", "),"));
                     entrySuffix = "_2";                    
                 }
             }
