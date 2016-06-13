@@ -6,8 +6,8 @@ http://maven.apache.org/maven-v4_0_0.xsd">
 
   <artifactId>scdb-ant-utils</artifactId>
   <groupId>org.quattor.ant</groupId>
-  <version>10.0.0-SNAPSHOT</version>
-  <name>panc</name>
+  <version>9.1.0-SNAPSHOT</version>
+  <name>scdb-ant-utils</name>
   <description>Ant tasks for Quattor SCDB</description>
   <packaging>jar</packaging>
 
@@ -21,15 +21,8 @@ http://maven.apache.org/maven-v4_0_0.xsd">
 
     <sourceDirectory>target/java</sourceDirectory>
 
-    <resources>
-      <resource>
-        <directory>src/main/resources</directory>
-        <filtering>true</filtering>
-      </resource>
-    </resources>
-
     <plugins>
- 
+
       <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
@@ -56,9 +49,6 @@ http://maven.apache.org/maven-v4_0_0.xsd">
             </goals>
             <configuration>
               <encoding>UTF-8</encoding>
-              <delimiters>
-                <delimiter>${*}</delimiter>
-              </delimiters>
               <outputDirectory>${project.build.directory}/java</outputDirectory>
               <resources>
                 <resource>
@@ -101,19 +91,6 @@ http://maven.apache.org/maven-v4_0_0.xsd">
 
   </build>
 
-  <distributionManagement>
-    <repository>
-      <id>quattor-releases</id>
-      <name>Releases</name>
-      <url>http://repo.stratuslab.eu:8081/content/repositories/quattor-releases/</url>
-    </repository>
-    <snapshotRepository>
-      <id>quattor-snapshots</id>
-      <name>Snapshots</name>
-      <url>http://repo.stratuslab.eu:8081/content/repositories/quattor-snapshots</url>
-    </snapshotRepository>
-  </distributionManagement>
-
   <dependencies>
 
     <dependency>
@@ -121,7 +98,7 @@ http://maven.apache.org/maven-v4_0_0.xsd">
         <artifactId>ant</artifactId>
         <version>1.7.1</version>
     </dependency>
- 
+
    <dependency>
        <groupId>com.google.code.findbugs</groupId>
        <artifactId>findbugs</artifactId>
@@ -133,7 +110,7 @@ http://maven.apache.org/maven-v4_0_0.xsd">
         <artifactId>svnkit</artifactId>
         <version>1.3.0-hudson-4</version>
     </dependency>
-    
+
   </dependencies>
 
   <licenses>
