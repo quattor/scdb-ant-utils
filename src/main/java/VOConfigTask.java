@@ -522,7 +522,7 @@ public class VOConfigTask extends Task {
                 String VOMSServerKey = vomsServer.getHost() + ":" + Integer.toString(vomsServer.getPort());
                 if ( qName.equals("VOMS_Server") ) {
                     // Check the VOMS server for important attributes
-                    if ( vomsServer.getHost() == "" ) {
+                    if ( vomsServer.getHost().equals("")) {
                         System.err.println("    WARNING: a VOMS server has no hostname defined");
                     } else if ( vomsServer.getPort() == 0 ) {
                         System.err.println("    WARNING: a VOMS server has no port defined.");
@@ -531,7 +531,7 @@ public class VOConfigTask extends Task {
                             if ( debugTask ) {
                                 System.err.println("    VOMS server '"+VOMSServerKey+"' already defined: checking attribute consistency.");
                             }
-                            if ( (vomsServer.getCertExpiry() != null) && (vomsServer.getCert() != vomsServers.get(VOMSServerKey).getCert()) ) {
+                            if ( (vomsServer.getCertExpiry() != null) && (!vomsServer.getCert().equals(vomsServers.get(VOMSServerKey).getCert())) ) {
                                 if ( vomsServers.get(VOMSServerKey).getCert().length() == 0 ) {
                                     System.err.println("    WARNING: VOMS server '"+VOMSServerKey+"' already defined but without certificate, updating it.");
                                     vomsServers.get(VOMSServerKey).setCert(vomsServer.getCert());
