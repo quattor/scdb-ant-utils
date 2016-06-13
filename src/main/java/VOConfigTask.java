@@ -731,15 +731,19 @@ public class VOConfigTask extends Task {
         }
 
         public String toString() {
-            String configStr = "";
+            StringBuffer configStr = new StringBuffer();
             for (VOMSEndpoint endpoint : vomsEndpointList) {
                 if ( configStr.length() > 0 ) {
-                    configStr += "\n";
+                    configStr.append("\n");
                 }
-                configStr += "    VOMS Server: "+endpoint.getEndpoint()+" (VOMS port="+endpoint.getPort()+
-                                                                ", voms-admin="+endpoint.getVomsAdminEnabled()+")";
+                configStr.append(String.format(
+                    "    VOMS Server: %s (VOMS port=%s, voms-admin=%s)",
+                    endpoint.getEndpoint(),
+                    endpoint.getPort(),
+                    endpoint.getVomsAdminEnabled()
+                ));
             }                
-            return (configStr);
+            return (configStr.toString());
         }
         
         private void writeVOTemplate(String templateBranch) throws BuildException {            
@@ -1154,11 +1158,11 @@ if ( (entrySuffix.length() > 0) ) {
         // Revert order of attribues, '/' instead of ',' as a separator
         protected String ldapDN (String dn) {
             String[] tokens = dn.split(",\\s*");
-            String ldapDN = "";
+            StringBuffer ldapDN = new StringBuffer();
             for (int i=Array.getLength(tokens)-1; i>=0; i--) {
-                ldapDN += "/" + tokens[i];
+                ldapDN.append("/" + tokens[i]);
             }
-            return (ldapDN);
+            return (ldapDN.toString());
         }
 }
     
@@ -1378,14 +1382,14 @@ if ( (entrySuffix.length() > 0) ) {
         }
         
         public String toString() {
-            String voListStr = "";
+            StringBuffer voListStr = new StringBuffer();
             for (String vo : getVOs()) {
                 if ( voListStr.length() > 0 ) {
-                    voListStr += " ";
+                    voListStr.append(" ");
                 }
-                voListStr += vo;
+                voListStr.append(vo);
             }
-            return (voListStr);
+            return (voListStr.toString());
         }
     }
     
