@@ -34,7 +34,7 @@ public class RepositoryTask extends Task {
         /*
          *  scdb-ant-utils version
          */
-        private final String version = "${version}";
+        private final static String version = "${version}";
 
 	/* The pattern for matching the name information. */
 	private static Pattern namePattern = Pattern

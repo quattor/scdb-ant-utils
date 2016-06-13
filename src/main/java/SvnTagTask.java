@@ -50,7 +50,7 @@ public class SvnTagTask extends Task {
         /*
          *  scdb-ant-utils version
          */
-        private final String version = "${version}";
+        private final static String version = "${version}";
 
 	// The repository factory must be setup to know about http/https
 	// protocols (DAV) and the svn protocol (SVN).
