@@ -6,7 +6,14 @@ ${author-info}
 
 package org.quattor.ant;
 
-import java.io.*;
+import java.io.File;
+import java.io.InputStream;
+import java.io.ByteArrayInputStream;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.IOException;
+import java.io.FileNotFoundException;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.net.URL;
@@ -28,6 +35,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.nio.charset.Charset;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.DirectoryScanner;
@@ -54,7 +62,7 @@ public class VOConfigTask extends Task {
     /*
      *  scdb-ant-utils version
      */
-    private final String version = "${version}";
+    private final static String version = "${version}";
 
     /* List of directories containing a VO configuration description (templates) */
     protected DirSet configDirs = null;
@@ -342,7 +350,7 @@ public class VOConfigTask extends Task {
 
         
         try {
-            FileWriter template = new FileWriter(voListTpl);
+            OutputStreamWriter template = new OutputStreamWriter(new FileOutputStream(voListTpl), Charset.forName("utf-8"));
             template.write("unique template "+voListNS+";\n\n");
             template.write("variable ALLVOS ?= list(\n");
             for (String vo : voTable.keySet()) {
@@ -366,7 +374,7 @@ public class VOConfigTask extends Task {
 
         
         try {
-            FileWriter template = new FileWriter(dnListTpl);
+            OutputStreamWriter template = new OutputStreamWriter(new FileOutputStream(dnListTpl), Charset.forName("utf-8"));
             template.write("unique template "+dnListNS+";\n\n");
             if ( vomsServers != null ) {
                 template.write("variable VOMS_SERVER_DN ?= list(\n");
@@ -514,7 +522,7 @@ public class VOConfigTask extends Task {
                 String VOMSServerKey = vomsServer.getHost() + ":" + Integer.toString(vomsServer.getPort());
                 if ( qName.equals("VOMS_Server") ) {
                     // Check the VOMS server for important attributes
-                    if ( vomsServer.getHost() == "" ) {
+                    if ( vomsServer.getHost().equals("")) {
                         System.err.println("    WARNING: a VOMS server has no hostname defined");
                     } else if ( vomsServer.getPort() == 0 ) {
                         System.err.println("    WARNING: a VOMS server has no port defined.");
@@ -523,7 +531,7 @@ public class VOConfigTask extends Task {
                             if ( debugTask ) {
                                 System.err.println("    VOMS server '"+VOMSServerKey+"' already defined: checking attribute consistency.");
                             }
-                            if ( (vomsServer.getCertExpiry() != null) && (vomsServer.getCert() != vomsServers.get(VOMSServerKey).getCert()) ) {
+                            if ( (vomsServer.getCertExpiry() != null) && (!vomsServer.getCert().equals(vomsServers.get(VOMSServerKey).getCert())) ) {
                                 if ( vomsServers.get(VOMSServerKey).getCert().length() == 0 ) {
                                     System.err.println("    WARNING: VOMS server '"+VOMSServerKey+"' already defined but without certificate, updating it.");
                                     vomsServers.get(VOMSServerKey).setCert(vomsServer.getCert());
@@ -723,15 +731,19 @@ public class VOConfigTask extends Task {
         }
 
         public String toString() {
-            String configStr = "";
+            StringBuffer configStr = new StringBuffer();
             for (VOMSEndpoint endpoint : vomsEndpointList) {
                 if ( configStr.length() > 0 ) {
-                    configStr += "\n";
+                    configStr.append("\n");
                 }
-                configStr += "    VOMS Server: "+endpoint.getEndpoint()+" (VOMS port="+endpoint.getPort()+
-                                                                ", voms-admin="+endpoint.getVomsAdminEnabled()+")";
+                configStr.append(String.format(
+                    "    VOMS Server: %s (VOMS port=%s, voms-admin=%s)",
+                    endpoint.getEndpoint(),
+                    endpoint.getPort(),
+                    endpoint.getVomsAdminEnabled()
+                ));
             }                
-            return (configStr);
+            return (configStr.toString());
         }
         
         private void writeVOTemplate(String templateBranch) throws BuildException {            
@@ -744,7 +756,7 @@ public class VOConfigTask extends Task {
             System.out.println("Writing template for VO "+getName()+" ("+voParamsTpl+")");
 
             try {
-                FileWriter template = new FileWriter(voParamsTpl);
+                OutputStreamWriter template = new OutputStreamWriter(new FileOutputStream(voParamsTpl), Charset.forName("utf-8"));
                 template.write("structure template "+voParamsNS+";\n");
                 template.write("\n");
                 template.write("'name' ?= '"+getName()+"';\n");
@@ -834,7 +846,7 @@ public class VOConfigTask extends Task {
             this.vomsAdminEnabled = Boolean.parseBoolean(vomsAdminEnabled);
         }
 
-        public void writeTemplate(FileWriter template, boolean forceVomsAdmin) throws IOException {
+        public void writeTemplate(OutputStreamWriter template, boolean forceVomsAdmin) throws IOException {
             template.write("    nlist('name', '"+getServer().getHost()+"',\n");
             template.write("          'host', '"+getServer().getHost()+"',\n");
             template.write("          'port', "+getPort()+",\n");
@@ -946,7 +958,7 @@ public class VOConfigTask extends Task {
                     System.err.println("    Retrieving VOMS server "+getHost()+" existing certificate");
                 }
                 try {
-                    Scanner templateScanner = new Scanner(templateFile);
+                    Scanner templateScanner = new Scanner(templateFile, "utf-8");
                     String certStartTag;
                     boolean certFound = false;
                     while ( (certStartTag = templateScanner.findWithinHorizon(certDeclarationPattern,0)) != null ) {
@@ -1023,7 +1035,7 @@ public class VOConfigTask extends Task {
             String oldCert = getOldCert(templateBranch);
 
             try {
-                FileWriter template = new FileWriter(certParamsTpl);
+                OutputStreamWriter template = new OutputStreamWriter(new FileOutputStream(certParamsTpl), Charset.forName("utf-8"));
                 template.write("structure template "+getCertParamsNS()+";\n\n");
                 template.write("'cert' ?= <<EOF;\n");
                 template.write(getCert());
@@ -1044,7 +1056,7 @@ public class VOConfigTask extends Task {
          * This method writes subject and issuer of VOMS server valid certificates as
          * a nlist element
          */
-        public void writeCertInfo(FileWriter template) throws IOException {
+        public void writeCertInfo(OutputStreamWriter template) throws IOException {
             LinkedList<VOMSServerCertificate> certs = new LinkedList<VOMSServerCertificate>();
             if ( this.cert != null ) {
                 certs.add(cert);
@@ -1072,9 +1084,9 @@ if ( (entrySuffix.length() > 0) ) {
                     writeEntry = true;
                 }
                 if ( writeEntry ) {
-                    template.write(String.format("%-36s%s\n", "    '"+getHost()+entrySuffix+"', ", "nlist('subject', '"+subject+"',"));
-                    template.write(String.format("%-42s%s\n","", "'issuer', '"+issuer+"',"));
-                    template.write(String.format("%-41s%s\n","", "),"));
+                    template.write(String.format("%-36s%s%n", "    '"+getHost()+entrySuffix+"', ", "nlist('subject', '"+subject+"',"));
+                    template.write(String.format("%-42s%s%n","", "'issuer', '"+issuer+"',"));
+                    template.write(String.format("%-41s%s%n","", "),"));
                     entrySuffix = "_2";                    
                 }
             }
@@ -1093,11 +1105,11 @@ if ( (entrySuffix.length() > 0) ) {
         private Date expiry = null;
         
         // Constructor: retrieve main informations from certificate
-        public VOMSServerCertificate (String base64) throws CertificateException {
+        public VOMSServerCertificate (String base64) throws CertificateExpiredException, CertificateException {
             this.base64 = base64;
             try {
                 CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-                X509Certificate cert = (X509Certificate) certFactory.generateCertificate(new ByteArrayInputStream(base64.getBytes()));
+                X509Certificate cert = (X509Certificate) certFactory.generateCertificate(new ByteArrayInputStream(base64.getBytes("utf-8")));
                 cert.checkValidity();
                 this.expiry = cert.getNotAfter();
                 this.serial = cert.getSerialNumber();
@@ -1109,6 +1121,8 @@ if ( (entrySuffix.length() > 0) ) {
             } catch (CertificateException e) {
                 System.out.println("    Invalid VOMS server certificate: "+e.getMessage());
                 throw e;
+            } catch (UnsupportedEncodingException e) {
+                System.out.println("    Unable to encode certificate as utf-8: "+e.getMessage());
             }
         }
         
@@ -1144,11 +1158,11 @@ if ( (entrySuffix.length() > 0) ) {
         // Revert order of attribues, '/' instead of ',' as a separator
         protected String ldapDN (String dn) {
             String[] tokens = dn.split(",\\s*");
-            String ldapDN = "";
+            StringBuffer ldapDN = new StringBuffer();
             for (int i=Array.getLength(tokens)-1; i>=0; i--) {
-                ldapDN += "/" + tokens[i];
+                ldapDN.append("/" + tokens[i]);
             }
-            return (ldapDN);
+            return (ldapDN.toString());
         }
 }
     
@@ -1325,7 +1339,7 @@ if ( (entrySuffix.length() > 0) ) {
             return (this.legacySuffix);
         }
         
-        public void writeTemplate(FileWriter template, VOConfig voConfig) throws IOException {
+        public void writeTemplate(OutputStreamWriter template, VOConfig voConfig) throws IOException {
             String prefix = "";
             if ( !getMappingRequested() ) {
                 prefix = "#";
@@ -1368,14 +1382,14 @@ if ( (entrySuffix.length() > 0) ) {
         }
         
         public String toString() {
-            String voListStr = "";
+            StringBuffer voListStr = new StringBuffer();
             for (String vo : getVOs()) {
                 if ( voListStr.length() > 0 ) {
-                    voListStr += " ";
+                    voListStr.append(" ");
                 }
-                voListStr += vo;
+                voListStr.append(vo);
             }
-            return (voListStr);
+            return (voListStr.toString());
         }
     }
     
