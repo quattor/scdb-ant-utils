@@ -974,12 +974,12 @@ public class VOConfigTask extends Task {
                             //    System.err.println("Certificate delimiter="+delimiter);
                             //}
                             templateScanner.useDelimiter(delimiter+"\\s*;*");
-                            String certValue = templateScanner.next();
-                            if ( certValue != null ) {
+                            if (templateScanner.hasNext()) {
+                                String certValue = templateScanner.next();
                                 try {
                                     existingCerts.put(certType, new VOMSServerCertificate(certValue));
                                 } catch (CertificateException e) {
-                                        System.out.println("    Existing certificate ('"+certType+"') no longer valid, ignoring it.");
+                                    System.out.println("    Existing certificate ('" + certType + "') no longer valid, ignoring it.");
                                 }
                             } else {
                                 System.out.println("    WARNING: invalid format of certificate declaration ('"+certType+"') in existing template");
