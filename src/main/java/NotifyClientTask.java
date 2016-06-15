@@ -56,9 +56,9 @@ public class NotifyClientTask extends Task {
         LinkedList<DatagramPacket> packets = new LinkedList<DatagramPacket>();
 
         Map<String, Long> packetInfo = new HashMap<String, Long>();
-        for (File file : filetimes.keySet()) {
-            Long time = filetimes.get(file);
-            String host = getFullHostname(file);
+        for (Map.Entry<File, Long> file : filetimes.entrySet()) {
+            Long time = file.getValue();
+            String host = getFullHostname(file.getKey());
 
             if (host != null) {
                 Long oldTime = packetInfo.get(host);
