@@ -36,6 +36,7 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.nio.charset.Charset;
+import java.util.Map;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.DirectoryScanner;
@@ -783,8 +784,8 @@ public class VOConfigTask extends Task {
                 if ( getPilotRoleFQAN() != null ) {
                     fqanList.get(getPilotRoleFQAN()).writeTemplate(template,this);
                 }
-                for (String key : fqanList.keySet()) {
-                    VOMSFqan fqan = fqanList.get(key);
+                for (Map.Entry<String,VOMSFqan > entry: fqanList.entrySet()) {
+                    VOMSFqan fqan = entry.getValue();
                     if ( !fqan.isPilotRole() ) {
                         fqan.writeTemplate(template,this);
                     }

@@ -41,15 +41,14 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 	@Override
 	public void execute() throws BuildException {
 		// Sanity checks on the output directory.
-		if (profilesDirName == null) {
-			throw new BuildException("profilesDirName not specified");
-		}
-		if (profilesDirName.length() == 0) {
-			if ( debugTask ) {
-				System.out.println("profilesDirName parameters is an empty string: do nothing.");
-			}
-			return;
-		}
+            if (profilesDirName == null) {
+                throw new BuildException("profilesDirName not specified");
+            } else if (profilesDirName.length() == 0) {
+                if (debugTask) {
+                    System.out.println("profilesDirName parameters is an empty string: do nothing.");
+                }
+                return;
+            }
                 if ( debugTask ) {
 			System.out.println("Checking if profilesDirName ("+profilesDirName+") is a valid directory");
 		}
