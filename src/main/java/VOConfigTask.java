@@ -74,9 +74,6 @@ public class VOConfigTask extends Task {
     /* Namespace (relative directory) to use for templates containing VOMS server certificates */
     protected String certsTplNS = null;
 
-    /* Namespace (relative directory) to use for templates containing VO site-specific params */
-    protected String siteParamsTplNS = null;
-
     /* URI for VO ID card source */
     protected String voIdCardsUri = null;
 
@@ -88,17 +85,6 @@ public class VOConfigTask extends Task {
 
     /* Name of the template containing the list of all defined VOs */
     protected String vomsServerDNsTemplate = "voms_dn_list";
-
-    /* Algorithm used to generate account suffix.
-     * The original one was very bad at ensuring suffix uniqueness, requiring several retries to get
-     * a unique suffix and thus making the actual suffix dependent on the FQAN order which historicall was alphabetical.
-     * With the new algorithm, there is a very small chance of suffix conflict and the FQAN order in the VO card is
-     * maintained to limit side effect of generation retries (with the assumption that new FQAN are added at the end of
-     * the list in the VO ID card.
-     * Default is to use the new algorithm but the option must be passed explicitly to preserve account
-     * backward compatibility (in term of account names and uids).
-     */
-    protected boolean legacySuffixAlgorithm = false;
 
     /* Control printing of debugging messages in this task */
     protected boolean debugTask = false;
@@ -194,30 +180,6 @@ public class VOConfigTask extends Task {
     public void setcertsTplNS(String certsTplNS) {
         this.certsTplNS = certsTplNS;
     }
-
-    /**
-     * Set the namespace (relative directory) for site-specific templates related to VO cnfiguration.
-     * 
-     * @param siteParamsTplNS
-     *            String containing a template form of the path to the
-     *            customization directory
-     * 
-     */
-    public void setsiteParamsTplNS(String siteParamsTplNS) {
-        this.siteParamsTplNS = siteParamsTplNS;
-    }
-
-    /**
-     * Set the version of the algorithm to use for generating account suffix.
-     * 
-     * @param legacySuffixAlgorithm
-     *            if true, used the legacy algorithm for backward compatibility.
-     * 
-     */
-    public void setlegacySuffixAlgorithm(boolean legacySuffixAlgorithm) {
-        this.legacySuffixAlgorithm = legacySuffixAlgorithm;
-    }
-
 
     // Possible FQAN for a Software Manager
     static final private String softwareManagerSuffix = "s";
@@ -552,7 +514,7 @@ public class VOConfigTask extends Task {
                             vomsServers.put(VOMSServerKey,vomsServer);
                         }
                         vomsEndpoint.setServer(vomsServers.get(VOMSServerKey));
-                        //vomsEndpoint.setEndpoint("vomss://" + vomsServer.getHost() + ":" + Integer.toString(vomsServer.getPort()) + "/voms/" + voConfig.getName() + "?/" + voConfig.getName());
+                        //vomsEndpoint.setEndpoint("vomss://" + vomsServer.getHost()bae + ":" + Integer.toString(vomsServer.getPort()) + "/voms/" + voConfig.getName() + "?/" + voConfig.getName());
                         voConfig.addVomsEndpoint(vomsEndpoint);
                     }
                 } else {
