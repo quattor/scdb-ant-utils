@@ -557,7 +557,6 @@ public class VOConfigTask extends Task {
                     }
                 } else {
                     if ( qName.equals("hostname") ) {
-                        String hostname = data.trim();
                         vomsServer.setHost(data.trim());
                     } else if ( qName.equals("X509PublicKey") ) {
                         vomsServer.setCert(data.trim());
