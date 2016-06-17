@@ -72,14 +72,18 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 				"<?xml version='1.0' encoding='utf-8'?>\n");
 		contents.append("<profiles>\n");
 		File[] files = outputdir.listFiles(this);
-		for (File file : files) {
-			long mtime = file.lastModified();
-			contents.append("<profile mtime='");
-			contents.append(mtime);
-			contents.append("'>");
-			contents.append(file.getName());
-			contents.append("</profile>\n");
-		}
+                if (files != null) {
+                    for (File file : files) {
+                        long mtime = file.lastModified();
+                        contents.append("<profile mtime='");
+                        contents.append(mtime);
+                        contents.append("'>");
+                        contents.append(file.getName());
+                        contents.append("</profile>\n");
+                    }
+                } else {
+                    throw new BuildException("Files Array is Null");
+                }
 		contents.append("</profiles>\n");
 
 		// Create the output file.
