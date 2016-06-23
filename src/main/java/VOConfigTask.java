@@ -514,7 +514,7 @@ public class VOConfigTask extends Task {
                             vomsServers.put(VOMSServerKey,vomsServer);
                         }
                         vomsEndpoint.setServer(vomsServers.get(VOMSServerKey));
-                        //vomsEndpoint.setEndpoint("vomss://" + vomsServer.getHost()bae + ":" + Integer.toString(vomsServer.getPort()) + "/voms/" + voConfig.getName() + "?/" + voConfig.getName());
+                        //vomsEndpoint.setEndpoint("vomss://" + vomsServer.getHost() + ":" + Integer.toString(vomsServer.getPort()) + "/voms/" + voConfig.getName() + "?/" + voConfig.getName());
                         voConfig.addVomsEndpoint(vomsEndpoint);
                     }
                 } else {
@@ -765,7 +765,7 @@ public class VOConfigTask extends Task {
 
     // Class representing a VOMS server endpoint (used by a specific V0)
     
-    private class VOMSEndpoint {
+    private static class VOMSEndpoint {
         protected VOMSServer server = null;
         protected int port;
         protected String endpoint = null;
@@ -1058,7 +1058,7 @@ if ( (entrySuffix.length() > 0) ) {
     
     // Class to represent a VOMS server certificate
     
-    private class VOMSServerCertificate {
+    private static class VOMSServerCertificate {
         // An empty string for base64 means that the certificate is not valid and must be ignored
         private String base64 = null;
         private BigInteger serial = null;
@@ -1330,7 +1330,7 @@ if ( (entrySuffix.length() > 0) ) {
     
     // Class to keep track of VOs using the same accounting prefix
     
-    private class AccountPrefixConflict {
+    private static class AccountPrefixConflict {
         protected LinkedList<String> vos = new LinkedList<String>();
         
         // Methods

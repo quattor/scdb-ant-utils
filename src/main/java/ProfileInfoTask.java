@@ -58,7 +58,7 @@ public class ProfileInfoTask extends Task implements java.io.FileFilter {
 			throw new BuildException("outputdir (" + outputdir
 					+ ") does not exist");
 		}
-		if (!outputdir.isDirectory()) {                   
+		if (!outputdir.isDirectory()) {
 			throw new BuildException("outputdir (" + outputdir
 					+ ") is not a directory");
 		}
