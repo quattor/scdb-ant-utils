@@ -125,7 +125,7 @@ public class RepositoryTask extends Task {
 			        OutputStreamWriter allRepos = new OutputStreamWriter(new FileOutputStream(listFileName), Charset.forName("utf-8"));
 				allRepos.write("# List of all existing repository templates\n");
 				allRepos.write("template "+listName+";\n\n");
-				allRepos.write("variable ALL_REPOSITORIES= nlist( \n");
+				allRepos.write("variable ALL_REPOSITORIES= dict( \n");
 				for (Repository r:repositoryList) {
 					allRepos.write("'"+r.name+"',  create('repository/" + r.name+"'),\n");					
 				}
@@ -354,7 +354,7 @@ public class RepositoryTask extends Task {
 				pair = new String[2];
 				pair[0] = name + "-" + version + "-" + arch;
 				pair[1] = "# pkg = " + pair[0] + "\n" + "escape(\"" + pair[0]
-						+ "\"),nlist(\"name\",\"" + name + "\",\"version\",\""
+						+ "\"),dict(\"name\",\"" + name + "\",\"version\",\""
 						+ version + "\",\"arch\",\"" + arch + "\")";
 			}
 		}
@@ -481,11 +481,11 @@ public class RepositoryTask extends Task {
 			buffer.append("\"name\" = \"" + name + "\";" + "\n");
 			buffer.append("\"owner\" = \"" + owner + "\";" + "\n");
 			buffer.append("\"protocols\" = list(" + "\n");
-			buffer.append("  nlist(\"name\",\"http\"," + "\n");
+			buffer.append("  dict(\"name\",\"http\"," + "\n");
 			buffer.append("        \"url\",\"" + url + "\")" + "\n");
 			buffer.append(");\n\n");
 
-			buffer.append("\"contents\" = nlist(\n");
+			buffer.append("\"contents\" = dict(\n");
 
 			TreeSet<String> keys = new TreeSet<String>();
 			keys.addAll(pkgs.keySet());
