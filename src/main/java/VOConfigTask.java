@@ -809,10 +809,10 @@ public class VOConfigTask extends Task {
         }
 
         public void writeTemplate(OutputStreamWriter template, boolean forceVomsAdmin) throws IOException {
-            template.write("    nlist('name', '"+getServer().getHost()+"',\n");
-            template.write("          'host', '"+getServer().getHost()+"',\n");
-            template.write("          'port', "+getPort()+",\n");
-            template.write("          'adminport', "+getServer().getPort()+",\n");
+            template.write("    dict('name', '"+getServer().getHost()+"',\n");
+            template.write("         'host', '"+getServer().getHost()+"',\n");
+            template.write("         'port', "+getPort()+",\n");
+            template.write("         'adminport', "+getServer().getPort()+",\n");
             if ( !getVomsAdminEnabled() ) {
                 if ( !forceVomsAdmin ) {
                     template.write("          'type', list('voms-only'),\n");
@@ -1016,7 +1016,7 @@ public class VOConfigTask extends Task {
         
         /*
          * This method writes subject and issuer of VOMS server valid certificates as
-         * a nlist element
+         * a dict element
          */
         public void writeCertInfo(OutputStreamWriter template) throws IOException {
             LinkedList<VOMSServerCertificate> certs = new LinkedList<VOMSServerCertificate>();
@@ -1046,7 +1046,7 @@ if ( (entrySuffix.length() > 0) ) {
                     writeEntry = true;
                 }
                 if ( writeEntry ) {
-                    template.write(String.format("%-36s%s%n", "    '"+getHost()+entrySuffix+"', ", "nlist('subject', '"+subject+"',"));
+                    template.write(String.format("%-36s%s%n", "    '"+getHost()+entrySuffix+"', ", "dict('subject', '"+subject+"',"));
                     template.write(String.format("%-42s%s%n","", "'issuer', '"+issuer+"',"));
                     template.write(String.format("%-41s%s%n","", "),"));
                     entrySuffix = "_2";                    
@@ -1317,13 +1317,13 @@ if ( (entrySuffix.length() > 0) ) {
                 // Pilot role must have an explicit description, whatever is in the VO card
                 description = "pilot";
             }
-            template.write(prefix+"    nlist('description', '"+description+"',\n");
-            template.write(prefix+"          'fqan', '"+getFqan()+"',\n");
+            template.write(prefix+"    dict('description', '"+description+"',\n");
+            template.write(prefix+"         'fqan', '"+getFqan()+"',\n");
             // Both old and new suffix are present in the template as different attributes.
             // The one to use can be choosen at compilation time.
-            template.write(prefix+"          'suffix', '"+getLegacyAccountSuffix(voConfig)+"',\n");
-            template.write(prefix+"          'suffix2', '"+getAccountSuffix(voConfig)+"',\n");
-            template.write(prefix+"         ),\n");
+            template.write(prefix+"         'suffix', '"+getLegacyAccountSuffix(voConfig)+"',\n");
+            template.write(prefix+"         'suffix2', '"+getAccountSuffix(voConfig)+"',\n");
+            template.write(prefix+"        ),\n");
         }
     }
 
